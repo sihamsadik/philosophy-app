@@ -125,6 +125,30 @@ describe("shapeUser", () => {
   it("returns null for a null row", () => {
     expect(shapeUser(null)).toBeNull();
   });
+
+  it("parses and attaches philosophyProfile from metadata if present", () => {
+    const row = profileRow({
+      metadata: {
+        philosophyProfile: {
+          primarySchools: ["Existentialism"],
+          keyThinkers: ["Nietzsche"],
+          coreQuestions: ["Does free will exist?"],
+          favoriteTexts: ["Thus Spoke Zarathustra"],
+          worldviewSummary: "Perspectivism",
+          connectionIntents: ["discussion"],
+        },
+      },
+    });
+    const u = shapeUser(row)!;
+    expect(u.philosophyProfile).toEqual({
+      primarySchools: ["Existentialism"],
+      keyThinkers: ["Nietzsche"],
+      coreQuestions: ["Does free will exist?"],
+      favoriteTexts: ["Thus Spoke Zarathustra"],
+      worldviewSummary: "Perspectivism",
+      connectionIntents: ["discussion"],
+    });
+  });
 });
 
 describe("shapeEntity", () => {

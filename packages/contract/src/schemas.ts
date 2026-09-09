@@ -148,6 +148,19 @@ export interface StewardConfigView {
 }
 
 // ─── users / profiles ────────────────────────────────────────────────────────
+export const connectionIntentEnum = z.enum(["discussion", "friendship", "intellectual", "dating"]);
+
+export const philosophyProfileSchema = z.object({
+  primarySchools: z.array(z.string().max(100)).max(10).optional().default([]),
+  keyThinkers: z.array(z.string().max(100)).max(20).optional().default([]),
+  coreQuestions: z.array(z.string().max(300)).max(10).optional().default([]),
+  favoriteTexts: z.array(z.string().max(200)).max(20).optional().default([]),
+  worldviewSummary: z.string().max(2000).nullable().optional().default(null),
+  connectionIntents: z.array(connectionIntentEnum).optional().default(["discussion", "intellectual"]),
+});
+
+export const updatePhilosophyProfileSchema = philosophyProfileSchema.partial();
+
 export const updateProfileSchema = z
   .object({
     name: z.string().max(120).nullable().optional(),
@@ -155,6 +168,7 @@ export const updateProfileSchema = z
     avatar: z.string().url().nullable().optional(),
     bio: z.string().max(300).nullable().optional(),
     metadata,
+    philosophyProfile: updatePhilosophyProfileSchema.nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No updatable fields provided" });
 

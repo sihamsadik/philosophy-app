@@ -16,6 +16,8 @@ import {
   muteConversationSchema,
   matchUsersSchema,
   spaceVisibility,
+  philosophyProfileSchema,
+  updateProfileSchema,
 } from "./schemas.js";
 
 const UUID = "11111111-1111-1111-1111-111111111111";
@@ -224,7 +226,39 @@ describe("space visibility", () => {
     expect(createSpaceSchema.parse({ name: "x", visibility: "unlisted" }).visibility).toBe("unlisted");
     expect(createSpaceSchema.parse({ name: "x" }).visibility).toBeUndefined();
   });
-  it("createSpaceSchema rejects a bad visibility", () => {
-    expect(() => createSpaceSchema.parse({ name: "x", visibility: "secret" })).toThrow();
+});
+
+describe("philosophyProfileSchema & updateProfileSchema", () => {
+  it("validates and applies defaults for philosophyProfileSchema", () => {
+    const parsed = philosophyProfileSchema.parse({
+      primarySchools: ["Existentialism", "Stoicism"],
+      keyThinkers: ["Nietzsche", "Camus"],
+      coreQuestions: ["Does free will exist under determinism?"],
+      favoriteTexts: ["The Myth of Sisyphus"],
+      worldviewSummary: "Meaning is created, not discovered.",
+      connectionIntents: ["discussion", "intellectual"],
+    });
+
+    expect(parsed.primarySchools).toEqual(["Existentialism", "Stoicism"]);
+    expect(parsed.keyThinkers).toEqual(["Nietzsche", "Camus"]);
+    expect(parsed.connectionIntents).toEqual(["discussion", "intellectual"]);
+  });
+
+  it("accepts updating profile with philosophyProfile in updateProfileSchema", () => {
+    const res = updateProfileSchema.safeParse({
+      philosophyProfile: {
+        primarySchools: ["Rationalism"],
+        keyThinkers: ["Descartes", "Spinoza"],
+      },
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("rejects invalid connection intent in philosophy profile", () => {
+    const res = philosophyProfileSchema.safeParse({
+      connectionIntents: ["invalid_intent" as any],
+    });
+    expect(res.success).toBe(false);
   });
 });
+

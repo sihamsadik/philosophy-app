@@ -12,14 +12,14 @@ import {
   stewardCases, stewardCaseEvents, userSuspensions,
   events, eventRsvps, eventInvites,
 } from "../db/schema/index.js";
-import { REACTION_TYPES } from "@agora-server/contract";
-import type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report } from "@agora-server/contract";
+import { REACTION_TYPES, philosophyProfileSchema } from "@agora-server/contract";
+import type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile } from "@agora-server/contract";
 
 // ─── Shared contract surface (re-exported from @agora-server/contract) ──────────────
 // The reaction taxonomy + API model interfaces now live in @agora-server/contract (shared with the
 // admin frontend). Re-exported here so existing `./shape.js` importers keep working unchanged.
 export { REACTION_TYPES };
-export type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report };
+export type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile };
 
 // Drizzle inferred row types.
 type ProfileRow = typeof profiles.$inferSelect;
@@ -35,11 +35,21 @@ function iso(d: Date | string | null | undefined): string | null {
   return d instanceof Date ? d.toISOString() : String(d);
 }
 
+function parsePhilosophyProfile(meta: Record<string, unknown> | null | undefined): PhilosophyProfile | null {
+  if (!meta) return null;
+  const raw = meta.philosophyProfile ?? meta.philosophy;
+  if (!raw || typeof raw !== "object") return null;
+  const result = philosophyProfileSchema.safeParse(raw);
+  return result.success ? result.data : null;
+}
+
 // ─── Shapers ─────────────────────────────────────────────────────────────────
 
 /** Public user (omits email/secureMetadata/isVerified/isActive/lastActive/updatedAt). */
 export function shapeUser(row: ProfileRow | null | undefined): User | null {
   if (!row) return null;
+  const metadata = (row.metadata as Record<string, unknown>) ?? {};
+  const philosophyProfile = parsePhilosophyProfile(metadata);
   return {
     id: row.id,
     projectId: row.projectId,
@@ -53,7 +63,8 @@ export function shapeUser(row: ProfileRow | null | undefined): User | null {
     bio: row.bio ?? null,
     birthdate: row.birthdate ?? null,
     location: null, // PostGIS column not modeled in Drizzle; populated in a later pass
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    metadata,
+    philosophyProfile,
     reputation: row.reputation ?? 0,
     createdAt: iso(row.createdAt)!,
   };

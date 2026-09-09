@@ -2,6 +2,17 @@
 // Pure types — no hono/drizzle/runtime dependency.
 import type { ReactionCounts, ReactionType } from "./reactions.js";
 
+export type ConnectionIntent = "discussion" | "friendship" | "intellectual" | "dating";
+
+export interface PhilosophyProfile {
+  primarySchools: string[];
+  keyThinkers: string[];
+  coreQuestions: string[];
+  favoriteTexts: string[];
+  worldviewSummary: string | null;
+  connectionIntents: ConnectionIntent[];
+}
+
 export interface User {
   id: string;
   projectId: string;
@@ -16,6 +27,7 @@ export interface User {
   birthdate: string | null;
   location: unknown | null;
   metadata: Record<string, unknown>;
+  philosophyProfile?: PhilosophyProfile | null;
   reputation: number;
   spaceReputation?: number; // space-scoped reputation, attached when the SDK requests it (v7.8.2 #6)
   createdAt: string;

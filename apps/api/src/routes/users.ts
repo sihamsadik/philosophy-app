@@ -78,6 +78,25 @@ export const userRoutes = new Hono<{ Variables: Variables }>()
     const body = parseBody(updateProfileSchema, await c.req.json().catch(() => ({})), "users");
     const check = await webhooks.validate(c.var.projectId, "user.updated", { ...body, id });
     if (!check.valid) throw Errors.forbidden("users/rejected", check.message ?? "Profile update rejected by validation webhook");
+    
+    const existing = await findUser(c.var.projectId, profiles.id, id);
+    if (!existing) throw Errors.notFound("users/not-found", "User not found");
+
+    let newMetadata: Record<string, unknown> | undefined = undefined;
+    if (body.metadata !== undefined || body.philosophyProfile !== undefined) {
+      const currentMeta = (existing.metadata as Record<string, unknown>) ?? {};
+      const currentPhilosophy = (currentMeta.philosophyProfile as Record<string, unknown>) ?? {};
+      const updatedPhilosophy = body.philosophyProfile !== undefined
+        ? (body.philosophyProfile === null ? null : { ...currentPhilosophy, ...body.philosophyProfile })
+        : (currentMeta.philosophyProfile ?? undefined);
+
+      newMetadata = {
+        ...currentMeta,
+        ...(body.metadata ?? {}),
+        ...(updatedPhilosophy !== undefined ? { philosophyProfile: updatedPhilosophy } : {}),
+      };
+    }
+
     let row: typeof profiles.$inferSelect | undefined;
     try {
       [row] = await getDb()
@@ -87,7 +106,7 @@ export const userRoutes = new Hono<{ Variables: Variables }>()
           ...(body.username !== undefined ? { username: body.username } : {}),
           ...(body.avatar !== undefined ? { avatar: body.avatar } : {}),
           ...(body.bio !== undefined ? { bio: body.bio } : {}),
-          ...(body.metadata !== undefined ? { metadata: body.metadata } : {}),
+          ...(newMetadata !== undefined ? { metadata: newMetadata } : {}),
         })
         .where(and(eq(profiles.projectId, c.var.projectId), eq(profiles.id, id)))
         .returning();
