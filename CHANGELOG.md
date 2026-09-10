@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Frontend & Philosophical UI Integration (Sprint 6)**: Created `@agora/web` client application (React 18 + Vite + TypeScript) providing a dedicated UI interface for the Philosophy Community platform.
+  - API Client Layer: `AgoraPhilosophyClient` in `apps/web/src/lib/api-client.ts` providing type-safe interaction with `@agora-server/contract` and `@agora/api`.
+  - Philosophical Profile Editor: `PhilosophyProfileEditor` in `apps/web/src/components/PhilosophyProfileEditor.tsx` with interactive tag pickers for primary schools, thinkers, core questions, favorite texts, and connection intent badges.
+  - Dual-Axis Intellectual Matching UI: `PeopleRecommendationsFeed` and `DualAxisCompatibilityGauge` rendering visual Shared Ground vs Productive Tension progress indicators and explainable AI compatibility breakdowns.
+  - Semantic Concept Search Interface: `SemanticSearch` in `apps/web/src/components/SemanticSearch.tsx` providing natural language concept search with multi-tab results (*Users*, *Arguments/Posts*, *Spaces*) and vector similarity percentage badges.
+  - AI Debate Analysis Drawer: `DebateSummaryDrawer` in `apps/web/src/components/DebateSummaryDrawer.tsx` rendering accordion views of main positions, arguments vs rebuttals, consensus/conflict highlights, and unresolved questions.
+  - Unified Dashboard: `App` dashboard in `apps/web/src/App.tsx` and glassmorphic styling system in `apps/web/src/index.css`.
 - **AI Discussion Summarization & Debate Analysis (Sprint 5)**: Added automated structured summarization of complex philosophical comment threads and debates.
   - Contract types & schemas in `@agora-server/contract`: `DiscussionSummary`, `PhilosophicalPosition`, `ArgumentRebuttal`, `discussionSummarySchema`.
   - Discussion Summarizer Subsystem in `@agora/api`: `generateDiscussionSummary` aggregates comment trees and uses LLM / heuristic debate analysis to extract main positions/theses, key arguments & rebuttals, points of agreement & disagreement, and unresolved questions.
