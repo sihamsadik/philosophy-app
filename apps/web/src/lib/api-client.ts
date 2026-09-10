@@ -13,6 +13,15 @@ export interface ApiClientOptions {
   authToken?: string;
 }
 
+export interface AuthSessionResponse {
+  user: User;
+  token?: {
+    accessToken: string;
+    refreshToken?: string;
+  };
+  accessToken?: string;
+}
+
 export class AgoraPhilosophyClient {
   private baseUrl: string;
   private projectId: string;
@@ -21,11 +30,28 @@ export class AgoraPhilosophyClient {
   constructor(options?: ApiClientOptions) {
     this.baseUrl = options?.baseUrl || "/v7";
     this.projectId = options?.projectId || "00000000-0000-0000-0000-000000000000";
-    this.authToken = options?.authToken || "mock-auth-token";
+    
+    // Restore saved token from localStorage if available
+    let storedToken = "";
+    if (typeof window !== "undefined") {
+      storedToken = localStorage.getItem("agora_philosophy_token") || "";
+    }
+    this.authToken = options?.authToken || storedToken || "mock-auth-token";
   }
 
   setAuthToken(token: string) {
     this.authToken = token;
+    if (typeof window !== "undefined") {
+      if (token) {
+        localStorage.setItem("agora_philosophy_token", token);
+      } else {
+        localStorage.removeItem("agora_philosophy_token");
+      }
+    }
+  }
+
+  getAuthToken(): string {
+    return this.authToken;
   }
 
   setProjectId(projectId: string) {
@@ -36,7 +62,7 @@ export class AgoraPhilosophyClient {
     const url = `${this.baseUrl}/${this.projectId}${path}`;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${this.authToken}`,
+      ...(this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {}),
       ...(init?.headers as Record<string, string>),
     };
 
@@ -54,14 +80,72 @@ export class AgoraPhilosophyClient {
   }
 
   /**
-   * Fetch current user or specific user profile with PhilosophyProfile
+   * POST /v7/:projectId/auth/sign-up
+   */
+  async signUp(data: {
+    email: string;
+    password?: string;
+    username?: string;
+    name?: string;
+  }): Promise<AuthSessionResponse> {
+    const res = await this.request<AuthSessionResponse>("/auth/sign-up", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const token = res.accessToken || res.token?.accessToken;
+    if (token) {
+      this.setAuthToken(token);
+    }
+    return res;
+  }
+
+  /**
+   * POST /v7/:projectId/auth/sign-in
+   */
+  async signIn(data: { email: string; password?: string }): Promise<AuthSessionResponse> {
+    const res = await this.request<AuthSessionResponse>("/auth/sign-in", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const token = res.accessToken || res.token?.accessToken;
+    if (token) {
+      this.setAuthToken(token);
+    }
+    return res;
+  }
+
+  /**
+   * POST /v7/:projectId/auth/sign-out
+   */
+  async signOut(): Promise<{ success: boolean }> {
+    try {
+      await this.request<{ success: boolean }>("/auth/sign-out", {
+        method: "POST",
+      });
+    } catch {
+      // Ignore network sign-out failure
+    } finally {
+      this.setAuthToken("");
+    }
+    return { success: true };
+  }
+
+  /**
+   * GET /v7/:projectId/auth/me
+   */
+  async getMe(): Promise<User> {
+    return this.request<User>("/auth/me");
+  }
+
+  /**
+   * Fetch user profile by ID
    */
   async getUser(userId: string): Promise<User> {
     return this.request<User>(`/users/${userId}`);
   }
 
   /**
-   * Update current user's philosophical profile
+   * Update user's philosophical profile
    */
   async updatePhilosophyProfile(
     userId: string,
@@ -75,7 +159,6 @@ export class AgoraPhilosophyClient {
 
   /**
    * GET /v7/:projectId/recommendations/people
-   * Dual-axis intellectual recommendations with filtering
    */
   async getPeopleRecommendations(params?: {
     connectionIntent?: ConnectionIntent;
@@ -95,7 +178,6 @@ export class AgoraPhilosophyClient {
 
   /**
    * GET /v7/:projectId/users/:id/compatibility
-   * Specific target user compatibility analysis
    */
   async getUserCompatibility(targetUserId: string): Promise<{ user: User; compatibility: CompatibilityScore }> {
     return this.request<{ user: User; compatibility: CompatibilityScore }>(`/users/${targetUserId}/compatibility`);
@@ -103,7 +185,6 @@ export class AgoraPhilosophyClient {
 
   /**
    * GET /v7/:projectId/search/semantic
-   * Semantic concept search across profiles, entities, and spaces
    */
   async searchSemantic(params: {
     q: string;
@@ -128,7 +209,6 @@ export class AgoraPhilosophyClient {
 
   /**
    * GET /v7/:projectId/entities/:id/summary
-   * AI debate analysis & discussion summarization
    */
   async getDiscussionSummary(entityId: string): Promise<DiscussionSummary> {
     return this.request<DiscussionSummary>(`/entities/${entityId}/summary`);
@@ -136,7 +216,6 @@ export class AgoraPhilosophyClient {
 
   /**
    * POST /v7/:projectId/spaces/seed-philosophy
-   * Pre-seed philosophy spaces with tailored discourse rules
    */
   async seedPhilosophySpaces(): Promise<{ count: number; created: any[] }> {
     return this.request<{ count: number; created: any[] }>("/spaces/seed-philosophy", {

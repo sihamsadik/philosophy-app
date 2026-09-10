@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Authentication & User Onboarding Flow (Sprint 7)**: Integrated full sign-up, sign-in, session token persistence, and onboarding sequence into `@agora/web` and `@agora/api`.
+  - API Client Auth Methods: Added `signUp`, `signIn`, `signOut`, `getMe`, and automatic JWT token storage in `localStorage` inside `apps/web/src/lib/api-client.ts`.
+  - Auth Context Provider: Created `AuthProvider` and `useAuth` hook in `apps/web/src/context/AuthContext.tsx` managing active user profile, auth state, and session lifecycle.
+  - Auth Modal & Dialog: Created `AuthModal` in `apps/web/src/components/AuthModal.tsx` providing Sign In, Create Account (Sign Up), and instant demo profile switching (*Sartre*, *Spinoza*, *Camus*).
+  - Navigation User Menu: Added authenticated user profile menu, avatar, username handle badge, and Sign Out button to top navbar in `App.tsx`.
 - **Frontend & Philosophical UI Integration (Sprint 6)**: Created `@agora/web` client application (React 18 + Vite + TypeScript) providing a dedicated UI interface for the Philosophy Community platform.
   - API Client Layer: `AgoraPhilosophyClient` in `apps/web/src/lib/api-client.ts` providing type-safe interaction with `@agora-server/contract` and `@agora/api`.
   - Philosophical Profile Editor: `PhilosophyProfileEditor` in `apps/web/src/components/PhilosophyProfileEditor.tsx` with interactive tag pickers for primary schools, thinkers, core questions, favorite texts, and connection intent badges.

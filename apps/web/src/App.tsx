@@ -1,16 +1,19 @@
 import React, { useState } from "react";
+import { useAuth } from "./context/AuthContext.js";
 import { PhilosophyProfileEditor } from "./components/PhilosophyProfileEditor.js";
 import { PeopleRecommendationsFeed } from "./components/PeopleRecommendationsFeed.js";
 import { SemanticSearch } from "./components/SemanticSearch.js";
 import { DebateSummaryDrawer } from "./components/DebateSummaryDrawer.js";
+import { AuthModal } from "./components/AuthModal.js";
 
 type NavTab = "profile" | "recommendations" | "search" | "debates";
 
 export const App: React.FC = () => {
+  const { user, isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>("recommendations");
   const [activeDrawerEntityId, setActiveDrawerEntityId] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Sample seed debate entities for demonstration
   const sampleDebates = [
     {
       id: "00000000-0000-0000-0000-000000000001",
@@ -40,6 +43,7 @@ export const App: React.FC = () => {
             Intellectual Discovery & Community Platform
           </span>
         </div>
+
         <div className="nav-tabs">
           <button
             className={`nav-tab-btn ${activeTab === "recommendations" ? "active" : ""}`}
@@ -66,6 +70,25 @@ export const App: React.FC = () => {
             📜 Debate Summaries
           </button>
         </div>
+
+        {/* User Auth Section */}
+        <div className="navbar-user-block">
+          {isAuthenticated && user ? (
+            <div className="user-profile-menu">
+              <div className="user-info">
+                <span className="user-display-name">{user.name || user.username}</span>
+                <span className="user-handle">@{user.username || "philosopher"}</span>
+              </div>
+              <button className="logout-btn" onClick={() => logout()}>
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button className="connect-btn" onClick={() => setIsAuthModalOpen(true)}>
+              Sign In / Register
+            </button>
+          )}
+        </div>
       </nav>
 
       {/* Tab Views */}
@@ -74,15 +97,8 @@ export const App: React.FC = () => {
 
         {activeTab === "profile" && (
           <PhilosophyProfileEditor
-            userId="00000000-0000-0000-0000-000000000001"
-            initialProfile={{
-              worldviewSummary: "Exploring agency, determinism, and authentic freedom in modern ethics.",
-              primarySchools: ["Existentialism", "Determinism"],
-              keyThinkers: ["Friedrich Nietzsche", "Baruch Spinoza", "Immanuel Kant"],
-              coreQuestions: ["Does free will exist under determinism?", "Is morality objective?"],
-              favoriteTexts: ["Ethics", "Being and Time"],
-              connectionIntents: ["discussion", "intellectual"],
-            }}
+            userId={user?.id || "00000000-0000-0000-0000-000000000001"}
+            initialProfile={user?.philosophyProfile}
           />
         )}
 
@@ -130,6 +146,13 @@ export const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Auth Modal Dialog */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => setActiveTab("profile")}
+      />
 
       {/* AI Debate Summary Drawer Modal */}
       <DebateSummaryDrawer
