@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Intellectual Matching & Compatibility Engine (Sprint 4)**: Added dual-axis compatibility scoring and explainable AI recommendations across users.
+  - Contract types & schemas in `@agora-server/contract`: `CompatibilityScore`, `UserRecommendation`, `peopleRecommendationQuerySchema`.
+  - Matching Engine in `@agora/api`: `calculateIntellectualCompatibility` calculates `sharedGroundScore` (schools, thinkers, questions, texts), `productiveTensionScore` (shared questions & distinct perspectives), `overallScore`, and human-readable `explanation`.
+  - Recommendation Endpoint: `GET /v7/:projectId/recommendations/people` supporting intent filtering (`discussion`, `friendship`, `intellectual`, `dating`), school, thinker, and pagination.
+  - Enhanced User Matching: `POST /v7/:projectId/match/users` enriched with dual-axis intellectual compatibility scores and explanations.
+  - User Compatibility Analysis: `GET /v7/:projectId/users/:id/compatibility` returning compatibility breakdown between calling user and target user.
 - **AI Vector Embeddings & Semantic Search (Sprint 3)**: Added support for semantic concept search and vector embedding indexing across users, entities, and spaces.
   - Extended `SourceType` in `@agora/api`'s `embeddings.ts` to include `"profile"` and `"space"`, with text builder helpers (`buildProfileEmbedText`, `buildSpaceEmbedText`) and async indexers (`indexUserAsync`, `indexSpaceAsync`).
   - Added `GET /v7/:projectId/search/semantic` and `POST /v7/:projectId/search/semantic` route handlers in `search.ts` providing vector similarity retrieval via `pgvector` with rich multi-field relevance fallback.

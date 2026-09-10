@@ -19,6 +19,7 @@ import { requireProjectAdmin } from "../lib/project-roles.js";
 import { spaceRepGate } from "../middleware/space-rep.js";
 import { enrichSpaceReputation } from "../lib/space-reputation-enrich.js";
 import { indexUserAsync } from "../lib/embeddings.js";
+import { calculateIntellectualCompatibility } from "../lib/intellectual-matching.js";
 
 async function findUser(projectId: string, col: typeof profiles.id | typeof profiles.username | typeof profiles.foreignId, value: string) {
   const [row] = await getDb()
@@ -67,6 +68,26 @@ export const userRoutes = new Hono<{ Variables: Variables }>()
       .orderBy(desc(profiles.reputation))
       .limit(limit);
     return c.json(await enrichSpaceReputation(c, rows.map(shapeUser))); // bare User[] — matches the SDK's useFetchUserSuggestions
+  })
+  .get("/:id/compatibility", requireAuth, async (c) => {
+    const currentUserId = c.var.auth!.userId;
+    const targetUserId = c.req.param("id");
+
+    const [authRow, targetRow] = await Promise.all([
+      findUser(c.var.projectId, profiles.id, currentUserId),
+      findUser(c.var.projectId, profiles.id, targetUserId),
+    ]);
+
+    if (!authRow || !targetRow) throw Errors.notFound("users/not-found", "User profile not found");
+
+    const authUser = shapeUser(authRow);
+    const targetUser = shapeUser(targetRow);
+    const compatibility = calculateIntellectualCompatibility(authUser, targetUser);
+
+    return c.json({
+      user: await enrichSpaceReputation(c, targetUser),
+      compatibility,
+    });
   })
   .get("/:id", async (c) => {
     const row = await findUser(c.var.projectId, profiles.id, c.req.param("id"));

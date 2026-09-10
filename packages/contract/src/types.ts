@@ -13,6 +13,22 @@ export interface PhilosophyProfile {
   connectionIntents: ConnectionIntent[];
 }
 
+export interface CompatibilityScore {
+  overallScore: number;
+  sharedGroundScore: number;
+  productiveTensionScore: number;
+  overlappingSchools: string[];
+  overlappingThinkers: string[];
+  overlappingQuestions: string[];
+  overlappingTexts: string[];
+  explanation: string;
+}
+
+export interface UserRecommendation {
+  user: User;
+  compatibility: CompatibilityScore;
+}
+
 export interface User {
   id: string;
   projectId: string;

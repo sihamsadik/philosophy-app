@@ -29,6 +29,7 @@ import { socialRoutes } from "./social.js";
 import { miscRoutes } from "./misc.js";
 import { pushNotificationRoutes } from "./push-notifications.js";
 import { matchRoutes } from "./match.js";
+import { recommendationRoutes } from "./recommendations.js";
 
 export function mountRoutes() {
   // Project-scoped app: every request resolves :projectId, then attaches optional auth.
@@ -62,6 +63,7 @@ export function mountRoutes() {
   project.route("/social", socialRoutes);   // graph read side: transparency + weather
   project.route("/push-notifications", pushNotificationRoutes);
   project.route("/match", matchRoutes);
+  project.route("/recommendations", recommendationRoutes);
   // oauth, projects, crypto, utils — small, grouped in misc
   project.route("/", miscRoutes);
 
