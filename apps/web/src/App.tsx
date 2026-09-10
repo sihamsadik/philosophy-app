@@ -36,6 +36,9 @@ export const App: React.FC = () => {
       <nav className="app-navbar">
         <div className="brand-block">
           <h1 className="brand-title">🏛️ Agora Philosophy</h1>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block" }}>
+            Intellectual Discovery & Community Platform
+          </span>
         </div>
         <div className="nav-tabs">
           <button
