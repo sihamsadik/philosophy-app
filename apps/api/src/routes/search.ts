@@ -239,4 +239,119 @@ export const searchRoutes = new Hono<{ Variables: Variables }>()
       .map((r) => ({ similarity: relevance(q, r.username, r.name), record: shapeUser(r) }))
       .sort((a, b) => b.similarity - a.similarity);
     return c.json(await enrichSpaceReputation(c, results));
+  })
+  // Semantic search for philosophical concepts, users, entities, and spaces.
+  .on(["GET", "POST"], "/semantic", async (c) => {
+    let q = "";
+    let limit = 20;
+    let type = "all";
+
+    if (c.req.method === "POST") {
+      const body = (await c.req.json().catch(() => ({}))) as { query?: string; q?: string; limit?: number; type?: string };
+      q = (body.query ?? body.q ?? "").trim();
+      limit = Math.min(50, Math.max(1, Number(body.limit) || 20));
+      type = body.type ?? "all";
+    } else {
+      q = (c.req.query("q") ?? c.req.query("query") ?? "").trim();
+      limit = Math.min(50, Math.max(1, Number(c.req.query("limit")) || 20));
+      type = c.req.query("type") ?? "all";
+    }
+
+    if (!q) throw Errors.badRequest("search/missing-query", "Query parameter 'q' or 'query' is required", "query");
+
+    const projectId = c.var.projectId;
+
+    if (embeddingsEnabled() && allow("search", projectId)) {
+      try {
+        const vec = await embedText(q, "query");
+        const lit = `[${vec.join(",")}]`;
+
+        let typeFilter = sql`null::text[]`;
+        if (type === "users") typeFilter = sql`array['profile']::text[]`;
+        else if (type === "spaces") typeFilter = sql`array['space']::text[]`;
+        else if (type === "entities") typeFilter = sql`array['entity']::text[]`;
+
+        const matches = (await getDb().execute(sql`
+          select source_type, source_id, similarity
+          from match_content(${projectId}::uuid, ${lit}::vector, ${limit}, ${typeFilter}, null::uuid,
+                             ${c.var.auth?.userId ?? null}::uuid, false, true, null::uuid[])
+        `)) as unknown as { source_type: SourceType; source_id: string; similarity: number }[];
+
+        if (matches.length > 0) {
+          const userIds = matches.filter((m) => m.source_type === "profile").map((m) => m.source_id);
+          const spaceIds = matches.filter((m) => m.source_type === "space").map((m) => m.source_id);
+          const entityIds = matches.filter((m) => m.source_type === "entity").map((m) => m.source_id);
+
+          const recordMap = new Map<string, unknown>();
+
+          if (userIds.length) {
+            const rows = await getDb().select().from(profiles).where(and(eq(profiles.projectId, projectId), inArray(profiles.id, userIds)));
+            for (const r of rows) recordMap.set(r.id, shapeUser(r));
+          }
+          if (spaceIds.length) {
+            const rows = await getDb().select().from(spaces).where(and(eq(spaces.projectId, projectId), inArray(spaces.id, spaceIds), isNull(spaces.deletedAt)));
+            for (const r of rows) recordMap.set(r.id, shapeSpace(r));
+          }
+          if (entityIds.length) {
+            const rows = await getDb().select().from(entities).where(and(eq(entities.projectId, projectId), inArray(entities.id, entityIds), isNull(entities.deletedAt)));
+            for (const r of rows) recordMap.set(r.id, shapeEntity(r));
+          }
+
+          const results = matches
+            .map((m) => (recordMap.has(m.source_id) ? { type: m.source_type, similarity: m.similarity, record: recordMap.get(m.source_id) } : null))
+            .filter(Boolean);
+
+          return c.json(await enrichSpaceReputation(c, { query: q, type, count: results.length, data: results }));
+        }
+      } catch (err) {
+        logger.debug({ err }, "Semantic vector retrieval failed; using multi-field fallback");
+      }
+    }
+
+    const like = `%${q}%`;
+    const results: any[] = [];
+
+    if (type === "all" || type === "users") {
+      const userRows = await getDb().select().from(profiles).where(
+        and(
+          eq(profiles.projectId, projectId),
+          or(ilike(profiles.username, like), ilike(profiles.name, like), ilike(profiles.bio, like), sql`${profiles.metadata}::text ILIKE ${like}`)
+        )
+      ).limit(limit);
+      for (const r of userRows) {
+        const u = shapeUser(r);
+        results.push({ type: "user", similarity: relevance(q, r.username, r.name, r.bio, JSON.stringify(r.metadata)), record: u });
+      }
+    }
+
+    if (type === "all" || type === "entities") {
+      const entityRows = await getDb().select().from(entities).where(
+        and(
+          eq(entities.projectId, projectId),
+          isNull(entities.deletedAt),
+          or(ilike(entities.title, like), ilike(entities.content, like), sql`${entities.metadata}::text ILIKE ${like}`)
+        )
+      ).limit(limit);
+      for (const r of entityRows) {
+        results.push({ type: "entity", similarity: relevance(q, r.title, r.content), record: shapeEntity(r) });
+      }
+    }
+
+    if (type === "all" || type === "spaces") {
+      const spaceRows = await getDb().select().from(spaces).where(
+        and(
+          eq(spaces.projectId, projectId),
+          isNull(spaces.deletedAt),
+          or(ilike(spaces.name, like), ilike(spaces.description, like), sql`${spaces.metadata}::text ILIKE ${like}`)
+        )
+      ).limit(limit);
+      for (const r of spaceRows) {
+        results.push({ type: "space", similarity: relevance(q, r.name, r.description), record: shapeSpace(r) });
+      }
+    }
+
+    results.sort((a, b) => b.similarity - a.similarity);
+    const sliced = results.slice(0, limit);
+
+    return c.json(await enrichSpaceReputation(c, { query: q, type, count: sliced.length, data: sliced }));
   });

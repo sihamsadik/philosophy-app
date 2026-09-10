@@ -21,6 +21,7 @@ import { isProjectAdmin } from "../lib/project-roles.js";
 import { spaceRepGate } from "../middleware/space-rep.js";
 import { enrichSpaceReputation } from "../lib/space-reputation-enrich.js";
 import { discoverableSpacesSql, assertSpaceVisible, assertSpaceVisibleById, spaceVisibleToViewer } from "../lib/space-visibility.js";
+import { indexSpaceAsync } from "../lib/embeddings.js";
 
 type SpaceRow = typeof spaces.$inferSelect;
 type Membership = typeof spaceMembers.$inferSelect;
@@ -153,6 +154,7 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
       projectId: c.var.projectId, spaceId: row!.id, userId: c.var.auth!.userId, role: "admin", status: "active",
     }).onConflictDoNothing();
     const shaped = shapeSpace(row!);
+    indexSpaceAsync(c.var.projectId, shaped);
     logger.info({ projectId: c.var.projectId, spaceId: row!.id, userId: c.var.auth!.userId, parentSpaceId: row!.parentSpaceId ?? null }, "space: created");
     webhooks.broadcast(c.var.projectId, "space.created.complete", shaped);
     return c.json(shaped, 201);

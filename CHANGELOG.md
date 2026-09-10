@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **AI Vector Embeddings & Semantic Search (Sprint 3)**: Added support for semantic concept search and vector embedding indexing across users, entities, and spaces.
+  - Extended `SourceType` in `@agora/api`'s `embeddings.ts` to include `"profile"` and `"space"`, with text builder helpers (`buildProfileEmbedText`, `buildSpaceEmbedText`) and async indexers (`indexUserAsync`, `indexSpaceAsync`).
+  - Added `GET /v7/:projectId/search/semantic` and `POST /v7/:projectId/search/semantic` route handlers in `search.ts` providing vector similarity retrieval via `pgvector` with rich multi-field relevance fallback.
 - **Philosophical Content, Arguments & Spaces (Sprint 2)**: Added support for philosophical post taxonomies and categorized philosophy communities.
   - Contract types & schemas in `@agora-server/contract`: `PhilosophicalPostType`, `PhilosophicalTaxonomy`, `PhilosophySpaceCategory`, `PhilosophySpaceMetadata`, `philosophicalTaxonomySchema`, `philosophySpaceMetadataSchema`, and updated `createEntitySchema`, `updateEntitySchema`, `createSpaceSchema`, and `updateSpaceSchema`.
   - Shaper & API Handler updates in `@agora/api`: `shapeEntity` extracts `philosophicalTaxonomy`, `shapeSpace` extracts `philosophyMetadata`, entity handlers auto-index taxonomy tags (`topics`, `schools`, `thinkers`) into `keywords`, and added `POST /v7/:projectId/spaces/seed-philosophy` endpoint for pre-seeding philosophy spaces with tailored discourse rules.

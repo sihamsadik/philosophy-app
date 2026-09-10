@@ -8,7 +8,7 @@ import { allow } from "./embed-throttle.js";
 import { enqueuePending } from "./pending-embeddings.js";
 import { embeddingDurationMs, embeddingsTotal } from "./telemetry.js";
 
-export type SourceType = "entity" | "comment" | "message" | "event";
+export type SourceType = "entity" | "comment" | "message" | "event" | "profile" | "space";
 
 const VOYAGE_URL = "https://api.voyageai.com/v1/embeddings";
 
@@ -73,4 +73,43 @@ export function indexContentAsync(projectId: string, sourceType: SourceType, sou
 /** Back-compat convenience for entity write paths. */
 export function indexEntityAsync(projectId: string, entityId: string, text: string | null | undefined): void {
   indexContentAsync(projectId, "entity", entityId, text);
+}
+
+export function buildProfileEmbedText(user: Record<string, any>): string {
+  const parts: string[] = [];
+  if (user.name) parts.push(`Name: ${user.name}`);
+  if (user.username) parts.push(`Username: ${user.username}`);
+  if (user.bio) parts.push(`Bio: ${user.bio}`);
+  
+  const p = user.philosophyProfile;
+  if (p) {
+    if (p.worldviewSummary) parts.push(`Worldview: ${p.worldviewSummary}`);
+    if (p.primarySchools?.length) parts.push(`Philosophical Schools: ${p.primarySchools.join(", ")}`);
+    if (p.keyThinkers?.length) parts.push(`Key Thinkers: ${p.keyThinkers.join(", ")}`);
+    if (p.coreQuestions?.length) parts.push(`Core Questions: ${p.coreQuestions.join("; ")}`);
+    if (p.favoriteTexts?.length) parts.push(`Favorite Texts: ${p.favoriteTexts.join(", ")}`);
+  }
+  return parts.join("\n");
+}
+
+export function indexUserAsync(projectId: string, user: Record<string, any>): void {
+  const text = buildProfileEmbedText(user);
+  indexContentAsync(projectId, "profile", user.id, text);
+}
+
+export function buildSpaceEmbedText(space: Record<string, any>): string {
+  const parts: string[] = [`Space: ${space.name}`];
+  if (space.description) parts.push(`Description: ${space.description}`);
+  const m = space.philosophyMetadata;
+  if (m) {
+    if (m.categoryType) parts.push(`Category: ${m.categoryType}`);
+    if (m.canonicalName) parts.push(`Canonical Name: ${m.canonicalName}`);
+    if (m.discourseRules?.length) parts.push(`Discourse Rules: ${m.discourseRules.join("; ")}`);
+  }
+  return parts.join("\n");
+}
+
+export function indexSpaceAsync(projectId: string, space: Record<string, any>): void {
+  const text = buildSpaceEmbedText(space);
+  indexContentAsync(projectId, "space", space.id, text);
 }

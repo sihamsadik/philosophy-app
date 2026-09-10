@@ -18,6 +18,7 @@ import * as webhooks from "../lib/webhooks.js";
 import { requireProjectAdmin } from "../lib/project-roles.js";
 import { spaceRepGate } from "../middleware/space-rep.js";
 import { enrichSpaceReputation } from "../lib/space-reputation-enrich.js";
+import { indexUserAsync } from "../lib/embeddings.js";
 
 async function findUser(projectId: string, col: typeof profiles.id | typeof profiles.username | typeof profiles.foreignId, value: string) {
   const [row] = await getDb()
@@ -121,6 +122,7 @@ export const userRoutes = new Hono<{ Variables: Variables }>()
     }
     if (!row) throw Errors.notFound("users/not-found", "User not found");
     const shaped = shapeUser(row);
+    if (shaped) indexUserAsync(c.var.projectId, shaped);
     webhooks.broadcast(c.var.projectId, "user.updated.complete", shaped);
     return c.json(await enrichSpaceReputation(c, shaped));
   })
