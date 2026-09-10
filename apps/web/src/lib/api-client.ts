@@ -145,16 +145,32 @@ export class AgoraPhilosophyClient {
   }
 
   /**
+   * Update user's full profile (name, avatar, bio, philosophyProfile)
+   */
+  async updateUserProfile(
+    userId: string,
+    data: {
+      name?: string | null;
+      username?: string | null;
+      avatar?: string | null;
+      bio?: string | null;
+      philosophyProfile?: Partial<PhilosophyProfile> | null;
+    }
+  ): Promise<User> {
+    return this.request<User>(`/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
    * Update user's philosophical profile
    */
   async updatePhilosophyProfile(
     userId: string,
     philosophyProfile: Partial<PhilosophyProfile>
   ): Promise<User> {
-    return this.request<User>(`/users/${userId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ philosophyProfile }),
-    });
+    return this.updateUserProfile(userId, { philosophyProfile });
   }
 
   /**

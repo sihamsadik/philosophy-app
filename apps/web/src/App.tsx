@@ -6,13 +6,17 @@ import { SemanticSearch } from "./components/SemanticSearch.js";
 import { DebateSummaryDrawer } from "./components/DebateSummaryDrawer.js";
 import { AuthModal } from "./components/AuthModal.js";
 
+import { UserSettingsModal } from "./components/UserSettingsModal.js";
+
 type NavTab = "profile" | "recommendations" | "search" | "debates";
 
 export const App: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>("recommendations");
   const [activeDrawerEntityId, setActiveDrawerEntityId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isUserMenuDropdownOpen, setIsUserMenuDropdownOpen] = useState(false);
 
   const sampleDebates = [
     {
@@ -74,14 +78,52 @@ export const App: React.FC = () => {
         {/* User Auth Section */}
         <div className="navbar-user-block">
           {isAuthenticated && user ? (
-            <div className="user-profile-menu">
-              <div className="user-info">
-                <span className="user-display-name">{user.name || user.username}</span>
-                <span className="user-handle">@{user.username || "philosopher"}</span>
-              </div>
-              <button className="logout-btn" onClick={() => logout()}>
-                Sign Out
+            <div className="user-profile-dropdown-wrapper">
+              <button
+                type="button"
+                className="user-profile-menu-btn"
+                onClick={() => setIsUserMenuDropdownOpen(!isUserMenuDropdownOpen)}
+              >
+                {user.avatar ? (
+                  <img src={user.avatar} alt="Avatar" className="navbar-avatar-img" />
+                ) : (
+                  <div className="navbar-avatar-circle">
+                    {(user.name || user.username || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="user-info">
+                  <span className="user-display-name">{user.name || user.username}</span>
+                  <span className="user-handle">@{user.username || "philosopher"}</span>
+                </div>
+                <span className="dropdown-caret">▼</span>
               </button>
+
+              {isUserMenuDropdownOpen && (
+                <div className="navbar-dropdown-menu" onClick={() => setIsUserMenuDropdownOpen(false)}>
+                  <button
+                    type="button"
+                    className="dropdown-item-btn"
+                    onClick={() => setIsSettingsModalOpen(true)}
+                  >
+                    ⚙️ Profile Settings & Bio
+                  </button>
+                  <button
+                    type="button"
+                    className="dropdown-item-btn"
+                    onClick={() => setActiveTab("profile")}
+                  >
+                    🧠 My Worldview Profile
+                  </button>
+                  <div className="dropdown-divider" />
+                  <button
+                    type="button"
+                    className="dropdown-item-btn logout"
+                    onClick={() => logout()}
+                  >
+                    🚪 Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <button className="connect-btn" onClick={() => setIsAuthModalOpen(true)}>
@@ -152,6 +194,14 @@ export const App: React.FC = () => {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={() => setActiveTab("profile")}
+      />
+
+      {/* Profile Settings & Customization Modal */}
+      <UserSettingsModal
+        user={user}
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onSaveSuccess={() => refreshUser()}
       />
 
       {/* AI Debate Summary Drawer Modal */}

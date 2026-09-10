@@ -10,6 +10,8 @@ export interface PhilosophyProfile {
   coreQuestions: string[];
   favoriteTexts: string[];
   worldviewSummary: string | null;
+  favoriteQuote?: string | null;
+  quoteAuthor?: string | null;
   connectionIntents: ConnectionIntent[];
 }
 

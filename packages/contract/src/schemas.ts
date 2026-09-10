@@ -174,6 +174,8 @@ export const philosophyProfileSchema = z.object({
   coreQuestions: z.array(z.string().max(300)).max(10).optional().default([]),
   favoriteTexts: z.array(z.string().max(200)).max(20).optional().default([]),
   worldviewSummary: z.string().max(2000).nullable().optional().default(null),
+  favoriteQuote: z.string().max(1000).nullable().optional().default(null),
+  quoteAuthor: z.string().max(150).nullable().optional().default(null),
   connectionIntents: z.array(connectionIntentEnum).optional().default(["discussion", "intellectual"]),
 });
 
