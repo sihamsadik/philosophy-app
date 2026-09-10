@@ -12,17 +12,18 @@ import {
   stewardCases, stewardCaseEvents, userSuspensions,
   events, eventRsvps, eventInvites,
 } from "../db/schema/index.js";
-import { REACTION_TYPES, philosophyProfileSchema } from "@agora-server/contract";
-import type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile } from "@agora-server/contract";
+import { REACTION_TYPES, philosophyProfileSchema, philosophicalTaxonomySchema, philosophySpaceMetadataSchema } from "@agora-server/contract";
+import type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile, PhilosophicalTaxonomy, PhilosophySpaceMetadata, Space } from "@agora-server/contract";
 
 // ─── Shared contract surface (re-exported from @agora-server/contract) ──────────────
 // The reaction taxonomy + API model interfaces now live in @agora-server/contract (shared with the
 // admin frontend). Re-exported here so existing `./shape.js` importers keep working unchanged.
 export { REACTION_TYPES };
-export type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile };
+export type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile, PhilosophicalTaxonomy, PhilosophySpaceMetadata, Space };
 
 // Drizzle inferred row types.
 type ProfileRow = typeof profiles.$inferSelect;
+type SpaceRow = typeof spaces.$inferSelect;
 // entities/comments rows are passed structurally to avoid a hard import cycle here.
 type EntityRow = Record<string, any>;
 type CommentRow = Record<string, any>;
@@ -40,6 +41,22 @@ function parsePhilosophyProfile(meta: Record<string, unknown> | null | undefined
   const raw = meta.philosophyProfile ?? meta.philosophy;
   if (!raw || typeof raw !== "object") return null;
   const result = philosophyProfileSchema.safeParse(raw);
+  return result.success ? result.data : null;
+}
+
+function parsePhilosophicalTaxonomy(meta: Record<string, unknown> | null | undefined): PhilosophicalTaxonomy | null {
+  if (!meta) return null;
+  const raw = meta.philosophicalTaxonomy ?? meta.taxonomy;
+  if (!raw || typeof raw !== "object") return null;
+  const result = philosophicalTaxonomySchema.safeParse(raw);
+  return result.success ? result.data : null;
+}
+
+function parsePhilosophySpaceMetadata(meta: Record<string, unknown> | null | undefined): PhilosophySpaceMetadata | null {
+  if (!meta) return null;
+  const raw = meta.philosophyMetadata ?? meta.philosophy;
+  if (!raw || typeof raw !== "object") return null;
+  const result = philosophySpaceMetadataSchema.safeParse(raw);
   return result.success ? result.data : null;
 }
 
@@ -74,6 +91,8 @@ export function shapeEntity(
   row: EntityRow,
   opts: { userReaction?: ReactionType | null; isSaved?: boolean; user?: User | null; files?: unknown[] } = {}
 ): Entity {
+  const metadata = (row.metadata as Record<string, unknown>) ?? {};
+  const philosophicalTaxonomy = parsePhilosophicalTaxonomy(metadata);
   const entity: Entity = {
     id: row.id,
     foreignId: row.foreignId ?? null,
@@ -96,7 +115,8 @@ export function shapeEntity(
     score: row.score ?? 0,
     scoreUpdatedAt: iso(row.scoreUpdatedAt)!,
     location: null, // PostGIS column not modeled in Drizzle
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    metadata,
+    philosophicalTaxonomy,
     createdAt: iso(row.createdAt)!,
     updatedAt: iso(row.updatedAt)!,
     deletedAt: iso(row.deletedAt),
@@ -255,6 +275,8 @@ type NotificationRow = typeof appNotifications.$inferSelect;
 type ReportRow = typeof reports.$inferSelect;
 
 export function shapeSpace(row: SpaceRow, opts: { isMember?: boolean; files?: unknown[] } = {}) {
+  const metadata = (row.metadata as Record<string, unknown>) ?? {};
+  const philosophyMetadata = parsePhilosophySpaceMetadata(metadata);
   const space = {
     id: row.id,
     projectId: row.projectId,
@@ -271,7 +293,8 @@ export function shapeSpace(row: SpaceRow, opts: { isMember?: boolean; files?: un
     requireJoinApproval: row.requireJoinApproval,
     parentSpaceId: row.parentSpaceId ?? null,
     depth: row.depth,
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    metadata,
+    philosophyMetadata,
     membersCount: row.membersCount,
     childSpacesCount: row.childSpacesCount,
     // Disclosed per-space read-receipts opt-in (docs/SOCIAL-GRAPH.md §4) — lets a client badge the space

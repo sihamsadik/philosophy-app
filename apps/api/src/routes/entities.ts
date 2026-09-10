@@ -164,6 +164,21 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
     // Blocking validation webhook (host app may veto). Passes through if unconfigured/unsubscribed.
     const check = await webhooks.validate(projectId, "entity.created", { ...body, userId });
     if (!check.valid) throw Errors.forbidden("entities/rejected", check.message ?? "Entity rejected by validation webhook");
+    const userMeta = (body.metadata as Record<string, unknown>) ?? {};
+    let finalMetadata = userMeta;
+    if (body.philosophicalTaxonomy) {
+      finalMetadata = { ...userMeta, philosophicalTaxonomy: body.philosophicalTaxonomy };
+    }
+
+    const taxKeywords = body.philosophicalTaxonomy
+      ? [
+          ...(body.philosophicalTaxonomy.topics ?? []),
+          ...(body.philosophicalTaxonomy.schools ?? []),
+          ...(body.philosophicalTaxonomy.thinkers ?? []),
+        ]
+      : [];
+    const mergedKeywords = [...new Set([...(body.keywords ?? []), ...taxKeywords])];
+
     const [row] = await getDb()
       .insert(entities)
       .values({
@@ -177,9 +192,9 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
         spaceId: body.spaceId,
         mentions: await sanitizeMentions(projectId, body.mentions),
         // null → undefined so Drizzle applies the NOT NULL array/jsonb defaults
-        keywords: body.keywords ?? undefined,
+        keywords: mergedKeywords.length ? mergedKeywords : undefined,
         attachments: body.attachments ?? undefined,
-        metadata: body.metadata ?? undefined,
+        metadata: finalMetadata,
         isDraft: body.isDraft ?? false,
       })
       .returning();

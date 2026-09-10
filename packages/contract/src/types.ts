@@ -33,6 +33,47 @@ export interface User {
   createdAt: string;
 }
 
+export type PhilosophicalPostType = "argument" | "question" | "thought_experiment" | "quote_reflection";
+
+export interface PhilosophicalTaxonomy {
+  postType: PhilosophicalPostType | null;
+  topics: string[];
+  schools: string[];
+  thinkers: string[];
+}
+
+export type PhilosophySpaceCategory = "school" | "thinker" | "area";
+
+export interface PhilosophySpaceMetadata {
+  categoryType: PhilosophySpaceCategory | null;
+  canonicalName: string | null;
+  discourseRules?: string[];
+}
+
+export interface Space {
+  id: string;
+  projectId: string;
+  shortId: string;
+  slug: string | null;
+  name: string;
+  description: string | null;
+  avatarFileId: string | null;
+  bannerFileId: string | null;
+  userId: string | null;
+  readingPermission: string;
+  postingPermission: string;
+  visibility: string;
+  requireJoinApproval: boolean;
+  parentSpaceId: string | null;
+  depth: number;
+  metadata: Record<string, unknown>;
+  philosophyMetadata?: PhilosophySpaceMetadata | null;
+  membersCount: number;
+  childSpacesCount: number;
+  readReceiptsEnabled: boolean;
+  createdAt: string;
+}
+
 // The resolved space-reputation request directive (from spaceReputationId/spaceReputationDescendants).
 // null (not represented here) means "no enrichment"; the mode discriminates global vs a specific space.
 export type SpaceReputationDirective =
@@ -46,7 +87,7 @@ export interface Entity {
   projectId: string;
   sourceId: string | null;
   spaceId: string | null;
-  space?: unknown;
+  space?: Space | null;
   userId: string | null;
   user?: User | null;
   title: string | null;
@@ -65,6 +106,7 @@ export interface Entity {
   scoreUpdatedAt: string;
   location: unknown | null;
   metadata: Record<string, unknown>;
+  philosophicalTaxonomy?: PhilosophicalTaxonomy | null;
   isSaved?: boolean;
   createdAt: string;
   updatedAt: string;

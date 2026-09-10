@@ -134,13 +134,19 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
       depth = parent.depth + 1;
       if (depth > MAX_SPACE_DEPTH) throw Errors.badRequest("spaces/too-deep", `Spaces can nest at most ${MAX_SPACE_DEPTH} levels deep`, "parentSpaceId");
     }
+    const userMeta = (body.metadata as Record<string, unknown>) ?? {};
+    let finalMetadata = userMeta;
+    if (body.philosophyMetadata) {
+      finalMetadata = { ...userMeta, philosophyMetadata: body.philosophyMetadata };
+    }
+
     const [row] = await getDb().insert(spaces).values({
       projectId: c.var.projectId, userId: c.var.auth!.userId, shortId: generateShortId(),
       name: body.name, slug: body.slug, description: body.description,
       readingPermission: body.readingPermission, postingPermission: body.postingPermission,
       visibility: body.visibility,
       requireJoinApproval: body.requireJoinApproval, parentSpaceId: body.parentSpaceId, depth,
-      metadata: body.metadata,
+      metadata: finalMetadata,
     }).returning();
     // Creator joins as admin (trigger bumps members_count).
     await getDb().insert(spaceMembers).values({
@@ -150,6 +156,103 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     logger.info({ projectId: c.var.projectId, spaceId: row!.id, userId: c.var.auth!.userId, parentSpaceId: row!.parentSpaceId ?? null }, "space: created");
     webhooks.broadcast(c.var.projectId, "space.created.complete", shaped);
     return c.json(shaped, 201);
+  })
+  .post("/seed-philosophy", requireAuth, async (c) => {
+    await requireProjectAdmin(c);
+    const defaultSpaces = [
+      {
+        name: "Existentialism",
+        slug: "existentialism",
+        description: "Discussions on freedom, anguish, absurdity, and the creation of meaning.",
+        philosophyMetadata: { categoryType: "school", canonicalName: "Existentialism" },
+        rules: [
+          { title: "Charitable Interpretation", description: "Engage with the strongest version of an argument." },
+          { title: "No Ad Hominem", description: "Attack arguments and ideas, not the character of participants." },
+        ],
+      },
+      {
+        name: "Stoicism",
+        slug: "stoicism",
+        description: "Practical virtue ethics, virtue, tranquility, and what lies within our control.",
+        philosophyMetadata: { categoryType: "school", canonicalName: "Stoicism" },
+        rules: [
+          { title: "Focus on Virtue & Action", description: "Keep discussions grounded in ethical reasoning." },
+        ],
+      },
+      {
+        name: "Ethics & Moral Philosophy",
+        slug: "ethics",
+        description: "Meta-ethics, normative ethics (consequentialism, deontology), and applied ethics.",
+        philosophyMetadata: { categoryType: "area", canonicalName: "Ethics" },
+        rules: [
+          { title: "Define Key Terms", description: "Clarify definitions (e.g. utility, duty, right) when constructing arguments." },
+        ],
+      },
+      {
+        name: "Philosophy of Mind",
+        slug: "philosophy-of-mind",
+        description: "Consciousness, dualism, physicalism, personal identity, and free will vs determinism.",
+        philosophyMetadata: { categoryType: "area", canonicalName: "Philosophy of Mind" },
+        rules: [
+          { title: "Rigorous Thought Experiments", description: "Provide explicit premises when offering thought experiments." },
+        ],
+      },
+      {
+        name: "Friedrich Nietzsche",
+        slug: "nietzsche",
+        description: "Will to power, master-slave morality, eternal recurrence, and perspectivism.",
+        philosophyMetadata: { categoryType: "thinker", canonicalName: "Friedrich Nietzsche" },
+        rules: [
+          { title: "Textual Grounding", description: "Cite relevant passages when offering interpretations of Nietzsche's texts." },
+        ],
+      },
+    ];
+
+    const created: any[] = [];
+    for (const seed of defaultSpaces) {
+      const [existing] = await getDb()
+        .select()
+        .from(spaces)
+        .where(and(eq(spaces.projectId, c.var.projectId), eq(spaces.slug, seed.slug), isNull(spaces.deletedAt)))
+        .limit(1);
+
+      if (!existing) {
+        const [row] = await getDb()
+          .insert(spaces)
+          .values({
+            projectId: c.var.projectId,
+            userId: c.var.auth!.userId,
+            shortId: generateShortId(),
+            name: seed.name,
+            slug: seed.slug,
+            description: seed.description,
+            readingPermission: "anyone",
+            postingPermission: "members",
+            visibility: "public",
+            metadata: { philosophyMetadata: seed.philosophyMetadata },
+          })
+          .returning();
+
+        if (row) {
+          await getDb().insert(spaceMembers).values({
+            projectId: c.var.projectId, spaceId: row.id, userId: c.var.auth!.userId, role: "admin", status: "active",
+          }).onConflictDoNothing();
+
+          for (let i = 0; i < seed.rules.length; i++) {
+            await getDb().insert(spaceRules).values({
+              projectId: c.var.projectId,
+              spaceId: row.id,
+              title: seed.rules[i].title,
+              description: seed.rules[i].description,
+              order: i,
+              lastApprovedBy: c.var.auth!.userId,
+            });
+          }
+          created.push(shapeSpace(row));
+        }
+      }
+    }
+    return c.json({ seeded: created.length, spaces: created });
   })
   .get("/by-short-id", async (c) => {
     const shortId = c.req.query("shortId");

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Philosophical Content, Arguments & Spaces (Sprint 2)**: Added support for philosophical post taxonomies and categorized philosophy communities.
+  - Contract types & schemas in `@agora-server/contract`: `PhilosophicalPostType`, `PhilosophicalTaxonomy`, `PhilosophySpaceCategory`, `PhilosophySpaceMetadata`, `philosophicalTaxonomySchema`, `philosophySpaceMetadataSchema`, and updated `createEntitySchema`, `updateEntitySchema`, `createSpaceSchema`, and `updateSpaceSchema`.
+  - Shaper & API Handler updates in `@agora/api`: `shapeEntity` extracts `philosophicalTaxonomy`, `shapeSpace` extracts `philosophyMetadata`, entity handlers auto-index taxonomy tags (`topics`, `schools`, `thinkers`) into `keywords`, and added `POST /v7/:projectId/spaces/seed-philosophy` endpoint for pre-seeding philosophy spaces with tailored discourse rules.
+- **Philosophy Profile & Worldview Extensions (Sprint 1)**: Added structured `PhilosophyProfile` support to standard user profiles.
+  - Contract types & schemas in `@agora-server/contract`: `PhilosophyProfile`, `ConnectionIntent`, `philosophyProfileSchema`, `updatePhilosophyProfileSchema`, and updated `updateProfileSchema`.
+  - Shaper & API Handler updates in `@agora/api`: `shapeUser` extracts and parses `philosophyProfile` from `profiles.metadata`, and `PATCH /v7/:projectId/users/:id` safely merges updated philosophy attributes (`primarySchools`, `keyThinkers`, `coreQuestions`, `favoriteTexts`, `worldviewSummary`, `connectionIntents`).
+
 ### Fixed
 - **The compose `demo` service passed only 7 of the demo image's 11 runtime knobs.** Three of the four
   it dropped default to values that are wrong for any self-hosted deployment:

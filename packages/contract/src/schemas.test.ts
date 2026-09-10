@@ -18,6 +18,8 @@ import {
   spaceVisibility,
   philosophyProfileSchema,
   updateProfileSchema,
+  philosophicalTaxonomySchema,
+  philosophySpaceMetadataSchema,
 } from "./schemas.js";
 
 const UUID = "11111111-1111-1111-1111-111111111111";
@@ -261,4 +263,55 @@ describe("philosophyProfileSchema & updateProfileSchema", () => {
     expect(res.success).toBe(false);
   });
 });
+
+describe("philosophicalTaxonomySchema & createEntitySchema with taxonomy", () => {
+  it("parses and defaults philosophicalTaxonomySchema", () => {
+    const parsed = philosophicalTaxonomySchema.parse({
+      postType: "thought_experiment",
+      topics: ["epistemology"],
+      schools: ["rationalism"],
+      thinkers: ["descartes"],
+    });
+
+    expect(parsed.postType).toBe("thought_experiment");
+    expect(parsed.topics).toEqual(["epistemology"]);
+    expect(parsed.schools).toEqual(["rationalism"]);
+    expect(parsed.thinkers).toEqual(["descartes"]);
+  });
+
+  it("createEntitySchema accepts philosophicalTaxonomy", () => {
+    const res = createEntitySchema.safeParse({
+      title: "Brain in a vat",
+      philosophicalTaxonomy: {
+        postType: "thought_experiment",
+        topics: ["epistemology"],
+      },
+    });
+    expect(res.success).toBe(true);
+  });
+});
+
+describe("philosophySpaceMetadataSchema & createSpaceSchema", () => {
+  it("parses philosophySpaceMetadataSchema", () => {
+    const parsed = philosophySpaceMetadataSchema.parse({
+      categoryType: "school",
+      canonicalName: "Existentialism",
+      discourseRules: ["Charitable Interpretation"],
+    });
+    expect(parsed.categoryType).toBe("school");
+    expect(parsed.canonicalName).toBe("Existentialism");
+  });
+
+  it("createSpaceSchema accepts philosophyMetadata", () => {
+    const res = createSpaceSchema.safeParse({
+      name: "Existentialism",
+      philosophyMetadata: {
+        categoryType: "school",
+        canonicalName: "Existentialism",
+      },
+    });
+    expect(res.success).toBe(true);
+  });
+});
+
 

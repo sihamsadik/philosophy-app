@@ -32,6 +32,22 @@ export const matchUsersSchema = z
     path: ["query"],
   });
 
+export const philosophicalPostTypeEnum = z.enum([
+  "argument",
+  "question",
+  "thought_experiment",
+  "quote_reflection",
+]);
+
+export const philosophicalTaxonomySchema = z.object({
+  postType: philosophicalPostTypeEnum.nullable().optional().default(null),
+  topics: z.array(z.string().max(100)).max(20).optional().default([]),
+  schools: z.array(z.string().max(100)).max(10).optional().default([]),
+  thinkers: z.array(z.string().max(100)).max(20).optional().default([]),
+});
+
+export const updatePhilosophicalTaxonomySchema = philosophicalTaxonomySchema.partial();
+
 export const createEntitySchema = z.object({
   title: z.string().nullish(),
   content: z.string().nullish(),
@@ -42,6 +58,7 @@ export const createEntitySchema = z.object({
   mentions,
   attachments: z.array(z.unknown()).nullish(),
   metadata,
+  philosophicalTaxonomy: philosophicalTaxonomySchema.optional(),
   isDraft: z.boolean().nullish(),
 });
 
@@ -53,6 +70,7 @@ export const updateEntitySchema = z
     mentions,
     attachments: z.array(z.unknown()).optional(),
     metadata,
+    philosophicalTaxonomy: updatePhilosophicalTaxonomySchema.nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No updatable fields provided" });
 
@@ -179,6 +197,16 @@ export const spaceSortByEnum = z.enum(["newest", "members", "alphabetical"]);
 export const spaceVisibility = z.enum(["public", "unlisted", "private"]);
 export type SpaceVisibility = z.infer<typeof spaceVisibility>;
 
+export const philosophySpaceCategoryEnum = z.enum(["school", "thinker", "area"]);
+
+export const philosophySpaceMetadataSchema = z.object({
+  categoryType: philosophySpaceCategoryEnum.nullable().optional().default(null),
+  canonicalName: z.string().max(120).nullable().optional().default(null),
+  discourseRules: z.array(z.string().max(500)).max(20).optional().default([]),
+});
+
+export const updatePhilosophySpaceMetadataSchema = philosophySpaceMetadataSchema.partial();
+
 export const createSpaceSchema = z.object({
   name: z.string().min(1).max(120),
   slug: z.string().min(1).max(120).optional(),
@@ -189,6 +217,7 @@ export const createSpaceSchema = z.object({
   requireJoinApproval: z.boolean().optional(),
   parentSpaceId: z.string().uuid().optional(),
   metadata,
+  philosophyMetadata: philosophySpaceMetadataSchema.optional(),
 });
 
 export const updateSpaceSchema = z
@@ -202,6 +231,7 @@ export const updateSpaceSchema = z
     requireJoinApproval: z.boolean().optional(),
     parentSpaceId: z.string().uuid().nullable().optional(), // reparent; null = make top-level
     metadata,
+    philosophyMetadata: updatePhilosophySpaceMetadataSchema.nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No updatable fields provided" });
 

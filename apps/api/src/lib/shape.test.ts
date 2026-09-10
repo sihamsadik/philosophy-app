@@ -178,6 +178,25 @@ describe("shapeEntity", () => {
     expect(shapeEntity(entityRow({ isPublic: true })).public).toBe(true);
     expect(shapeEntity(entityRow({ isPublic: false })).public).toBe(false);
   });
+
+  it("parses and attaches philosophicalTaxonomy from metadata", () => {
+    const e = shapeEntity(entityRow({
+      metadata: {
+        philosophicalTaxonomy: {
+          postType: "thought_experiment",
+          topics: ["epistemology"],
+          schools: ["rationalism"],
+          thinkers: ["descartes"],
+        },
+      },
+    }));
+    expect(e.philosophicalTaxonomy).toEqual({
+      postType: "thought_experiment",
+      topics: ["epistemology"],
+      schools: ["rationalism"],
+      thinkers: ["descartes"],
+    });
+  });
 });
 
 describe("shapeComment", () => {
@@ -261,6 +280,22 @@ describe("shapeSpace visibility", () => {
   });
   it("defaults legacy null to 'public'", () => {
     expect((shapeSpace(spaceRow({ visibility: null })) as any).visibility).toBe("public");
+  });
+  it("parses and attaches philosophyMetadata", () => {
+    const s = shapeSpace(spaceRow({
+      metadata: {
+        philosophyMetadata: {
+          categoryType: "school",
+          canonicalName: "Existentialism",
+          discourseRules: ["Charitable Interpretation"],
+        },
+      },
+    }));
+    expect((s as any).philosophyMetadata).toEqual({
+      categoryType: "school",
+      canonicalName: "Existentialism",
+      discourseRules: ["Charitable Interpretation"],
+    });
   });
 });
 
