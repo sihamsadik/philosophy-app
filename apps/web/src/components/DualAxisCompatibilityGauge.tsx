@@ -95,6 +95,17 @@ export const DualAxisCompatibilityGauge: React.FC<DualAxisCompatibilityGaugeProp
             ))}
           </div>
         )}
+
+        {compatibility.overlappingTexts && compatibility.overlappingTexts.length > 0 && (
+          <div className="badge-group">
+            <span className="group-label">Shared Texts:</span>
+            {compatibility.overlappingTexts.map((txt, i) => (
+              <span key={i} className="chip text-chip">
+                📖 {txt}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

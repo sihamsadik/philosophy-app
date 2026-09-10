@@ -54,6 +54,28 @@ export const SemanticSearch: React.FC = () => {
           </button>
         </div>
 
+        {/* Quick Sample Concept Prompts */}
+        <div className="sample-prompts-row" style={{ display: "flex", gap: "8px", margin: "12px 0 16px 0", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", alignSelf: "center" }}>Try concept:</span>
+          {[
+            "People discussing free will and determinism",
+            "Critiques of existentialism and absurdity",
+            "Virtue ethics and technology",
+            "Phenomenological analysis of perception",
+          ].map((promptText, i) => (
+            <button
+              type="button"
+              key={i}
+              className="pill-btn"
+              onClick={() => {
+                setQuery(promptText);
+              }}
+            >
+              💡 {promptText}
+            </button>
+          ))}
+        </div>
+
         <div className="type-toggle-group">
           {(["all", "users", "entities", "spaces"] as const).map((t) => (
             <button

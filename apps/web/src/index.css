@@ -360,6 +360,9 @@ body {
 .chip.school-chip { color: #a7f3d0; background: rgba(16, 185, 129, 0.15); }
 .chip.thinker-chip { color: #f472b6; background: rgba(244, 114, 182, 0.15); }
 .chip.question-chip { color: #93c5fd; background: rgba(147, 197, 253, 0.15); }
+.chip.text-chip { color: #fde047; background: rgba(250, 204, 21, 0.15); }
+.chip.thinker-chip { color: #f472b6; background: rgba(244, 114, 182, 0.15); }
+.chip.question-chip { color: #93c5fd; background: rgba(147, 197, 253, 0.15); }
 
 /* Drawer Styles */
 .drawer-overlay {
