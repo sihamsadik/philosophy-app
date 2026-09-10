@@ -190,6 +190,13 @@ export const updateProfileSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No updatable fields provided" });
 
+export const peopleRecommendationQuerySchema = z.object({
+  connectionIntent: connectionIntentEnum.optional(),
+  school: z.string().max(100).optional(),
+  thinker: z.string().max(100).optional(),
+  limit: z.number().int().positive().max(50).optional().default(10),
+});
+
 // ─── spaces ────────────────────────────────────────────────────────────────
 const readingPerm = z.enum(["anyone", "members"]);
 const postingPerm = z.enum(["anyone", "members", "admins"]);
@@ -554,3 +561,26 @@ export const connectionRequestSchema = z.object({
 // Sort surfaces (SDK v7.6.2). `new`/`old` are deprecated aliases the server still accepts.
 export const sortDirSchema = z.enum(["asc", "desc"]);
 export const commentSortBySchema = z.enum(["createdAt", "top", "controversial", "new", "old"]);
+
+// ─── discussion summary & debate analysis ─────────────────────────────────
+export const philosophicalPositionSchema = z.object({
+  title: z.string(),
+  proponent: z.string().optional(),
+  summary: z.string(),
+});
+
+export const argumentRebuttalSchema = z.object({
+  argument: z.string(),
+  rebuttal: z.string().optional(),
+});
+
+export const discussionSummarySchema = z.object({
+  entityId: z.string().uuid(),
+  commentCount: z.number().int().nonnegative(),
+  mainPositions: z.array(philosophicalPositionSchema),
+  keyArguments: z.array(argumentRebuttalSchema),
+  pointsOfAgreement: z.array(z.string()),
+  pointsOfDisagreement: z.array(z.string()),
+  unresolvedQuestions: z.array(z.string()),
+  generatedAt: z.string(),
+});

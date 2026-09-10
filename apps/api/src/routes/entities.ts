@@ -9,6 +9,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
 import { logger } from "../lib/logger.js";
 import { indexEntityAsync } from "../lib/embeddings.js";
+import { generateDiscussionSummary } from "../lib/discussion-summarizer.js";
 import { env } from "../lib/env.js";
 import { collectFileRows, removeMediaAsync } from "../lib/storage-cleanup.js";
 import * as webhooks from "../lib/webhooks.js";
@@ -268,6 +269,11 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
       )
       .limit(1);
     return c.json({ isSaved: rows.length > 0 });
+  })
+  .get("/:id/summary", async (c) => {
+    const id = c.req.param("id");
+    const summary = await generateDiscussionSummary(c.var.projectId, id);
+    return c.json(summary);
   })
   .get("/:id", async (c) => {
     const id = c.req.param("id");

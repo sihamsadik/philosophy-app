@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **AI Discussion Summarization & Debate Analysis (Sprint 5)**: Added automated structured summarization of complex philosophical comment threads and debates.
+  - Contract types & schemas in `@agora-server/contract`: `DiscussionSummary`, `PhilosophicalPosition`, `ArgumentRebuttal`, `discussionSummarySchema`.
+  - Discussion Summarizer Subsystem in `@agora/api`: `generateDiscussionSummary` aggregates comment trees and uses LLM / heuristic debate analysis to extract main positions/theses, key arguments & rebuttals, points of agreement & disagreement, and unresolved questions.
+  - Discussion Summary Endpoint: `GET /v7/:projectId/entities/:id/summary` returning structured debate analysis for any entity/discussion thread.
 - **Intellectual Matching & Compatibility Engine (Sprint 4)**: Added dual-axis compatibility scoring and explainable AI recommendations across users.
   - Contract types & schemas in `@agora-server/contract`: `CompatibilityScore`, `UserRecommendation`, `peopleRecommendationQuerySchema`.
   - Matching Engine in `@agora/api`: `calculateIntellectualCompatibility` calculates `sharedGroundScore` (schools, thinkers, questions, texts), `productiveTensionScore` (shared questions & distinct perspectives), `overallScore`, and human-readable `explanation`.

@@ -255,3 +255,26 @@ export interface ModerationAnalysis {
   createdAt: string;
   author?: UserSummary | null; // the poster (content author); populated by the AI-flag queue
 }
+
+// ─── discussion summarization & debate analysis ───────────────────────────
+export interface PhilosophicalPosition {
+  title: string;          // Main position / thesis
+  proponent?: string;      // Proponent user or stance
+  summary: string;
+}
+
+export interface ArgumentRebuttal {
+  argument: string;
+  rebuttal?: string;
+}
+
+export interface DiscussionSummary {
+  entityId: string;
+  commentCount: number;
+  mainPositions: PhilosophicalPosition[];
+  keyArguments: ArgumentRebuttal[];
+  pointsOfAgreement: string[];
+  pointsOfDisagreement: string[];
+  unresolvedQuestions: string[];
+  generatedAt: string;
+}
