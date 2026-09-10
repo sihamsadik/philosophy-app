@@ -248,6 +248,47 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
           </div>
         </div>
 
+        {/* Favorite Philosophical Texts */}
+        <div className="form-section">
+          <label className="section-label">Favorite Philosophical Texts</label>
+          <ul className="question-list">
+            {favoriteTexts.map((text, idx) => (
+              <li key={idx} className="list-item">
+                <span>📖 {text}</span>
+                <button
+                  type="button"
+                  className="remove-btn"
+                  onClick={() => setFavoriteTexts(favoriteTexts.filter((_, i) => i !== idx))}
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="custom-add-bar">
+            <input
+              type="text"
+              className="input-text"
+              placeholder="e.g. Being and Time, Ethics, The Myth of Sisyphus..."
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  setFavoriteTexts(addItem(favoriteTexts, newText, () => setNewText("")));
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="add-btn"
+              onClick={() => setFavoriteTexts(addItem(favoriteTexts, newText, () => setNewText("")))}
+            >
+              Add Text
+            </button>
+          </div>
+        </div>
+
         {/* Connection Intents */}
         <div className="form-section">
           <label className="section-label">Connection Intents</label>
