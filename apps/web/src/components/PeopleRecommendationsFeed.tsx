@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { UserRecommendation, ConnectionIntent } from "@agora-server/contract";
+import type { User, UserRecommendation, ConnectionIntent } from "@agora-server/contract";
 import { agoraClient } from "../lib/api-client.js";
 import { DualAxisCompatibilityGauge } from "./DualAxisCompatibilityGauge.js";
 
@@ -11,7 +11,11 @@ const INTENT_FILTERS: { id: ConnectionIntent | "all"; label: string; icon: strin
   { id: "dating", label: "Dating", icon: "❤️" },
 ];
 
-export const PeopleRecommendationsFeed: React.FC = () => {
+export interface PeopleRecommendationsFeedProps {
+  onOpenDM?: (user: User) => void;
+}
+
+export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps> = ({ onOpenDM }) => {
   const [recommendations, setRecommendations] = useState<UserRecommendation[]>([]);
   const [selectedIntent, setSelectedIntent] = useState<ConnectionIntent | "all">("all");
   const [schoolFilter, setSchoolFilter] = useState("");
@@ -119,9 +123,13 @@ export const PeopleRecommendationsFeed: React.FC = () => {
               <div key={user.id} className="user-recommendation-card">
                 <div className="user-card-header">
                   <div className="user-avatar-block">
-                    <div className="avatar-circle">
-                      {(user.name || user.username || "U").charAt(0).toUpperCase()}
-                    </div>
+                    {user.avatar ? (
+                      <img src={user.avatar} alt="Avatar" className="navbar-avatar-img" />
+                    ) : (
+                      <div className="avatar-circle">
+                        {(user.name || user.username || "U").charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div className="user-identity">
                       <h3>{user.name || user.username}</h3>
                       <span className="username-handle">@{user.username || "philosopher"}</span>
@@ -141,8 +149,12 @@ export const PeopleRecommendationsFeed: React.FC = () => {
 
                 {/* Action Buttons */}
                 <div className="card-actions">
-                  <button className="connect-btn">Connect & Discuss</button>
-                  <button className="view-profile-btn">View Profile</button>
+                  <button
+                    className="connect-btn"
+                    onClick={() => onOpenDM && onOpenDM(user)}
+                  >
+                    💬 Direct Message
+                  </button>
                 </div>
               </div>
             );
@@ -152,3 +164,4 @@ export const PeopleRecommendationsFeed: React.FC = () => {
     </div>
   );
 };
+
