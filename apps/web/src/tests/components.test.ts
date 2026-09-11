@@ -11,6 +11,7 @@ import { EventComposerModal } from "../components/EventComposerModal.js";
 import { LeaderboardHub } from "../components/LeaderboardHub.js";
 import { ConnectionRequestModal } from "../components/ConnectionRequestModal.js";
 import { NotificationCenterDrawer } from "../components/NotificationCenterDrawer.js";
+import { InstallAppBanner } from "../components/InstallAppBanner.js";
 
 describe("React Components Export & Module Signature Verification", () => {
   it("should export all main application view components cleanly", () => {
@@ -27,5 +28,6 @@ describe("React Components Export & Module Signature Verification", () => {
     expect(LeaderboardHub).toBeDefined();
     expect(ConnectionRequestModal).toBeDefined();
     expect(NotificationCenterDrawer).toBeDefined();
+    expect(InstallAppBanner).toBeDefined();
   });
 });

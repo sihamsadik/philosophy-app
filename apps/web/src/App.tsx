@@ -17,6 +17,7 @@ import { ConnectionRequestModal } from "./components/ConnectionRequestModal.js";
 import { SymposiumsDirectory } from "./components/SymposiumsDirectory.js";
 import { EventComposerModal } from "./components/EventComposerModal.js";
 import { LeaderboardHub } from "./components/LeaderboardHub.js";
+import { InstallAppBanner } from "./components/InstallAppBanner.js";
 import { agoraClient } from "./lib/api-client.js";
 
 type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | "symposiums" | "leaderboard";
@@ -334,6 +335,9 @@ export const App: React.FC = () => {
         onClose={() => setIsEventComposerOpen(false)}
         onCreated={() => setActiveTab("symposiums")}
       />
+
+      {/* Floating PWA Install App Banner (Matching Mobile/Desktop Screenshot) */}
+      <InstallAppBanner />
     </div>
   );
 };
