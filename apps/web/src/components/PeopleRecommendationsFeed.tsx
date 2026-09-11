@@ -4,11 +4,10 @@ import { agoraClient } from "../lib/api-client.js";
 import { DualAxisCompatibilityGauge } from "./DualAxisCompatibilityGauge.js";
 
 const INTENT_FILTERS: { id: ConnectionIntent | "all"; label: string; icon: string }[] = [
-  { id: "all", label: "All Connections", icon: "🌐" },
-  { id: "discussion", label: "Discussions", icon: "💬" },
-  { id: "intellectual", label: "Intellectual", icon: "🧠" },
-  { id: "friendship", label: "Friendship", icon: "🤝" },
-  { id: "dating", label: "Dating", icon: "❤️" },
+  { id: "all", label: "All Thinkers", icon: "🌐" },
+  { id: "discussion", label: "Debate Partners", icon: "⚔️" },
+  { id: "intellectual", label: "Intellectual Peers", icon: "🧠" },
+  { id: "friendship", label: "Reading Partners", icon: "📖" },
 ];
 
 export interface PeopleRecommendationsFeedProps {
@@ -54,9 +53,9 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
   return (
     <div className="recommendations-feed-container">
       <div className="feed-header">
-        <h2>🤝 Intellectual Connections & Compatibility Recommendations</h2>
+        <h2>🤝 Philosopher Peer Discovery & Worldview Compatibility</h2>
         <p className="feed-subtitle">
-          Discover thinkers based on dual-axis compatibility: shared ground + productive philosophical tension.
+          Discover fellow thinkers and co-debaters based on dual-axis compatibility: shared ground + productive philosophical tension.
         </p>
       </div>
 

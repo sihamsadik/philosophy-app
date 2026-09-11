@@ -189,7 +189,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                       className="ai-summary-trigger-btn"
                       onClick={() => onOpenDebateSummary(post.id)}
                     >
-                      🧠 AI Debate Summary
+                      ⚡ Debate Overview
                     </button>
                   </div>
 

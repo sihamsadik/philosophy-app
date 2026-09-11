@@ -42,7 +42,7 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
       <div className="drawer-content-pane" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-header">
           <div>
-            <h3>🧠 AI Discussion Summarization & Debate Analysis</h3>
+            <h3>⚡ Structured Debate Overview & Synthesis</h3>
             <p className="drawer-subtitle">
               Structured summary of positions, arguments, agreements, and open inquiry paths.
             </p>

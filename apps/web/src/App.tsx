@@ -89,7 +89,7 @@ export const App: React.FC = () => {
             className={`nav-tab-btn ${activeTab === "recommendations" ? "active" : ""}`}
             onClick={() => setActiveTab("recommendations")}
           >
-            🤝 Connections
+            🤝 Peer Discovery
           </button>
           <button
             className={`nav-tab-btn ${activeTab === "debates" ? "active" : ""}`}
