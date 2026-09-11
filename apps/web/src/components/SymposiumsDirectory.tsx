@@ -2,21 +2,25 @@ import React, { useState, useEffect } from "react";
 import type { User } from "@agora-server/contract";
 import type { EventType, PhilosophyEvent, EventRSVP, RSVPStatus } from "../lib/api-client.js";
 import { agoraClient, DEMO_EVENTS, DEMO_RSVPS } from "../lib/api-client.js";
+import { LiveEventJoinModal } from "./LiveEventJoinModal.js";
 
 export interface SymposiumsDirectoryProps {
   onOpenComposer: () => void;
   onOpenDM?: (targetUser: User) => void;
+  onOpenTextDebate?: (hostUser: User) => void;
 }
 
 export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
   onOpenComposer,
   onOpenDM,
+  onOpenTextDebate,
 }) => {
   const [events, setEvents] = useState<PhilosophyEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTypeTab, setActiveTypeTab] = useState<"all" | EventType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEventForRoster, setSelectedEventForRoster] = useState<PhilosophyEvent | null>(null);
+  const [selectedLiveEvent, setSelectedLiveEvent] = useState<PhilosophyEvent | null>(null);
   const [rosterRsvps, setRosterRsvps] = useState<EventRSVP[]>([]);
   const [rosterTab, setRosterTab] = useState<"all" | RSVPStatus>("all");
   const [isRosterLoading, setIsRosterLoading] = useState(false);
@@ -265,19 +269,16 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                     </span>
                   </div>
 
-                  {event.locationUrl && (
-                    <div className="meta-item link-item">
-                      <span className="meta-icon">🔗</span>
-                      <a
-                        href={event.locationUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="room-link"
-                      >
-                        Join Room
-                      </a>
-                    </div>
-                  )}
+                  <div className="meta-item link-item">
+                    <button
+                      type="button"
+                      className="room-link"
+                      onClick={() => setSelectedLiveEvent(event)}
+                      style={{ background: "transparent", border: "none", cursor: "pointer" }}
+                    >
+                      🔗 {countdown.status === "live" ? "🔴 Join Live Event" : "ℹ️ View Live Meeting Info"}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Event Tags */}
@@ -425,6 +426,15 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
           </div>
         </div>
       )}
+
+      {/* Live Event Join / Creator Details Modal */}
+      <LiveEventJoinModal
+        isOpen={!!selectedLiveEvent}
+        onClose={() => setSelectedLiveEvent(null)}
+        event={selectedLiveEvent}
+        onOpenDM={onOpenDM}
+        onOpenTextDebate={onOpenTextDebate}
+      />
     </div>
   );
 };

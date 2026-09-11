@@ -189,6 +189,7 @@ export const App: React.FC = () => {
           <SymposiumsDirectory
             onOpenComposer={() => setIsEventComposerOpen(true)}
             onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+            onOpenTextDebate={(hostUser) => setLiveDebateThinker(hostUser)}
           />
         )}
 

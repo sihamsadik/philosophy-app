@@ -15,6 +15,7 @@ import { InstallAppBanner } from "../components/InstallAppBanner.js";
 import { MomentsCarousel } from "../components/MomentsCarousel.js";
 import { BottomNavDock } from "../components/BottomNavDock.js";
 import { LiveTextDebateModal } from "../components/LiveTextDebateModal.js";
+import { LiveEventJoinModal } from "../components/LiveEventJoinModal.js";
 
 describe("React Components Export & Module Signature Verification", () => {
   it("should export all main application view components cleanly", () => {
@@ -35,5 +36,6 @@ describe("React Components Export & Module Signature Verification", () => {
     expect(MomentsCarousel).toBeDefined();
     expect(BottomNavDock).toBeDefined();
     expect(LiveTextDebateModal).toBeDefined();
+    expect(LiveEventJoinModal).toBeDefined();
   });
 });
