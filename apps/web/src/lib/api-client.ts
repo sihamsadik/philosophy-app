@@ -561,6 +561,37 @@ export class AgoraPhilosophyClient {
   }
 
   /**
+   * Community Intellectual Leaderboard & Achievement Badges
+   */
+  async getLeaderboard(school?: string): Promise<{ entries: LeaderboardEntry[] }> {
+    try {
+      const query = school ? `?school=${encodeURIComponent(school)}` : "";
+      return await this.request<{ entries: LeaderboardEntry[] }>(`/leaderboard${query}`);
+    } catch {
+      let filtered = [...DEMO_LEADERBOARD];
+      if (school && school !== "all") {
+        filtered = filtered.filter(
+          (e) =>
+            e.primarySchool.toLowerCase().includes(school.toLowerCase()) ||
+            e.user.philosophyProfile?.primarySchools?.some((s) =>
+              s.toLowerCase().includes(school.toLowerCase())
+            )
+        );
+      }
+      return { entries: filtered };
+    }
+  }
+
+  async getUserBadges(userId: string): Promise<{ badges: PhilosophicalBadge[] }> {
+    try {
+      return await this.request<{ badges: PhilosophicalBadge[] }>(`/users/${userId}/badges`);
+    } catch {
+      const entry = DEMO_LEADERBOARD.find((e) => e.user.id === userId);
+      return { badges: entry ? entry.badges : ALL_PLATFORM_BADGES };
+    }
+  }
+
+  /**
    * Direct Conversations (DMs)
    */
   async getConversations(): Promise<{ conversations: DirectConversation[] }> {
@@ -851,6 +882,28 @@ export interface EventRSVP {
   createdAt: string;
 }
 
+export interface PhilosophicalBadge {
+  id: string;
+  code: string;
+  title: string;
+  icon: string;
+  description: string;
+  category: "debate" | "scholar" | "events" | "community" | "reputation";
+  unlockedAt?: string;
+  progressPercentage?: number;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user: User;
+  reputationPoints: number;
+  primarySchool: string;
+  argumentsCount: number;
+  symposiumsHosted: number;
+  badges: PhilosophicalBadge[];
+  trend: "up" | "down" | "same";
+}
+
 export interface PhilosophicalPost {
   id: string;
   title: string;
@@ -869,7 +922,7 @@ export interface PhilosophicalPost {
   createdAt: string;
 }
 
-const DEMO_CONVERSATIONS: DirectConversation[] = [
+export const DEMO_CONVERSATIONS: DirectConversation[] = [
   {
     id: "conv-1",
     participant: {
@@ -981,7 +1034,7 @@ const DEMO_POSTS: PhilosophicalPost[] = [
   },
 ];
 
-const DEMO_COMMENTS: PhilosophicalComment[] = [
+export const DEMO_COMMENTS: PhilosophicalComment[] = [
   // --- Comments for Post 1: Determinism vs Compatibilism ---
   {
     id: "comment-det-1",
@@ -1460,6 +1513,152 @@ export const DEMO_RSVPS: EventRSVP[] = [
     status: "going",
     updatedAt: "3 hours ago",
     createdAt: "3 hours ago",
+  },
+];
+
+export const ALL_PLATFORM_BADGES: PhilosophicalBadge[] = [
+  {
+    id: "badge-master-debater",
+    code: "master_debater",
+    title: "⚔️ Master Debater",
+    icon: "⚔️",
+    description: "Published 10+ high-engagement formal debate arguments with high upvote ratios.",
+    category: "debate",
+    progressPercentage: 100,
+  },
+  {
+    id: "badge-stoic-scholar",
+    code: "stoic_scholar",
+    title: "📜 Stoic Scholar",
+    icon: "📜",
+    description: "Achieved >90% worldview compatibility in Stoic virtue ethics & dichotomy of control.",
+    category: "scholar",
+    progressPercentage: 100,
+  },
+  {
+    id: "badge-symposium-host",
+    code: "symposium-host",
+    title: "📅 Symposium Host",
+    icon: "📅",
+    description: "Scheduled and hosted 3+ virtual symposiums, live formal duels, or reading groups.",
+    category: "events",
+    progressPercentage: 80,
+  },
+  {
+    id: "badge-circle-steward",
+    code: "circle_steward",
+    title: "🏛️ Circle Steward",
+    icon: "🏛️",
+    description: "Active member and contributor in 2+ philosophical school circles.",
+    category: "community",
+    progressPercentage: 100,
+  },
+  {
+    id: "badge-philosophical-catalyst",
+    code: "philosophical_catalyst",
+    title: "⚡ Philosophical Catalyst",
+    icon: "⚡",
+    description: "Earned 1,000+ total community reputation points through insightful contributions.",
+    category: "reputation",
+    progressPercentage: 95,
+  },
+];
+
+export const DEMO_LEADERBOARD: LeaderboardEntry[] = [
+  {
+    rank: 1,
+    user: {
+      id: "00000000-0000-0000-0000-000000000001",
+      name: "Immanuel Kant",
+      username: "kantian_critique",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+      philosophyProfile: {
+        primarySchools: ["Kantian Idealism"],
+        keyThinkers: ["Kant", "Rousseau"],
+      },
+    } as unknown as User,
+    reputationPoints: 2450,
+    primarySchool: "Rationalism & Kantian Idealism",
+    argumentsCount: 34,
+    symposiumsHosted: 8,
+    trend: "same",
+    badges: [ALL_PLATFORM_BADGES[0]!, ALL_PLATFORM_BADGES[2]!, ALL_PLATFORM_BADGES[3]!, ALL_PLATFORM_BADGES[4]!],
+  },
+  {
+    rank: 2,
+    user: {
+      id: "00000000-0000-0000-0000-000000000002",
+      name: "Baruch Spinoza",
+      username: "spinoza",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      philosophyProfile: {
+        primarySchools: ["Rationalism & Monism"],
+        keyThinkers: ["Spinoza", "Descartes"],
+      },
+    } as unknown as User,
+    reputationPoints: 2180,
+    primarySchool: "Rationalism & Monism",
+    argumentsCount: 28,
+    symposiumsHosted: 5,
+    trend: "up",
+    badges: [ALL_PLATFORM_BADGES[0]!, ALL_PLATFORM_BADGES[1]!, ALL_PLATFORM_BADGES[4]!],
+  },
+  {
+    rank: 3,
+    user: {
+      id: "00000000-0000-0000-0000-000000000004",
+      name: "Jean-Paul Sartre",
+      username: "sartre",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+      philosophyProfile: {
+        primarySchools: ["Existentialism"],
+        keyThinkers: ["Sartre", "Beauvoir"],
+      },
+    } as unknown as User,
+    reputationPoints: 1890,
+    primarySchool: "Existentialism",
+    argumentsCount: 22,
+    symposiumsHosted: 4,
+    trend: "up",
+    badges: [ALL_PLATFORM_BADGES[0]!, ALL_PLATFORM_BADGES[3]!, ALL_PLATFORM_BADGES[4]!],
+  },
+  {
+    rank: 4,
+    user: {
+      id: "00000000-0000-0000-0000-000000000005",
+      name: "Friedrich Nietzsche",
+      username: "nietzsche",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+      philosophyProfile: {
+        primarySchools: ["Existentialism & Perspectivism"],
+        keyThinkers: ["Nietzsche", "Schopenhauer"],
+      },
+    } as unknown as User,
+    reputationPoints: 1720,
+    primarySchool: "Existentialism",
+    argumentsCount: 19,
+    symposiumsHosted: 2,
+    trend: "down",
+    badges: [ALL_PLATFORM_BADGES[0]!, ALL_PLATFORM_BADGES[4]!],
+  },
+  {
+    rank: 5,
+    user: {
+      id: "00000000-0000-0000-0000-000000000003",
+      name: "Albert Camus",
+      username: "camus",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
+      philosophyProfile: {
+        primarySchools: ["Absurdism"],
+        keyThinkers: ["Camus", "Nietzsche"],
+      },
+    } as unknown as User,
+    reputationPoints: 1540,
+    primarySchool: "Absurdism",
+    argumentsCount: 16,
+    symposiumsHosted: 3,
+    trend: "up",
+    badges: [ALL_PLATFORM_BADGES[2]!, ALL_PLATFORM_BADGES[3]!],
   },
 ];
 

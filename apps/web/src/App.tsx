@@ -16,9 +16,10 @@ import { NotificationCenterDrawer } from "./components/NotificationCenterDrawer.
 import { ConnectionRequestModal } from "./components/ConnectionRequestModal.js";
 import { SymposiumsDirectory } from "./components/SymposiumsDirectory.js";
 import { EventComposerModal } from "./components/EventComposerModal.js";
+import { LeaderboardHub } from "./components/LeaderboardHub.js";
 import { agoraClient } from "./lib/api-client.js";
 
-type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | "symposiums";
+type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | "symposiums" | "leaderboard";
 
 export const App: React.FC = () => {
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
@@ -77,6 +78,12 @@ export const App: React.FC = () => {
             onClick={() => setActiveTab("symposiums")}
           >
             📅 Symposiums & Events
+          </button>
+          <button
+            className={`nav-tab-btn ${activeTab === "leaderboard" ? "active" : ""}`}
+            onClick={() => setActiveTab("leaderboard")}
+          >
+            🏆 Leaderboard
           </button>
           <button
             className={`nav-tab-btn ${activeTab === "recommendations" ? "active" : ""}`}
@@ -220,6 +227,10 @@ export const App: React.FC = () => {
             onOpenComposer={() => setIsEventComposerOpen(true)}
             onOpenDM={(targetUser) => handleOpenDM(targetUser)}
           />
+        )}
+
+        {activeTab === "leaderboard" && (
+          <LeaderboardHub onOpenDM={(targetUser) => handleOpenDM(targetUser)} />
         )}
 
         {activeTab === "recommendations" && (
