@@ -172,21 +172,17 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
 
                     <button
                       type="button"
-                      className={`action-btn ${isCommentsExpanded ? "active" : ""}`}
-                      onClick={() => toggleCommentsSection(post.id)}
+                      className="action-btn"
+                      onClick={() => {
+                        if (onOpenThreadDrawer) {
+                          onOpenThreadDrawer(post.id);
+                        } else {
+                          toggleCommentsSection(post.id);
+                        }
+                      }}
                     >
-                      💬 Debate Tree ({post.commentsCount})
+                      💬 Comments & Debate Tree ({post.commentsCount})
                     </button>
-
-                    {onOpenThreadDrawer && (
-                      <button
-                        type="button"
-                        className="action-btn"
-                        onClick={() => onOpenThreadDrawer(post.id)}
-                      >
-                        🔍 Open Thread Drawer
-                      </button>
-                    )}
 
                     <button
                       type="button"
