@@ -13,9 +13,10 @@ const INTENT_FILTERS: { id: ConnectionIntent | "all"; label: string; icon: strin
 
 export interface PeopleRecommendationsFeedProps {
   onOpenDM?: (user: User) => void;
+  onOpenConnectModal?: (user: User) => void;
 }
 
-export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps> = ({ onOpenDM }) => {
+export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps> = ({ onOpenDM, onOpenConnectModal }) => {
   const [recommendations, setRecommendations] = useState<UserRecommendation[]>([]);
   const [selectedIntent, setSelectedIntent] = useState<ConnectionIntent | "all">("all");
   const [schoolFilter, setSchoolFilter] = useState("");
@@ -148,12 +149,22 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                 <DualAxisCompatibilityGauge compatibility={compatibility} />
 
                 {/* Action Buttons */}
-                <div className="card-actions">
+                <div className="card-actions" style={{ gap: 10 }}>
+                  {onOpenConnectModal && (
+                    <button
+                      className="connect-btn"
+                      style={{ fontSize: "0.85rem" }}
+                      onClick={() => onOpenConnectModal(user)}
+                    >
+                      🤝 Send Invite
+                    </button>
+                  )}
                   <button
-                    className="connect-btn"
+                    className="action-btn"
+                    style={{ fontSize: "0.85rem" }}
                     onClick={() => onOpenDM && onOpenDM(user)}
                   >
-                    💬 Direct Message
+                    💬 Message
                   </button>
                 </div>
               </div>

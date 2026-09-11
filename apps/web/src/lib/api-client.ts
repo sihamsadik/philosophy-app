@@ -336,6 +336,96 @@ export class AgoraPhilosophyClient {
   }
 
   /**
+   * Connection Requests & Notifications
+   */
+  async sendConnectionRequest(
+    targetUserId: string,
+    message?: string,
+    targetUser?: User
+  ): Promise<ConnectionRequest> {
+    try {
+      return await this.request<ConnectionRequest>("/connections/requests", {
+        method: "POST",
+        body: JSON.stringify({ targetUserId, message }),
+      });
+    } catch {
+      const newReq: ConnectionRequest = {
+        id: `req-${Date.now()}`,
+        sender: targetUser || ({
+          id: "00000000-0000-0000-0000-000000000001",
+          name: "Jean-Paul Sartre",
+          username: "sartre",
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        } as User),
+        recipientId: targetUserId,
+        message: message || "I would love to connect and exchange philosophical perspectives.",
+        status: "pending",
+        createdAt: "Just now",
+      };
+      DEMO_CONNECTION_REQUESTS.unshift(newReq);
+      return newReq;
+    }
+  }
+
+  async getConnectionRequests(): Promise<{ requests: ConnectionRequest[] }> {
+    try {
+      return await this.request<{ requests: ConnectionRequest[] }>("/connections/requests");
+    } catch {
+      return { requests: DEMO_CONNECTION_REQUESTS };
+    }
+  }
+
+  async acceptConnectionRequest(requestId: string): Promise<{ success: boolean }> {
+    try {
+      return await this.request<{ success: boolean }>(`/connections/requests/${requestId}/accept`, {
+        method: "POST",
+      });
+    } catch {
+      const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
+      if (req) req.status = "accepted";
+      const notif = DEMO_NOTIFICATIONS.find((n) => n.requestId === requestId);
+      if (notif) notif.read = true;
+      return { success: true };
+    }
+  }
+
+  async declineConnectionRequest(requestId: string): Promise<{ success: boolean }> {
+    try {
+      return await this.request<{ success: boolean }>(`/connections/requests/${requestId}/decline`, {
+        method: "POST",
+      });
+    } catch {
+      const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
+      if (req) req.status = "declined";
+      const notif = DEMO_NOTIFICATIONS.find((n) => n.requestId === requestId);
+      if (notif) notif.read = true;
+      return { success: true };
+    }
+  }
+
+  async getNotifications(): Promise<{ notifications: PhilosophyNotification[]; unreadCount: number }> {
+    try {
+      return await this.request<{ notifications: PhilosophyNotification[]; unreadCount: number }>("/notifications");
+    } catch {
+      const unreadCount = DEMO_NOTIFICATIONS.filter((n) => !n.read).length;
+      return { notifications: DEMO_NOTIFICATIONS, unreadCount };
+    }
+  }
+
+  async markNotificationsRead(): Promise<{ success: boolean }> {
+    try {
+      return await this.request<{ success: boolean }>("/notifications/mark-read", {
+        method: "POST",
+      });
+    } catch {
+      DEMO_NOTIFICATIONS.forEach((n) => {
+        n.read = true;
+      });
+      return { success: true };
+    }
+  }
+
+  /**
    * Direct Conversations (DMs)
    */
   async getConversations(): Promise<{ conversations: DirectConversation[] }> {
@@ -548,6 +638,28 @@ export interface ChatMessage {
   senderAvatar?: string;
   content: string;
   createdAt: string;
+}
+
+export interface ConnectionRequest {
+  id: string;
+  sender: User;
+  recipientId: string;
+  message?: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+}
+
+export interface PhilosophyNotification {
+  id: string;
+  type: "connection_request" | "direct_message" | "post_upvote" | "comment_reply";
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  sender?: User;
+  requestId?: string;
+  conversationId?: string;
+  entityId?: string;
 }
 
 export interface DirectConversation {
@@ -928,6 +1040,103 @@ const DEMO_SPACES: PhilosophicalSpace[] = [
     postsCount: 53,
     isJoined: false,
     createdAt: "2 weeks ago",
+  },
+];
+
+const DEMO_CONNECTION_REQUESTS: ConnectionRequest[] = [
+  {
+    id: "req-1",
+    sender: {
+      id: "00000000-0000-0000-0000-000000000004",
+      name: "Immanuel Kant",
+      username: "kant",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+      bio: "Königsberg philosopher • Categorical Imperative & Deontology",
+    } as User,
+    recipientId: "00000000-0000-0000-0000-000000000001",
+    message: "I read your synthesis on radical freedom and moral duty. I would love to connect for formal dialogue on synthetic a priori judgments.",
+    status: "pending",
+    createdAt: "10 minutes ago",
+  },
+  {
+    id: "req-2",
+    sender: {
+      id: "00000000-0000-0000-0000-000000000005",
+      name: "Friedrich Nietzsche",
+      username: "nietzsche",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+      bio: "Will to Power • Genealogist of Morals",
+    } as User,
+    recipientId: "00000000-0000-0000-0000-000000000001",
+    message: "Let us debate whether existential anguish is a triumph of spirit or a lingering shadow of ascetic ideals!",
+    status: "pending",
+    createdAt: "1 hour ago",
+  },
+];
+
+const DEMO_NOTIFICATIONS: PhilosophyNotification[] = [
+  {
+    id: "notif-1",
+    type: "connection_request",
+    title: "🤝 Intellectual Connection Invite",
+    message: "Immanuel Kant sent you a connection request: 'I read your synthesis on radical freedom...'",
+    read: false,
+    createdAt: "10 minutes ago",
+    requestId: "req-1",
+    sender: {
+      id: "00000000-0000-0000-0000-000000000004",
+      name: "Immanuel Kant",
+      username: "kant",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+    } as User,
+  },
+  {
+    id: "notif-2",
+    type: "connection_request",
+    title: "🤝 Intellectual Connection Invite",
+    message: "Friedrich Nietzsche sent you a connection request: 'Let us debate whether existential anguish...'",
+    read: false,
+    createdAt: "1 hour ago",
+    requestId: "req-2",
+    sender: {
+      id: "00000000-0000-0000-0000-000000000005",
+      name: "Friedrich Nietzsche",
+      username: "nietzsche",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+    } as User,
+  },
+  {
+    id: "notif-3",
+    type: "direct_message",
+    title: "💬 New Direct Message",
+    message: "Baruch Spinoza: 'Greetings friend! I read your essay on radical choice...'",
+    read: false,
+    createdAt: "15 minutes ago",
+    conversationId: "conv-1",
+    sender: {
+      id: "00000000-0000-0000-0000-000000000002",
+      name: "Baruch Spinoza",
+      username: "spinoza",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    } as User,
+  },
+  {
+    id: "notif-4",
+    type: "comment_reply",
+    title: "📜 Debate Thread Reply",
+    message: "G.W.F. Hegel replied to your comment with a ⚪ Synthesis stance.",
+    read: true,
+    createdAt: "45 minutes ago",
+    entityId: "00000000-0000-0000-0000-000000000001",
+  },
+  {
+    id: "notif-5",
+    type: "post_upvote",
+    title: "▲ Argument Upvoted",
+    message: "Albert Camus and 3 others upvoted your post 'Existence Precedes Essence'.",
+    read: true,
+    createdAt: "2 hours ago",
+    entityId: "00000000-0000-0000-0000-000000000003",
   },
 ];
 

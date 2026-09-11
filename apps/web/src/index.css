@@ -2068,6 +2068,277 @@ body {
   cursor: pointer;
 }
 
+/* ==========================================
+   Connection Request Modal & Notification Center
+   ========================================== */
+.connection-modal-pane {
+  max-width: 580px;
+}
+
+.recipient-summary-box {
+  background: rgba(10, 15, 26, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.compatibility-badges-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.compatibility-chip {
+  font-size: 0.75rem;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.compatibility-chip.high-overlap {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.compatibility-chip.productive-tension {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fb7185;
+}
+
+.recipient-bio {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 10px;
+}
+
+.request-sent-success-state {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+/* Notification Drawer Pane */
+.notifications-drawer-pane {
+  background: #0f131f;
+  border: 1px solid var(--border-glow);
+  border-radius: 20px;
+  width: 92%;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.8);
+}
+
+.notifications-toolbar {
+  padding: 12px 20px;
+  background: rgba(10, 15, 26, 0.6);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notifications-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.notif-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notif-tab-btn.active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.unread-badge {
+  background: #6366f1;
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.unread-badge.pending {
+  background: #f43f5e;
+}
+
+.notifications-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.notifications-list,
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.notification-item-card,
+.connection-request-card {
+  background: rgba(18, 26, 43, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.notification-item-card.unread {
+  border-left: 3px solid #6366f1;
+  background: rgba(28, 40, 65, 0.85);
+}
+
+.notif-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.notif-title {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.notif-time,
+.req-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.notif-message {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.req-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.req-intro-note {
+  font-size: 0.88rem;
+  color: #e5e7eb;
+  font-style: italic;
+  background: rgba(10, 15, 26, 0.5);
+  border-left: 2px solid #6366f1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin: 10px 0 14px 0;
+}
+
+.req-actions-row,
+.notif-inline-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.accept-req-btn,
+.accept-req-btn-sm {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  color: #34d399;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.decline-req-btn,
+.decline-req-btn-sm {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  color: #fb7185;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status-accepted-chip {
+  font-size: 0.78rem;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.status-declined-chip {
+  font-size: 0.78rem;
+  color: #fb7185;
+  background: rgba(244, 63, 94, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* Navbar Notification Bell Button */
+.notif-bell-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.notif-bell-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+}
+
+
 
 
 

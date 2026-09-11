@@ -12,6 +12,9 @@ import { PostComposerModal } from "./components/PostComposerModal.js";
 import { PhilosophicalFeed } from "./components/PhilosophicalFeed.js";
 import { DebateThreadDrawer } from "./components/DebateThreadDrawer.js";
 import { SpacesHub } from "./components/SpacesHub.js";
+import { NotificationCenterDrawer } from "./components/NotificationCenterDrawer.js";
+import { ConnectionRequestModal } from "./components/ConnectionRequestModal.js";
+import { agoraClient } from "./lib/api-client.js";
 
 type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces";
 
@@ -29,6 +32,19 @@ export const App: React.FC = () => {
   const [dmTargetUser, setDmTargetUser] = useState<User | null>(null);
   const [isPostComposerOpen, setIsPostComposerOpen] = useState(false);
   const [composerSpaceId, setComposerSpaceId] = useState<string | undefined>(undefined);
+
+  // Notification Drawer & Connection Request Modal
+  const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(2);
+  const [connectTargetUser, setConnectTargetUser] = useState<User | null>(null);
+
+  React.useEffect(() => {
+    // Initial fetch of unread count
+    agoraClient
+      .getNotifications()
+      .then((res) => setUnreadNotifCount(res.unreadCount))
+      .catch((err) => console.error("Failed to load notification badge:", err));
+  }, []);
 
   const handleOpenDM = (targetUser?: User | null) => {
     setDmTargetUser(targetUser || null);
@@ -178,7 +194,10 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === "recommendations" && (
-          <PeopleRecommendationsFeed onOpenDM={(targetUser) => handleOpenDM(targetUser)} />
+          <PeopleRecommendationsFeed
+            onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+            onOpenConnectModal={(targetUser) => setConnectTargetUser(targetUser)}
+          />
         )}
 
         {activeTab === "debates" && (
@@ -231,7 +250,6 @@ export const App: React.FC = () => {
         authorAvatar={user?.avatar || undefined}
       />
 
-
       {/* Direct Messaging Drawer Modal */}
       <DirectMessageDrawer
         isOpen={isDMDrawerOpen}
@@ -252,6 +270,22 @@ export const App: React.FC = () => {
         onClose={() => setActiveThreadPostId(null)}
         postId={activeThreadPostId}
         onOpenDebateSummary={(postId) => setActiveDrawerEntityId(postId)}
+      />
+
+      {/* Header Notification Center Drawer */}
+      <NotificationCenterDrawer
+        isOpen={isNotifDrawerOpen}
+        onClose={() => setIsNotifDrawerOpen(false)}
+        onUnreadCountChange={(count) => setUnreadNotifCount(count)}
+        onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+        onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
+      />
+
+      {/* Connection Request Custom Intro Note Modal */}
+      <ConnectionRequestModal
+        isOpen={!!connectTargetUser}
+        onClose={() => setConnectTargetUser(null)}
+        targetUser={connectTargetUser}
       />
     </div>
   );
