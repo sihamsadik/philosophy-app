@@ -12,6 +12,9 @@ import { LeaderboardHub } from "../components/LeaderboardHub.js";
 import { ConnectionRequestModal } from "../components/ConnectionRequestModal.js";
 import { NotificationCenterDrawer } from "../components/NotificationCenterDrawer.js";
 import { InstallAppBanner } from "../components/InstallAppBanner.js";
+import { MomentsCarousel } from "../components/MomentsCarousel.js";
+import { BottomNavDock } from "../components/BottomNavDock.js";
+import { LiveTextDebateModal } from "../components/LiveTextDebateModal.js";
 
 describe("React Components Export & Module Signature Verification", () => {
   it("should export all main application view components cleanly", () => {
@@ -29,5 +32,8 @@ describe("React Components Export & Module Signature Verification", () => {
     expect(ConnectionRequestModal).toBeDefined();
     expect(NotificationCenterDrawer).toBeDefined();
     expect(InstallAppBanner).toBeDefined();
+    expect(MomentsCarousel).toBeDefined();
+    expect(BottomNavDock).toBeDefined();
+    expect(LiveTextDebateModal).toBeDefined();
   });
 });

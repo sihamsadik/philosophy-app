@@ -18,18 +18,24 @@ import { SymposiumsDirectory } from "./components/SymposiumsDirectory.js";
 import { EventComposerModal } from "./components/EventComposerModal.js";
 import { LeaderboardHub } from "./components/LeaderboardHub.js";
 import { InstallAppBanner } from "./components/InstallAppBanner.js";
+import { MomentsCarousel } from "./components/MomentsCarousel.js";
+import { LiveTextDebateModal } from "./components/LiveTextDebateModal.js";
+import { BottomNavDock, type NavTab as BottomNavTab } from "./components/BottomNavDock.js";
 import { agoraClient } from "./lib/api-client.js";
 
 type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | "symposiums" | "leaderboard";
 
 export const App: React.FC = () => {
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<NavTab>("spaces");
+  const [activeTab, setActiveTab] = useState<NavTab>("debates");
   const [activeDrawerEntityId, setActiveDrawerEntityId] = useState<string | null>(null);
   const [activeThreadPostId, setActiveThreadPostId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isUserMenuDropdownOpen, setIsUserMenuDropdownOpen] = useState(false);
+
+  // Live Text Debate Modal for Story Circles
+  const [liveDebateThinker, setLiveDebateThinker] = useState<User | null>(null);
 
   // DM Drawer, Composer & Event Modals
   const [isDMDrawerOpen, setIsDMDrawerOpen] = useState(false);
@@ -58,93 +64,44 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      {/* Navbar */}
-      <nav className="app-navbar">
-        <div className="brand-block">
-          <h1 className="brand-title">🏛️ Agora Philosophy</h1>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "block" }}>
-            Intellectual Discovery & Community Platform
-          </span>
-        </div>
-
-        <div className="nav-tabs">
+      {/* Mobile & Desktop Header Bar (Inspired by Telegram / Rize App Screenshot) */}
+      <header className="app-top-header">
+        <div className="top-header-left">
           <button
-            className={`nav-tab-btn ${activeTab === "spaces" ? "active" : ""}`}
-            onClick={() => setActiveTab("spaces")}
+            type="button"
+            className="top-action-circle-btn"
+            onClick={() => {
+              setComposerSpaceId(undefined);
+              setIsPostComposerOpen(true);
+            }}
+            title="Create Post / Argument"
           >
-            🏛️ Spaces & Circles
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === "symposiums" ? "active" : ""}`}
-            onClick={() => setActiveTab("symposiums")}
-          >
-            📅 Symposiums & Events
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === "leaderboard" ? "active" : ""}`}
-            onClick={() => setActiveTab("leaderboard")}
-          >
-            🏆 Leaderboard
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === "recommendations" ? "active" : ""}`}
-            onClick={() => setActiveTab("recommendations")}
-          >
-            🤝 Peer Discovery
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === "debates" ? "active" : ""}`}
-            onClick={() => setActiveTab("debates")}
-          >
-            📜 Philosophical Feed
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === "profile" ? "active" : ""}`}
-            onClick={() => setActiveTab("profile")}
-          >
-            🧠 My Worldview
-          </button>
-          <button
-            className={`nav-tab-btn ${activeTab === "search" ? "active" : ""}`}
-            onClick={() => setActiveTab("search")}
-          >
-            🔍 Concept Search
+            +
           </button>
         </div>
 
-        {/* User Auth & Actions Section */}
-        <div className="navbar-user-block">
-          {/* Quick Action: Schedule Event */}
-          <button
-            type="button"
-            className="action-btn"
-            style={{ fontSize: "0.85rem", padding: "6px 12px" }}
-            onClick={() => setIsEventComposerOpen(true)}
-          >
-            📅 Schedule Event
-          </button>
+        <div className="top-header-center" onClick={() => setActiveTab("debates")}>
+          <span className="brand-logo-text">agora</span>
+        </div>
 
-          {/* Quick Action: Publish Post */}
+        <div className="top-header-right">
           <button
             type="button"
-            className="action-btn"
-            style={{ fontSize: "0.85rem", padding: "6px 12px" }}
-            onClick={() => setIsPostComposerOpen(true)}
-          >
-            ✍️ Post
-          </button>
-
-          {/* Notification Bell */}
-          <button
-            type="button"
-            className="notif-bell-btn"
-            title="Notification Center"
+            className="top-action-circle-btn notif-btn"
             onClick={() => setIsNotifDrawerOpen(true)}
+            title="Notification Center"
           >
             🔔
-            {unreadNotifCount > 0 && (
-              <span className="bell-badge">{unreadNotifCount}</span>
-            )}
+            {unreadNotifCount > 0 && <span className="top-notif-badge">{unreadNotifCount}</span>}
+          </button>
+
+          <button
+            type="button"
+            className="top-action-circle-btn"
+            onClick={() => handleOpenDM(null)}
+            title="Direct Messages"
+          >
+            💬
           </button>
 
           {isAuthenticated && user ? (
@@ -161,11 +118,6 @@ export const App: React.FC = () => {
                     {(user.name || user.username || "U").charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div className="user-info">
-                  <span className="user-display-name">{user.name || user.username}</span>
-                  <span className="user-handle">@{user.username || "philosopher"}</span>
-                </div>
-                <span className="dropdown-caret">▼</span>
               </button>
 
               {isUserMenuDropdownOpen && (
@@ -203,14 +155,24 @@ export const App: React.FC = () => {
               )}
             </div>
           ) : (
-            <button className="connect-btn" onClick={() => setIsAuthModalOpen(true)}>
-              Sign In / Register
+            <button className="connect-btn-sm" onClick={() => setIsAuthModalOpen(true)}>
+              Sign In
             </button>
           )}
         </div>
-      </nav>
+      </header>
 
-      {/* Tab Views */}
+      {/* Thinker Moments / Stories Carousel Bar */}
+      <MomentsCarousel
+        currentUser={user}
+        onOpenComposer={() => {
+          setComposerSpaceId(undefined);
+          setIsPostComposerOpen(true);
+        }}
+        onSelectThinker={(thinker) => setLiveDebateThinker(thinker)}
+      />
+
+      {/* Main Content Area */}
       <main className="app-main-content">
         {activeTab === "spaces" && (
           <SpacesHub
@@ -263,14 +225,23 @@ export const App: React.FC = () => {
         {activeTab === "search" && <SemanticSearch />}
       </main>
 
-      {/* Auth Modal Dialog */}
+      {/* Fixed Bottom Navigation Dock (Responsive Mobile & Desktop Bar) */}
+      <BottomNavDock
+        activeTab={activeTab as BottomNavTab}
+        onTabChange={(tab) => setActiveTab(tab as NavTab)}
+        unreadNotifCount={unreadNotifCount}
+      />
+
+      {/* Floating PWA Install App Banner (Positioned above bottom dock) */}
+      <InstallAppBanner />
+
+      {/* Modals & Drawers */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={() => setActiveTab("profile")}
       />
 
-      {/* Profile Settings & Customization Modal */}
       <UserSettingsModal
         user={user}
         isOpen={isSettingsModalOpen}
@@ -278,7 +249,6 @@ export const App: React.FC = () => {
         onSaveSuccess={() => refreshUser()}
       />
 
-      {/* Post Composer Modal */}
       <PostComposerModal
         isOpen={isPostComposerOpen}
         onClose={() => {
@@ -291,21 +261,18 @@ export const App: React.FC = () => {
         authorAvatar={user?.avatar || undefined}
       />
 
-      {/* Direct Messaging Drawer Modal */}
       <DirectMessageDrawer
         isOpen={isDMDrawerOpen}
         onClose={() => setIsDMDrawerOpen(false)}
         targetUser={dmTargetUser}
       />
 
-      {/* AI Debate Summary Drawer Modal */}
       <DebateSummaryDrawer
         entityId={activeDrawerEntityId || ""}
         isOpen={!!activeDrawerEntityId}
         onClose={() => setActiveDrawerEntityId(null)}
       />
 
-      {/* Debate Thread Drawer Modal */}
       <DebateThreadDrawer
         isOpen={!!activeThreadPostId}
         onClose={() => setActiveThreadPostId(null)}
@@ -313,7 +280,6 @@ export const App: React.FC = () => {
         onOpenDebateSummary={(postId) => setActiveDrawerEntityId(postId)}
       />
 
-      {/* Header Notification Center Drawer */}
       <NotificationCenterDrawer
         isOpen={isNotifDrawerOpen}
         onClose={() => setIsNotifDrawerOpen(false)}
@@ -322,25 +288,26 @@ export const App: React.FC = () => {
         onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
       />
 
-      {/* Connection Request Custom Intro Note Modal */}
       <ConnectionRequestModal
         isOpen={!!connectTargetUser}
         onClose={() => setConnectTargetUser(null)}
         targetUser={connectTargetUser}
       />
 
-      {/* Event Composer Modal */}
       <EventComposerModal
         isOpen={isEventComposerOpen}
         onClose={() => setIsEventComposerOpen(false)}
         onCreated={() => setActiveTab("symposiums")}
       />
 
-      {/* Floating PWA Install App Banner (Matching Mobile/Desktop Screenshot) */}
-      <InstallAppBanner />
+      {/* Live Text Debate / Moment Modal for Story Circles */}
+      <LiveTextDebateModal
+        isOpen={!!liveDebateThinker}
+        onClose={() => setLiveDebateThinker(null)}
+        thinker={liveDebateThinker}
+      />
     </div>
   );
 };
 
 export default App;
-
