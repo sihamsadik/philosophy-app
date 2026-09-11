@@ -14,9 +14,11 @@ import { DebateThreadDrawer } from "./components/DebateThreadDrawer.js";
 import { SpacesHub } from "./components/SpacesHub.js";
 import { NotificationCenterDrawer } from "./components/NotificationCenterDrawer.js";
 import { ConnectionRequestModal } from "./components/ConnectionRequestModal.js";
+import { SymposiumsDirectory } from "./components/SymposiumsDirectory.js";
+import { EventComposerModal } from "./components/EventComposerModal.js";
 import { agoraClient } from "./lib/api-client.js";
 
-type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces";
+type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | "symposiums";
 
 export const App: React.FC = () => {
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
@@ -27,11 +29,12 @@ export const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isUserMenuDropdownOpen, setIsUserMenuDropdownOpen] = useState(false);
 
-  // DM Drawer & Composer Modals
+  // DM Drawer, Composer & Event Modals
   const [isDMDrawerOpen, setIsDMDrawerOpen] = useState(false);
   const [dmTargetUser, setDmTargetUser] = useState<User | null>(null);
   const [isPostComposerOpen, setIsPostComposerOpen] = useState(false);
   const [composerSpaceId, setComposerSpaceId] = useState<string | undefined>(undefined);
+  const [isEventComposerOpen, setIsEventComposerOpen] = useState(false);
 
   // Notification Drawer & Connection Request Modal
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
@@ -70,6 +73,12 @@ export const App: React.FC = () => {
             🏛️ Spaces & Circles
           </button>
           <button
+            className={`nav-tab-btn ${activeTab === "symposiums" ? "active" : ""}`}
+            onClick={() => setActiveTab("symposiums")}
+          >
+            📅 Symposiums & Events
+          </button>
+          <button
             className={`nav-tab-btn ${activeTab === "recommendations" ? "active" : ""}`}
             onClick={() => setActiveTab("recommendations")}
           >
@@ -97,6 +106,16 @@ export const App: React.FC = () => {
 
         {/* User Auth & Actions Section */}
         <div className="navbar-user-block">
+          {/* Quick Action: Schedule Event */}
+          <button
+            type="button"
+            className="action-btn"
+            style={{ fontSize: "0.85rem", padding: "6px 12px" }}
+            onClick={() => setIsEventComposerOpen(true)}
+          >
+            📅 Schedule Event
+          </button>
+
           {/* Quick Action: Publish Post */}
           <button
             type="button"
@@ -107,14 +126,17 @@ export const App: React.FC = () => {
             ✍️ Post
           </button>
 
-          {/* Quick Action: DMs */}
+          {/* Notification Bell */}
           <button
             type="button"
-            className="action-btn"
-            style={{ fontSize: "0.85rem", padding: "6px 12px" }}
-            onClick={() => handleOpenDM(null)}
+            className="notif-bell-btn"
+            title="Notification Center"
+            onClick={() => setIsNotifDrawerOpen(true)}
           >
-            💬 DMs
+            🔔
+            {unreadNotifCount > 0 && (
+              <span className="bell-badge">{unreadNotifCount}</span>
+            )}
           </button>
 
           {isAuthenticated && user ? (
@@ -190,6 +212,13 @@ export const App: React.FC = () => {
               setComposerSpaceId(space.id);
               setIsPostComposerOpen(true);
             }}
+          />
+        )}
+
+        {activeTab === "symposiums" && (
+          <SymposiumsDirectory
+            onOpenComposer={() => setIsEventComposerOpen(true)}
+            onOpenDM={(targetUser) => handleOpenDM(targetUser)}
           />
         )}
 
@@ -286,6 +315,13 @@ export const App: React.FC = () => {
         isOpen={!!connectTargetUser}
         onClose={() => setConnectTargetUser(null)}
         targetUser={connectTargetUser}
+      />
+
+      {/* Event Composer Modal */}
+      <EventComposerModal
+        isOpen={isEventComposerOpen}
+        onClose={() => setIsEventComposerOpen(false)}
+        onCreated={() => setActiveTab("symposiums")}
       />
     </div>
   );

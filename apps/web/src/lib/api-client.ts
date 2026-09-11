@@ -426,6 +426,141 @@ export class AgoraPhilosophyClient {
   }
 
   /**
+   * Symposiums & Scheduled Events
+   */
+  async getEvents(params?: { type?: EventType; spaceId?: string }): Promise<{ events: PhilosophyEvent[] }> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.type) query.set("type", params.type);
+      if (params?.spaceId) query.set("spaceId", params.spaceId);
+      return await this.request<{ events: PhilosophyEvent[] }>(`/events?${query.toString()}`);
+    } catch {
+      let filtered = [...DEMO_EVENTS];
+      if (params?.type) {
+        filtered = filtered.filter((e) => e.type === params.type);
+      }
+      if (params?.spaceId) {
+        filtered = filtered.filter((e) => e.spaceId === params.spaceId);
+      }
+      return { events: filtered };
+    }
+  }
+
+  async createEvent(data: {
+    title: string;
+    type: EventType;
+    description: string;
+    startTime: string;
+    endTime?: string;
+    locationUrl?: string;
+    maxCapacity?: number;
+    spaceId?: string;
+    spaceName?: string;
+    tags?: string[];
+  }): Promise<PhilosophyEvent> {
+    try {
+      return await this.request<PhilosophyEvent>("/events", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    } catch {
+      const newEvent: PhilosophyEvent = {
+        id: `event-${Date.now()}`,
+        title: data.title,
+        type: data.type,
+        description: data.description,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        locationUrl: data.locationUrl || "https://agora.philosophy/symposium/live",
+        hostUser: {
+          id: "00000000-0000-0000-0000-000000000001",
+          name: "Immanuel Kant",
+          username: "kantian_critique",
+          avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+          philosophyProfile: {
+            primarySchools: ["Kantian Idealism"],
+            keyThinkers: ["Kant", "Rousseau"],
+          },
+        } as unknown as User,
+        spaceId: data.spaceId,
+        spaceName: data.spaceName,
+        maxCapacity: data.maxCapacity || 30,
+        attendeeCount: 1,
+        userRsvpStatus: "going",
+        tags: data.tags || ["Ethics", "Dialogue"],
+        createdAt: new Date().toISOString(),
+      };
+      DEMO_EVENTS.unshift(newEvent);
+
+      DEMO_RSVPS.unshift({
+        id: `rsvp-${Date.now()}`,
+        eventId: newEvent.id,
+        user: newEvent.hostUser,
+        status: "going",
+        updatedAt: "Just now",
+        createdAt: new Date().toISOString(),
+      });
+
+      return newEvent;
+    }
+  }
+
+  async rsvpEvent(eventId: string, status: RSVPStatus): Promise<{ success: boolean; event: PhilosophyEvent }> {
+    try {
+      return await this.request<{ success: boolean; event: PhilosophyEvent }>(`/events/${eventId}/rsvp`, {
+        method: "POST",
+        body: JSON.stringify({ status }),
+      });
+    } catch {
+      const event = DEMO_EVENTS.find((e) => e.id === eventId);
+      if (!event) throw new Error("Event not found");
+
+      const existingRsvp = DEMO_RSVPS.find(
+        (r) => r.eventId === eventId && r.user.id === "00000000-0000-0000-0000-000000000001"
+      );
+
+      const prevStatus = event.userRsvpStatus;
+      event.userRsvpStatus = status;
+
+      if (prevStatus !== "going" && status === "going") {
+        event.attendeeCount += 1;
+      } else if (prevStatus === "going" && status !== "going") {
+        event.attendeeCount = Math.max(0, event.attendeeCount - 1);
+      }
+
+      if (existingRsvp) {
+        existingRsvp.status = status;
+        existingRsvp.updatedAt = "Just now";
+      } else {
+        DEMO_RSVPS.push({
+          id: `rsvp-${Date.now()}`,
+          eventId,
+          user: {
+            id: "00000000-0000-0000-0000-000000000001",
+            name: "Immanuel Kant",
+            username: "kantian_critique",
+            avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+          } as User,
+          status,
+          updatedAt: "Just now",
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      return { success: true, event };
+    }
+  }
+
+  async getEventRsvps(eventId: string): Promise<{ rsvps: EventRSVP[] }> {
+    try {
+      return await this.request<{ rsvps: EventRSVP[] }>(`/events/${eventId}/rsvps`);
+    } catch {
+      const rsvps = DEMO_RSVPS.filter((r) => r.eventId === eventId);
+      return { rsvps };
+    }
+  }
+
+  /**
    * Direct Conversations (DMs)
    */
   async getConversations(): Promise<{ conversations: DirectConversation[] }> {
@@ -683,6 +818,36 @@ export interface PhilosophicalSpace {
   membersCount: number;
   postsCount: number;
   isJoined?: boolean;
+  createdAt: string;
+}
+
+export type EventType = "symposium" | "live_debate" | "reading_group" | "workshop";
+export type RSVPStatus = "going" | "maybe" | "declined";
+
+export interface PhilosophyEvent {
+  id: string;
+  title: string;
+  type: EventType;
+  description: string;
+  startTime: string;
+  endTime?: string;
+  locationUrl?: string;
+  hostUser: User;
+  spaceId?: string;
+  spaceName?: string;
+  maxCapacity?: number;
+  attendeeCount: number;
+  userRsvpStatus?: RSVPStatus;
+  tags?: string[];
+  createdAt: string;
+}
+
+export interface EventRSVP {
+  id: string;
+  eventId: string;
+  user: User;
+  status: RSVPStatus;
+  updatedAt: string;
   createdAt: string;
 }
 
@@ -965,7 +1130,7 @@ const DEMO_COMMENTS: PhilosophicalComment[] = [
   },
 ];
 
-const DEMO_SPACES: PhilosophicalSpace[] = [
+export const DEMO_SPACES: PhilosophicalSpace[] = [
   {
     id: "space-existentialism",
     name: "Existentialist Guild & Freedom Forum",
@@ -1137,6 +1302,164 @@ const DEMO_NOTIFICATIONS: PhilosophyNotification[] = [
     read: true,
     createdAt: "2 hours ago",
     entityId: "00000000-0000-0000-0000-000000000003",
+  },
+];
+
+export const DEMO_EVENTS: PhilosophyEvent[] = [
+  {
+    id: "event-1",
+    title: "📖 Critique of Pure Reason: Transcendental Aesthetic Reading Group",
+    type: "reading_group",
+    description: "Weekly close-reading workshop focusing on Kant's concepts of Space, Time, and synthetic a priori judgments. All thinkers welcome for active textual analysis.",
+    startTime: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
+    endTime: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
+    locationUrl: "https://agora.philosophy/room/kantian-critique",
+    hostUser: {
+      id: "00000000-0000-0000-0000-000000000001",
+      name: "Immanuel Kant",
+      username: "kantian_critique",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+      philosophyProfile: {
+        primarySchools: ["Kantian Idealism"],
+        keyThinkers: ["Kant", "Rousseau"],
+      },
+    } as unknown as User,
+    spaceId: "space-1",
+    spaceName: "Existentialist Guild",
+    maxCapacity: 25,
+    attendeeCount: 18,
+    userRsvpStatus: "going",
+    tags: ["Epistemology", "Kant", "Metaphysics"],
+    createdAt: "1 day ago",
+  },
+  {
+    id: "event-2",
+    title: "⚔️ Compatibilism vs. Hard Determinism: Live Formal Debate",
+    type: "live_debate",
+    description: "A structured 90-minute formal duel debating whether moral responsibility remains coherent in a fully deterministic physical cosmos.",
+    startTime: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    endTime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    locationUrl: "https://agora.philosophy/live/compatibilism-debate",
+    hostUser: {
+      id: "00000000-0000-0000-0000-000000000002",
+      name: "Baruch Spinoza",
+      username: "spinoza",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      philosophyProfile: {
+        primarySchools: ["Rationalism & Monism"],
+        keyThinkers: ["Spinoza", "Descartes"],
+      },
+    } as unknown as User,
+    spaceId: "space-2",
+    spaceName: "Spinozan Monism Hub",
+    maxCapacity: 50,
+    attendeeCount: 42,
+    userRsvpStatus: "going",
+    tags: ["Free Will", "Determinism", "Ethics"],
+    createdAt: "2 days ago",
+  },
+  {
+    id: "event-3",
+    title: "🏛️ Existential Ethics & The Ethics of Ambiguity Symposium",
+    type: "symposium",
+    description: "An open virtual symposium presenting three thesis papers on Simone de Beauvoir's moral framework under radical freedom and absurdity.",
+    startTime: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+    endTime: new Date(Date.now() + 27 * 3600 * 1000).toISOString(),
+    locationUrl: "https://agora.philosophy/symposium/existential-ethics",
+    hostUser: {
+      id: "00000000-0000-0000-0000-000000000004",
+      name: "Jean-Paul Sartre",
+      username: "sartre",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+      philosophyProfile: {
+        primarySchools: ["Existentialism"],
+        keyThinkers: ["Sartre", "Beauvoir"],
+      },
+    } as unknown as User,
+    spaceId: "space-3",
+    spaceName: "Absurdist Circle",
+    maxCapacity: 100,
+    attendeeCount: 64,
+    userRsvpStatus: "maybe",
+    tags: ["Existentialism", "Ethics", "Freedom"],
+    createdAt: "3 days ago",
+  },
+  {
+    id: "event-4",
+    title: "🧪 Spinoza's Ethics: Geometric Method & Affects Workshop",
+    type: "workshop",
+    description: "Hands-on workshop mapping out Spinoza's Propositions on human passions, active affects, and beatitude using geometric proof diagrams.",
+    startTime: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+    endTime: new Date(Date.now() + 51 * 3600 * 1000).toISOString(),
+    locationUrl: "https://agora.philosophy/workshop/spinoza-ethics",
+    hostUser: {
+      id: "00000000-0000-0000-0000-000000000002",
+      name: "Baruch Spinoza",
+      username: "spinoza",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    } as User,
+    spaceId: "space-2",
+    spaceName: "Spinozan Monism Hub",
+    maxCapacity: 20,
+    attendeeCount: 15,
+    userRsvpStatus: "declined",
+    tags: ["Rationalism", "Spinoza", "Metaphysics"],
+    createdAt: "4 days ago",
+  },
+];
+
+export const DEMO_RSVPS: EventRSVP[] = [
+  {
+    id: "rsvp-1",
+    eventId: "event-1",
+    user: {
+      id: "00000000-0000-0000-0000-000000000001",
+      name: "Immanuel Kant",
+      username: "kantian_critique",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+    } as User,
+    status: "going",
+    updatedAt: "Host",
+    createdAt: "1 day ago",
+  },
+  {
+    id: "rsvp-2",
+    eventId: "event-1",
+    user: {
+      id: "00000000-0000-0000-0000-000000000002",
+      name: "Baruch Spinoza",
+      username: "spinoza",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    } as User,
+    status: "going",
+    updatedAt: "1 hour ago",
+    createdAt: "1 hour ago",
+  },
+  {
+    id: "rsvp-3",
+    eventId: "event-1",
+    user: {
+      id: "00000000-0000-0000-0000-000000000005",
+      name: "Friedrich Nietzsche",
+      username: "nietzsche",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+    } as User,
+    status: "maybe",
+    updatedAt: "2 hours ago",
+    createdAt: "2 hours ago",
+  },
+  {
+    id: "rsvp-4",
+    eventId: "event-2",
+    user: {
+      id: "00000000-0000-0000-0000-000000000004",
+      name: "Jean-Paul Sartre",
+      username: "sartre",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+    } as User,
+    status: "going",
+    updatedAt: "3 hours ago",
+    createdAt: "3 hours ago",
   },
 ];
 
