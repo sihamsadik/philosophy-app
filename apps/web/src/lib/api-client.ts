@@ -231,12 +231,108 @@ export class AgoraPhilosophyClient {
   }
 
   /**
+   * Philosophical Spaces & Community Circles
+   */
+  async getSpaces(category?: string): Promise<{ spaces: PhilosophicalSpace[] }> {
+    try {
+      const query = category ? `?category=${encodeURIComponent(category)}` : "";
+      return await this.request<{ spaces: PhilosophicalSpace[] }>(`/spaces${query}`);
+    } catch {
+      const filtered = category && category !== "all"
+        ? DEMO_SPACES.filter((s) => s.category === category)
+        : DEMO_SPACES;
+      return { spaces: filtered };
+    }
+  }
+
+  async getSpace(spaceId: string): Promise<{ space: PhilosophicalSpace }> {
+    try {
+      return await this.request<{ space: PhilosophicalSpace }>(`/spaces/${spaceId}`);
+    } catch {
+      const space = DEMO_SPACES.find((s) => s.id === spaceId) || DEMO_SPACES[0]!;
+      return { space };
+    }
+  }
+
+  async joinSpace(spaceId: string): Promise<{ success: boolean; space: PhilosophicalSpace }> {
+    try {
+      return await this.request<{ success: boolean; space: PhilosophicalSpace }>(`/spaces/${spaceId}/join`, {
+        method: "POST",
+      });
+    } catch {
+      const space = DEMO_SPACES.find((s) => s.id === spaceId);
+      if (space) {
+        if (!space.isJoined) {
+          space.isJoined = true;
+          space.membersCount += 1;
+        }
+        return { success: true, space };
+      }
+      return { success: false, space: DEMO_SPACES[0]! };
+    }
+  }
+
+  async leaveSpace(spaceId: string): Promise<{ success: boolean; space: PhilosophicalSpace }> {
+    try {
+      return await this.request<{ success: boolean; space: PhilosophicalSpace }>(`/spaces/${spaceId}/leave`, {
+        method: "POST",
+      });
+    } catch {
+      const space = DEMO_SPACES.find((s) => s.id === spaceId);
+      if (space) {
+        if (space.isJoined) {
+          space.isJoined = false;
+          space.membersCount = Math.max(0, space.membersCount - 1);
+        }
+        return { success: true, space };
+      }
+      return { success: false, space: DEMO_SPACES[0]! };
+    }
+  }
+
+  async createSpace(spaceData: {
+    name: string;
+    description: string;
+    category?: "school" | "thinker" | "domain" | "general";
+    primarySchool?: string;
+    keyThinkers?: string[];
+  }): Promise<PhilosophicalSpace> {
+    try {
+      return await this.request<PhilosophicalSpace>("/spaces", {
+        method: "POST",
+        body: JSON.stringify(spaceData),
+      });
+    } catch {
+      const newSpace: PhilosophicalSpace = {
+        id: `space-${Date.now()}`,
+        name: spaceData.name,
+        slug: spaceData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        description: spaceData.description,
+        category: spaceData.category || "school",
+        primarySchool: spaceData.primarySchool || "General Philosophy",
+        keyThinkers: spaceData.keyThinkers || [],
+        avatarImage: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=200&q=80",
+        membersCount: 1,
+        postsCount: 0,
+        isJoined: true,
+        createdAt: "Just now",
+      };
+      DEMO_SPACES.unshift(newSpace);
+      return newSpace;
+    }
+  }
+
+  /**
    * POST /v7/:projectId/spaces/seed-philosophy
    */
-  async seedPhilosophySpaces(): Promise<{ count: number; created: any[] }> {
-    return this.request<{ count: number; created: any[] }>("/spaces/seed-philosophy", {
-      method: "POST",
-    });
+  async seedPhilosophySpaces(): Promise<{ count: number; created: PhilosophicalSpace[] }> {
+    try {
+      return await this.request<{ count: number; created: PhilosophicalSpace[] }>("/spaces/seed-philosophy", {
+        method: "POST",
+      });
+    } catch {
+      return { count: DEMO_SPACES.length, created: DEMO_SPACES };
+    }
   }
 
   /**
@@ -462,6 +558,22 @@ export interface DirectConversation {
   unreadCount?: number;
 }
 
+export interface PhilosophicalSpace {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  category: "school" | "thinker" | "domain" | "general";
+  primarySchool?: string;
+  keyThinkers?: string[];
+  bannerImage?: string;
+  avatarImage?: string;
+  membersCount: number;
+  postsCount: number;
+  isJoined?: boolean;
+  createdAt: string;
+}
+
 export interface PhilosophicalPost {
   id: string;
   title: string;
@@ -473,6 +585,8 @@ export interface PhilosophicalPost {
   postType: "argument" | "thought_experiment" | "question" | "essay" | "thesis";
   primarySchool?: string;
   keyThinkers?: string[];
+  spaceId?: string;
+  spaceName?: string;
   upvotesCount: number;
   commentsCount: number;
   createdAt: string;
@@ -736,6 +850,84 @@ const DEMO_COMMENTS: PhilosophicalComment[] = [
     stance: "thesis",
     upvotesCount: 17,
     createdAt: "1 hour ago",
+  },
+];
+
+const DEMO_SPACES: PhilosophicalSpace[] = [
+  {
+    id: "space-existentialism",
+    name: "Existentialist Guild & Freedom Forum",
+    slug: "existentialist-guild",
+    description: "Exploring radical freedom, anguish, existence preceding essence, and authentic choice without transcendent blueprints.",
+    category: "school",
+    primarySchool: "Existentialism",
+    keyThinkers: ["Jean-Paul Sartre", "Simone de Beauvoir", "Albert Camus", "Friedrich Nietzsche"],
+    avatarImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+    bannerImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80",
+    membersCount: 1420,
+    postsCount: 89,
+    isJoined: true,
+    createdAt: "1 month ago",
+  },
+  {
+    id: "space-stoicism",
+    name: "Stoicism & Virtue Ethics Guild",
+    slug: "stoicism-guild",
+    description: "Practicing the dichotomy of control, eudaimonia, tranquility (ataraxia), and living in accordance with Nature.",
+    category: "school",
+    primarySchool: "Stoicism",
+    keyThinkers: ["Marcus Aurelius", "Epictetus", "Seneca"],
+    avatarImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    bannerImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1000&q=80",
+    membersCount: 2150,
+    postsCount: 134,
+    isJoined: false,
+    createdAt: "2 months ago",
+  },
+  {
+    id: "space-rationalism",
+    name: "Spinozan Monism & Rationalism Hub",
+    slug: "spinoza-rationalism-hub",
+    description: "Substance monism, geometric proofs of ethics, intellectual love of God/Nature (Deus sive Natura), and necessary truth.",
+    category: "thinker",
+    primarySchool: "Rationalism",
+    keyThinkers: ["Baruch Spinoza", "René Descartes", "G.W. Leibniz"],
+    avatarImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+    bannerImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80",
+    membersCount: 870,
+    postsCount: 45,
+    isJoined: false,
+    createdAt: "3 weeks ago",
+  },
+  {
+    id: "space-mind",
+    name: "Philosophy of Mind & Consciousness Circle",
+    slug: "philosophy-of-mind",
+    description: "Addressing the hard problem of consciousness, physicalism vs dualism, qualia, and artificial intelligence agency.",
+    category: "domain",
+    primarySchool: "Philosophy of Mind",
+    keyThinkers: ["Thomas Nagel", "David Chalmers", "Daniel Dennett"],
+    avatarImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    bannerImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80",
+    membersCount: 1120,
+    postsCount: 62,
+    isJoined: true,
+    createdAt: "1 month ago",
+  },
+  {
+    id: "space-absurdism",
+    name: "Absurdist Revolt & Sisyphus Syndicate",
+    slug: "absurdist-revolt",
+    description: "Living passionately in the face of the absurd without philosophical suicide or theological escape.",
+    category: "school",
+    primarySchool: "Absurdism",
+    keyThinkers: ["Albert Camus", "Søren Kierkegaard"],
+    avatarImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+    bannerImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80",
+    membersCount: 960,
+    postsCount: 53,
+    isJoined: false,
+    createdAt: "2 weeks ago",
   },
 ];
 

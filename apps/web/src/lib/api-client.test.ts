@@ -64,4 +64,27 @@ describe("AgoraPhilosophyClient", () => {
 
     fetchSpy.mockRestore();
   });
+
+  it("fetches demo spaces and handles joining/leaving in fallback mode", async () => {
+    const client = new AgoraPhilosophyClient();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
+
+    const { spaces } = await client.getSpaces("school");
+    expect(spaces.length).toBeGreaterThan(0);
+    const targetSpace = spaces[0];
+    expect(targetSpace?.name).toBeDefined();
+
+    if (targetSpace) {
+      const initialCount = targetSpace.membersCount;
+      const joinRes = await client.joinSpace(targetSpace.id);
+      expect(joinRes.success).toBe(true);
+      expect(joinRes.space.isJoined).toBe(true);
+
+      const leaveRes = await client.leaveSpace(targetSpace.id);
+      expect(leaveRes.success).toBe(true);
+      expect(leaveRes.space.isJoined).toBe(false);
+    }
+
+    fetchSpy.mockRestore();
+  });
 });
