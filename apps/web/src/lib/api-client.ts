@@ -363,6 +363,85 @@ export class AgoraPhilosophyClient {
       return newPost;
     }
   }
+
+  /**
+   * Philosophical Comments & Nested Debate Threads
+   */
+  async getComments(entityId: string): Promise<{ comments: PhilosophicalComment[] }> {
+    try {
+      return await this.request<{ comments: PhilosophicalComment[] }>(`/entities/${entityId}/comments`);
+    } catch {
+      const postComments = DEMO_COMMENTS.filter((c) => c.entityId === entityId);
+      return { comments: postComments };
+    }
+  }
+
+  async createComment(
+    entityId: string,
+    content: string,
+    parentId?: string | null,
+    stance?: "thesis" | "antithesis" | "synthesis",
+    authorData?: { authorName?: string; authorHandle?: string; authorAvatar?: string }
+  ): Promise<PhilosophicalComment> {
+    try {
+      return await this.request<PhilosophicalComment>(`/entities/${entityId}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ content, parentId, stance }),
+      });
+    } catch {
+      const newComment: PhilosophicalComment = {
+        id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        entityId,
+        authorId: "00000000-0000-0000-0000-000000000001",
+        authorName: authorData?.authorName || "Jean-Paul Sartre",
+        authorHandle: authorData?.authorHandle || "sartre",
+        authorAvatar: authorData?.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        content,
+        parentId: parentId || null,
+        stance: stance || "synthesis",
+        upvotesCount: 0,
+        createdAt: "Just now",
+      };
+      DEMO_COMMENTS.push(newComment);
+
+      const post = DEMO_POSTS.find((p) => p.id === entityId);
+      if (post) {
+        post.commentsCount += 1;
+      }
+
+      return newComment;
+    }
+  }
+
+  async upvoteComment(commentId: string): Promise<{ success: boolean; upvotesCount: number }> {
+    try {
+      return await this.request<{ success: boolean; upvotesCount: number }>(`/comments/${commentId}/upvote`, {
+        method: "POST",
+      });
+    } catch {
+      const comment = DEMO_COMMENTS.find((c) => c.id === commentId);
+      if (comment) {
+        comment.upvotesCount += 1;
+        return { success: true, upvotesCount: comment.upvotesCount };
+      }
+      return { success: true, upvotesCount: 1 };
+    }
+  }
+}
+
+export interface PhilosophicalComment {
+  id: string;
+  entityId: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatar?: string;
+  content: string;
+  parentId?: string | null;
+  stance?: "thesis" | "antithesis" | "synthesis";
+  upvotesCount: number;
+  createdAt: string;
+  replies?: PhilosophicalComment[];
 }
 
 export interface ChatMessage {
@@ -508,6 +587,155 @@ const DEMO_POSTS: PhilosophicalPost[] = [
     upvotesCount: 67,
     commentsCount: 19,
     createdAt: "1 day ago",
+  },
+];
+
+const DEMO_COMMENTS: PhilosophicalComment[] = [
+  // --- Comments for Post 1: Determinism vs Compatibilism ---
+  {
+    id: "comment-det-1",
+    entityId: "00000000-0000-0000-0000-000000000001",
+    authorId: "00000000-0000-0000-0000-000000000004",
+    authorName: "Immanuel Kant",
+    authorHandle: "kant",
+    authorAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+    content: "Compatibilism saves moral responsibility. While our physical actions are determined in the phenomenal realm of space and time, the noumenal self remains transcendentally free to obey the categorical imperative.",
+    parentId: null,
+    stance: "thesis",
+    upvotesCount: 18,
+    createdAt: "2 hours ago",
+  },
+  {
+    id: "comment-det-1-1",
+    entityId: "00000000-0000-0000-0000-000000000001",
+    authorId: "00000000-0000-0000-0000-000000000005",
+    authorName: "Friedrich Nietzsche",
+    authorHandle: "nietzsche",
+    authorAvatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+    content: "The 'noumenal self' is merely a metaphysical fantasy constructed to preserve moral guilt! Free will is the greatest logical trick theologians ever concocted to hold humanity accountable for forces outside their power.",
+    parentId: "comment-det-1",
+    stance: "antithesis",
+    upvotesCount: 25,
+    createdAt: "1 hour ago",
+  },
+  {
+    id: "comment-det-1-1-1",
+    entityId: "00000000-0000-0000-0000-000000000001",
+    authorId: "00000000-0000-0000-0000-000000000006",
+    authorName: "G.W.F. Hegel",
+    authorHandle: "hegel",
+    authorAvatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80",
+    content: "Freedom is neither abstract indeterminism nor brute fatalism; true freedom is synthesized when individual volition recognizes itself within the rational evolution of ethical life (Sittlichkeit) and law.",
+    parentId: "comment-det-1-1",
+    stance: "synthesis",
+    upvotesCount: 14,
+    createdAt: "45 minutes ago",
+  },
+  {
+    id: "comment-det-2",
+    entityId: "00000000-0000-0000-0000-000000000001",
+    authorId: "00000000-0000-0000-0000-000000000002",
+    authorName: "Baruch Spinoza",
+    authorHandle: "spinoza",
+    authorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    content: "Humans believe themselves free simply because they are conscious of their appetites and ignorant of the causes by which they are determined. A stone thrown into the air, if endowed with consciousness, would believe it flies by pure willpower.",
+    parentId: null,
+    stance: "antithesis",
+    upvotesCount: 31,
+    createdAt: "2 hours ago",
+  },
+  {
+    id: "comment-det-2-1",
+    entityId: "00000000-0000-0000-0000-000000000001",
+    authorId: "00000000-0000-0000-0000-000000000007",
+    authorName: "Daniel Dennett",
+    authorHandle: "dennett",
+    authorAvatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80",
+    content: "The variety of free will worth wanting is not immunity from physical causation, but the evolved cognitive capacity for foresight, self-monitoring, and moral deliberation within a deterministic framework.",
+    parentId: "comment-det-2",
+    stance: "synthesis",
+    upvotesCount: 16,
+    createdAt: "1 hour ago",
+  },
+  {
+    id: "comment-det-3",
+    entityId: "00000000-0000-0000-0000-000000000001",
+    authorId: "00000000-0000-0000-0000-000000000008",
+    authorName: "Thomas Hobbes",
+    authorHandle: "hobbes",
+    authorAvatar: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&w=200&q=80",
+    content: "Liberty is simply the absence of external physical impediments. So long as a person is not chained or physically hindered, their voluntary action remains free, regardless of antecedent causes.",
+    parentId: null,
+    stance: "thesis",
+    upvotesCount: 12,
+    createdAt: "1 hour ago",
+  },
+
+  // --- Comments for Post 2: The Myth of Sisyphus ---
+  {
+    id: "comment-sis-1",
+    entityId: "00000000-0000-0000-0000-000000000002",
+    authorId: "00000000-0000-0000-0000-000000000003",
+    authorName: "Albert Camus",
+    authorHandle: "camus",
+    authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+    content: "The absurdity of existence lies in the tension between human desire for clarity and the silent universe. Pushing the boulder with full lucidity is Sisyphus's ultimate victory.",
+    parentId: null,
+    stance: "thesis",
+    upvotesCount: 40,
+    createdAt: "4 hours ago",
+  },
+  {
+    id: "comment-sis-1-1",
+    entityId: "00000000-0000-0000-0000-000000000002",
+    authorId: "00000000-0000-0000-0000-000000000009",
+    authorName: "Søren Kierkegaard",
+    authorHandle: "kierkegaard",
+    authorAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
+    content: "Without a leap of faith into the paradox of God, Sisyphus remains in aesthetic despair. Defiant endurance cannot replace spiritual salvation.",
+    parentId: "comment-sis-1",
+    stance: "antithesis",
+    upvotesCount: 22,
+    createdAt: "3 hours ago",
+  },
+  {
+    id: "comment-sis-1-1-1",
+    entityId: "00000000-0000-0000-0000-000000000002",
+    authorId: "00000000-0000-0000-0000-000000000001",
+    authorName: "Jean-Paul Sartre",
+    authorHandle: "sartre",
+    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    content: "Whether through absurd revolt or existential commitment, essence is preceded by existence. We are condemned to invent our own values without divine blueprints.",
+    parentId: "comment-sis-1-1",
+    stance: "synthesis",
+    upvotesCount: 19,
+    createdAt: "2 hours ago",
+  },
+  {
+    id: "comment-sis-2",
+    entityId: "00000000-0000-0000-0000-000000000002",
+    authorId: "00000000-0000-0000-0000-000000000010",
+    authorName: "Arthur Schopenhauer",
+    authorHandle: "schopenhauer",
+    authorAvatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80",
+    content: "Sisyphus is the perfect archetype of the blind Will to Live—endlessly striving, suffering, and rolling the stone only to watch it fall again. Joy is a fleeting illusion between moments of suffering.",
+    parentId: null,
+    stance: "antithesis",
+    upvotesCount: 28,
+    createdAt: "3 hours ago",
+  },
+  {
+    id: "comment-sis-2-1",
+    entityId: "00000000-0000-0000-0000-000000000002",
+    authorId: "00000000-0000-0000-0000-000000000011",
+    authorName: "Simone de Beauvoir",
+    authorHandle: "beauvoir",
+    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    content: "Striving is not futile when linked to the liberation of others. Sisyphus's labor acquires genuine ethical weight when grounded in shared human action and solidarity.",
+    parentId: "comment-sis-2",
+    stance: "thesis",
+    upvotesCount: 17,
+    createdAt: "1 hour ago",
   },
 ];
 

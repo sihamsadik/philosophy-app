@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User } from "@agora-server/contract";
 import type { PhilosophicalPost } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
+import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
 
 export interface PhilosophicalFeedProps {
   onOpenDebateSummary: (postId: string) => void;
@@ -17,6 +18,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
   const [posts, setPosts] = useState<PhilosophicalPost[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
   const [upvotedPostIds, setUpvotedPostIds] = useState<string[]>([]);
+  const [expandedCommentsPostIds, setExpandedCommentsPostIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +27,10 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
       try {
         const { posts: list } = await agoraClient.getPosts();
         setPosts(list);
+        // Expand comments by default for the first post so user immediately sees live debate tree
+        if (list.length > 0 && list[0]?.id) {
+          setExpandedCommentsPostIds([list[0].id]);
+        }
       } catch (err) {
         console.error("Failed to load posts:", err);
       } finally {
@@ -46,6 +52,12 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
           ? { ...p, upvotesCount: p.upvotesCount + (hasUpvoted ? -1 : 1) }
           : p
       )
+    );
+  };
+
+  const toggleCommentsSection = (postId: string) => {
+    setExpandedCommentsPostIds((prev) =>
+      prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]
     );
   };
 
@@ -93,6 +105,8 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
         <div className="posts-list-grid">
           {filteredPosts.map((post) => {
             const isUpvoted = upvotedPostIds.includes(post.id);
+            const isCommentsExpanded = expandedCommentsPostIds.includes(post.id);
+
             return (
               <div key={post.id} className="search-result-card post-feed-card">
                 {/* Author Bar */}
@@ -145,7 +159,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
 
                 {/* Post Footer & Actions */}
                 <div className="card-actions" style={{ justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
                       className={`upvote-btn ${isUpvoted ? "active" : ""}`}
@@ -153,12 +167,21 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                     >
                       ▲ {post.upvotesCount}
                     </button>
+
                     <button
                       type="button"
-                      className="action-btn"
+                      className={`action-btn ${isCommentsExpanded ? "active" : ""}`}
+                      onClick={() => toggleCommentsSection(post.id)}
+                    >
+                      💬 Debate Tree ({post.commentsCount})
+                    </button>
+
+                    <button
+                      type="button"
+                      className="ai-summary-trigger-btn"
                       onClick={() => onOpenDebateSummary(post.id)}
                     >
-                      🧠 AI Debate Summary ({post.commentsCount})
+                      🧠 AI Debate Summary
                     </button>
                   </div>
 
@@ -178,6 +201,14 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                     💬 Direct Message Author
                   </button>
                 </div>
+
+                {/* Embedded Philosophical Comments & Live Debate Tree */}
+                {isCommentsExpanded && (
+                  <PhilosophicalCommentsSection
+                    entityId={post.id}
+                    onOpenDebateSummary={onOpenDebateSummary}
+                  />
+                )}
               </div>
             );
           })}

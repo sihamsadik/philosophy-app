@@ -31,4 +31,37 @@ describe("AgoraPhilosophyClient", () => {
 
     fetchSpy.mockRestore();
   });
+
+  it("fetches demo comments when network request falls back", async () => {
+    const client = new AgoraPhilosophyClient();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
+
+    const res = await client.getComments("00000000-0000-0000-0000-000000000001");
+    expect(res.comments.length).toBeGreaterThan(0);
+    expect(res.comments[0]?.entityId).toBe("00000000-0000-0000-0000-000000000001");
+    expect(res.comments[0]?.stance).toBeDefined();
+
+    fetchSpy.mockRestore();
+  });
+
+  it("creates a new comment and handles upvoting in fallback mode", async () => {
+    const client = new AgoraPhilosophyClient();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
+
+    const newComment = await client.createComment(
+      "00000000-0000-0000-0000-000000000001",
+      "Determinism and free will are compatible under reflective equilibrium.",
+      null,
+      "synthesis"
+    );
+
+    expect(newComment.content).toBe("Determinism and free will are compatible under reflective equilibrium.");
+    expect(newComment.stance).toBe("synthesis");
+
+    const upvoteRes = await client.upvoteComment(newComment.id);
+    expect(upvoteRes.success).toBe(true);
+    expect(upvoteRes.upvotesCount).toBe(1);
+
+    fetchSpy.mockRestore();
+  });
 });
