@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import type { PhilosophicalPost } from "../lib/api-client.js";
+import React, { useState, useEffect } from "react";
+import type { PhilosophicalPost, PhilosophicalSpace } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 
 export interface PostComposerModalProps {
@@ -9,6 +9,7 @@ export interface PostComposerModalProps {
   authorName?: string;
   authorHandle?: string;
   authorAvatar?: string;
+  initialSpaceId?: string;
 }
 
 const POST_TYPES: { id: PhilosophicalPost["postType"]; label: string; icon: string }[] = [
@@ -26,14 +27,27 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
   authorName,
   authorHandle,
   authorAvatar,
+  initialSpaceId,
 }) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [postType, setPostType] = useState<PhilosophicalPost["postType"]>("argument");
   const [primarySchool, setPrimarySchool] = useState("");
   const [keyThinkersStr, setKeyThinkersStr] = useState("");
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>(initialSpaceId || "");
+  const [availableSpaces, setAvailableSpaces] = useState<PhilosophicalSpace[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialSpaceId) setSelectedSpaceId(initialSpaceId);
+      agoraClient
+        .getSpaces()
+        .then((res) => setAvailableSpaces(res.spaces))
+        .catch((err) => console.error("Failed to load spaces in composer:", err));
+    }
+  }, [isOpen, initialSpaceId]);
 
   if (!isOpen) return null;
 
@@ -49,23 +63,32 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const matchedSpace = availableSpaces.find((s) => s.id === selectedSpaceId);
+
     try {
       const createdPost = await agoraClient.createPost({
         title: title.trim(),
         content: content.trim(),
         postType,
-        primarySchool: primarySchool.trim() || "General Philosophy",
-        keyThinkers: keyThinkers.length > 0 ? keyThinkers : ["Various Thinkers"],
+        primarySchool: primarySchool.trim() || matchedSpace?.primarySchool || "General Philosophy",
+        keyThinkers: keyThinkers.length > 0 ? keyThinkers : matchedSpace?.keyThinkers || ["Various Thinkers"],
         authorName,
         authorHandle,
         authorAvatar,
       });
+
+      // Attach space metadata if selected
+      if (matchedSpace) {
+        createdPost.spaceId = matchedSpace.id;
+        createdPost.spaceName = matchedSpace.name;
+      }
 
       if (onPostPublished) onPostPublished(createdPost);
       setTitle("");
       setContent("");
       setPrimarySchool("");
       setKeyThinkersStr("");
+      setSelectedSpaceId("");
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to publish post");
@@ -137,6 +160,30 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
+          </div>
+
+          {/* Space Selector */}
+          <div className="form-group">
+            <label className="section-label">🏛️ Target Circle / Space (Optional)</label>
+            <select
+              className="input-text"
+              value={selectedSpaceId}
+              onChange={(e) => {
+                const spaceId = e.target.value;
+                setSelectedSpaceId(spaceId);
+                const matched = availableSpaces.find((s) => s.id === spaceId);
+                if (matched && matched.primarySchool) {
+                  setPrimarySchool(matched.primarySchool);
+                }
+              }}
+            >
+              <option value="">🌐 General Community Feed (No Specific Circle)</option>
+              {availableSpaces.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.primarySchool || s.category})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Taxonomy Details */}

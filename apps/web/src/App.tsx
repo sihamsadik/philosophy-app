@@ -11,12 +11,13 @@ import { DirectMessageDrawer } from "./components/DirectMessageDrawer.js";
 import { PostComposerModal } from "./components/PostComposerModal.js";
 import { PhilosophicalFeed } from "./components/PhilosophicalFeed.js";
 import { DebateThreadDrawer } from "./components/DebateThreadDrawer.js";
+import { SpacesHub } from "./components/SpacesHub.js";
 
-type NavTab = "profile" | "recommendations" | "search" | "debates";
+type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces";
 
 export const App: React.FC = () => {
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<NavTab>("recommendations");
+  const [activeTab, setActiveTab] = useState<NavTab>("spaces");
   const [activeDrawerEntityId, setActiveDrawerEntityId] = useState<string | null>(null);
   const [activeThreadPostId, setActiveThreadPostId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
   const [isDMDrawerOpen, setIsDMDrawerOpen] = useState(false);
   const [dmTargetUser, setDmTargetUser] = useState<User | null>(null);
   const [isPostComposerOpen, setIsPostComposerOpen] = useState(false);
+  const [composerSpaceId, setComposerSpaceId] = useState<string | undefined>(undefined);
 
   const handleOpenDM = (targetUser?: User | null) => {
     setDmTargetUser(targetUser || null);
@@ -45,6 +47,12 @@ export const App: React.FC = () => {
         </div>
 
         <div className="nav-tabs">
+          <button
+            className={`nav-tab-btn ${activeTab === "spaces" ? "active" : ""}`}
+            onClick={() => setActiveTab("spaces")}
+          >
+            🏛️ Spaces & Circles
+          </button>
           <button
             className={`nav-tab-btn ${activeTab === "recommendations" ? "active" : ""}`}
             onClick={() => setActiveTab("recommendations")}
@@ -158,6 +166,17 @@ export const App: React.FC = () => {
 
       {/* Tab Views */}
       <main className="app-main-content">
+        {activeTab === "spaces" && (
+          <SpacesHub
+            onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+            onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
+            onOpenComposerForSpace={(space) => {
+              setComposerSpaceId(space.id);
+              setIsPostComposerOpen(true);
+            }}
+          />
+        )}
+
         {activeTab === "recommendations" && (
           <PeopleRecommendationsFeed onOpenDM={(targetUser) => handleOpenDM(targetUser)} />
         )}
@@ -166,7 +185,10 @@ export const App: React.FC = () => {
           <PhilosophicalFeed
             onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
             onOpenDM={(authorUser) => handleOpenDM(authorUser)}
-            onOpenComposer={() => setIsPostComposerOpen(true)}
+            onOpenComposer={() => {
+              setComposerSpaceId(undefined);
+              setIsPostComposerOpen(true);
+            }}
             onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
           />
         )}
@@ -199,7 +221,11 @@ export const App: React.FC = () => {
       {/* Post Composer Modal */}
       <PostComposerModal
         isOpen={isPostComposerOpen}
-        onClose={() => setIsPostComposerOpen(false)}
+        onClose={() => {
+          setIsPostComposerOpen(false);
+          setComposerSpaceId(undefined);
+        }}
+        initialSpaceId={composerSpaceId}
         authorName={user?.name || user?.username || undefined}
         authorHandle={user?.username || undefined}
         authorAvatar={user?.avatar || undefined}
