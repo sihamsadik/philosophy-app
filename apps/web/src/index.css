@@ -1561,6 +1561,41 @@ body {
   text-align: center;
 }
 
+/* ==========================================
+   DebateThreadDrawer Specific Overlay Styles
+   ========================================== */
+.debate-thread-drawer-pane {
+  background: #0f131f;
+  border: 1px solid var(--border-glow);
+  border-radius: 20px;
+  width: 95%;
+  max-width: 1040px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.8);
+  animation: scaleIn 0.25 ease-out;
+  overflow: hidden;
+}
+
+.drawer-toolbar-bar {
+  padding: 12px 24px;
+  background: rgba(10, 15, 26, 0.7);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.debate-thread-drawer-pane .drawer-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+
 
 
 

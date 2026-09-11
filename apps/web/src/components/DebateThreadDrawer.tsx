@@ -1,0 +1,490 @@
+import React, { useState, useEffect } from "react";
+import type { PhilosophicalComment } from "../lib/api-client.js";
+import { agoraClient } from "../lib/api-client.js";
+
+export interface DebateThreadDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  postId: string | null;
+  postTitle?: string;
+  onOpenDebateSummary?: (postId: string) => void;
+}
+
+export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
+  isOpen,
+  onClose,
+  postId,
+  postTitle,
+  onOpenDebateSummary,
+}) => {
+  const [comments, setComments] = useState<PhilosophicalComment[]>([]);
+  const [viewMode, setViewMode] = useState<"nested" | "split">("nested");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Top Comment Form State
+  const [topCommentText, setTopCommentText] = useState("");
+  const [topCommentStance, setTopCommentStance] = useState<"thesis" | "antithesis" | "synthesis">("thesis");
+
+  // Inline Reply Form State
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replyStance, setReplyStance] = useState<"thesis" | "antithesis" | "synthesis">("antithesis");
+
+  // Upvoted Comments & Collapsed Threads
+  const [upvotedCommentIds, setUpvotedCommentIds] = useState<string[]>([]);
+  const [collapsedIds, setCollapsedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isOpen && postId) {
+      setIsLoading(true);
+      agoraClient
+        .getComments(postId)
+        .then((res) => setComments(res.comments))
+        .catch((err) => console.error("Failed to load drawer comments:", err))
+        .finally(() => setIsLoading(false));
+    }
+  }, [isOpen, postId]);
+
+  if (!isOpen || !postId) return null;
+
+  const handleCreateTopComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topCommentText.trim()) return;
+
+    try {
+      const created = await agoraClient.createComment(postId, topCommentText, null, topCommentStance);
+      setComments((prev) => [created, ...prev]);
+      setTopCommentText("");
+    } catch (err) {
+      console.error("Failed to post comment in drawer:", err);
+    }
+  };
+
+  const handleCreateReply = async (parentId: string) => {
+    if (!replyText.trim()) return;
+
+    try {
+      const created = await agoraClient.createComment(postId, replyText, parentId, replyStance);
+      setComments((prev) => [...prev, created]);
+      setReplyText("");
+      setReplyingToId(null);
+    } catch (err) {
+      console.error("Failed to post reply in drawer:", err);
+    }
+  };
+
+  const handleUpvoteComment = async (commentId: string) => {
+    const hasUpvoted = upvotedCommentIds.includes(commentId);
+    setUpvotedCommentIds((prev) =>
+      hasUpvoted ? prev.filter((id) => id !== commentId) : [...prev, commentId]
+    );
+
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === commentId
+          ? { ...c, upvotesCount: c.upvotesCount + (hasUpvoted ? -1 : 1) }
+          : c
+      )
+    );
+
+    try {
+      await agoraClient.upvoteComment(commentId);
+    } catch (err) {
+      console.error("Upvote failed:", err);
+    }
+  };
+
+  const toggleCollapse = (id: string) => {
+    setCollapsedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  // Build recursive comment tree
+  const buildCommentTree = (flatComments: PhilosophicalComment[]) => {
+    const map = new Map<string, PhilosophicalComment & { replies: PhilosophicalComment[] }>();
+    const roots: (PhilosophicalComment & { replies: PhilosophicalComment[] })[] = [];
+
+    flatComments.forEach((c) => {
+      map.set(c.id, { ...c, replies: [] });
+    });
+
+    flatComments.forEach((c) => {
+      const node = map.get(c.id);
+      if (!node) return;
+
+      if (c.parentId && map.has(c.parentId)) {
+        map.get(c.parentId)!.replies.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    return roots;
+  };
+
+  const stanceBadge = (stance?: "thesis" | "antithesis" | "synthesis") => {
+    switch (stance) {
+      case "thesis":
+        return <span className="stance-badge thesis">🟢 Thesis</span>;
+      case "antithesis":
+        return <span className="stance-badge antithesis">🔴 Antithesis</span>;
+      case "synthesis":
+      default:
+        return <span className="stance-badge synthesis">⚪ Synthesis</span>;
+    }
+  };
+
+  // Recursive Comment Item renderer
+  const renderRecursiveCommentItem = (comment: PhilosophicalComment, depth = 0) => {
+    const isCollapsed = collapsedIds.includes(comment.id);
+    const isReplying = replyingToId === comment.id;
+    const isUpvoted = upvotedCommentIds.includes(comment.id);
+    const childReplies = comment.replies || [];
+
+    return (
+      <div
+        key={comment.id}
+        className={`comment-thread-node stance-${comment.stance || "synthesis"}`}
+        style={{ marginLeft: depth > 0 ? `${Math.min(depth * 18, 72)}px` : 0 }}
+      >
+        <div className="comment-card">
+          <div className="comment-header-row">
+            <div className="author-identity">
+              {comment.authorAvatar ? (
+                <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" />
+              ) : (
+                <div className="author-avatar-circle-sm">
+                  {comment.authorName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="author-text-info">
+                <span className="author-name-text">{comment.authorName}</span>
+                <span className="author-handle-text">@{comment.authorHandle}</span>
+              </div>
+            </div>
+
+            <div className="comment-meta-right">
+              {stanceBadge(comment.stance)}
+              <span className="comment-timestamp">{comment.createdAt}</span>
+            </div>
+          </div>
+
+          <p className="comment-content-body">{comment.content}</p>
+
+          <div className="comment-actions-bar">
+            <button
+              type="button"
+              className={`upvote-btn-sm ${isUpvoted ? "active" : ""}`}
+              onClick={() => handleUpvoteComment(comment.id)}
+            >
+              ▲ {comment.upvotesCount}
+            </button>
+
+            <button
+              type="button"
+              className="reply-action-btn"
+              onClick={() => {
+                if (isReplying) {
+                  setReplyingToId(null);
+                } else {
+                  setReplyingToId(comment.id);
+                  setReplyStance(
+                    comment.stance === "thesis"
+                      ? "antithesis"
+                      : comment.stance === "antithesis"
+                      ? "synthesis"
+                      : "thesis"
+                  );
+                }
+              }}
+            >
+              💬 {isReplying ? "Cancel Reply" : "Reply"}
+            </button>
+
+            {childReplies.length > 0 && (
+              <button
+                type="button"
+                className="collapse-thread-btn"
+                onClick={() => toggleCollapse(comment.id)}
+              >
+                {isCollapsed ? `▶ Expand (${childReplies.length} replies)` : `▼ Collapse`}
+              </button>
+            )}
+          </div>
+
+          {/* Nested Reply Input */}
+          {isReplying && (
+            <div className="inline-reply-box">
+              <div className="stance-selector-row">
+                <span className="selector-label">Reply Stance:</span>
+                <button
+                  type="button"
+                  className={`stance-btn thesis ${replyStance === "thesis" ? "selected" : ""}`}
+                  onClick={() => setReplyStance("thesis")}
+                >
+                  🟢 Thesis
+                </button>
+                <button
+                  type="button"
+                  className={`stance-btn antithesis ${replyStance === "antithesis" ? "selected" : ""}`}
+                  onClick={() => setReplyStance("antithesis")}
+                >
+                  🔴 Antithesis
+                </button>
+                <button
+                  type="button"
+                  className={`stance-btn synthesis ${replyStance === "synthesis" ? "selected" : ""}`}
+                  onClick={() => setReplyStance("synthesis")}
+                >
+                  ⚪ Synthesis
+                </button>
+              </div>
+
+              <textarea
+                className="input-textarea reply-textarea"
+                rows={2}
+                placeholder={`Replying to @${comment.authorHandle}...`}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+              />
+
+              <div className="reply-submit-row">
+                <button
+                  type="button"
+                  className="connect-btn"
+                  onClick={() => handleCreateReply(comment.id)}
+                >
+                  Publish Reply
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Recursive Sub-Threads */}
+        {!isCollapsed && childReplies.length > 0 && (
+          <div className="nested-replies-container">
+            {childReplies.map((child) => renderRecursiveCommentItem(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const commentRoots = buildCommentTree(comments);
+  const thesisComments = comments.filter((c) => c.stance === "thesis");
+  const antithesisComments = comments.filter((c) => c.stance === "antithesis");
+  const synthesisComments = comments.filter((c) => !c.stance || c.stance === "synthesis");
+
+  return (
+    <div className="drawer-overlay" onClick={onClose}>
+      <div className="drawer-content-pane debate-thread-drawer-pane" onClick={(e) => e.stopPropagation()}>
+        {/* Drawer Header */}
+        <div className="drawer-header">
+          <div>
+            <h3>💬 Live Philosophical Debate Tree</h3>
+            <p className="drawer-subtitle">
+              {postTitle ? `Debating: "${postTitle}"` : "Interactive Comment Tree & Split View"}
+            </p>
+          </div>
+          <button type="button" className="close-drawer-btn" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        {/* Action Controls & View Switcher */}
+        <div className="drawer-toolbar-bar">
+          <div className="view-mode-toggle-group">
+            <button
+              type="button"
+              className={`toggle-mode-btn ${viewMode === "nested" ? "active" : ""}`}
+              onClick={() => setViewMode("nested")}
+            >
+              🌳 Nested Tree View
+            </button>
+            <button
+              type="button"
+              className={`toggle-mode-btn ${viewMode === "split" ? "active" : ""}`}
+              onClick={() => setViewMode("split")}
+            >
+              ⚔️ Side-by-Side Split View
+            </button>
+          </div>
+
+          {/* Launch DebateSummaryDrawer directly from thread drawer */}
+          {onOpenDebateSummary && (
+            <button
+              type="button"
+              className="ai-summary-trigger-btn"
+              onClick={() => {
+                onClose();
+                onOpenDebateSummary(postId);
+              }}
+            >
+              🧠 Launch AI Debate Summary
+            </button>
+          )}
+        </div>
+
+        {/* Drawer Content Body */}
+        <div className="drawer-body">
+          {/* Top Level Comment Creation Box */}
+          <form className="top-comment-form" onSubmit={handleCreateTopComment}>
+            <div className="stance-selector-row">
+              <span className="selector-label">Stance:</span>
+              <button
+                type="button"
+                className={`stance-btn thesis ${topCommentStance === "thesis" ? "selected" : ""}`}
+                onClick={() => setTopCommentStance("thesis")}
+              >
+                🟢 Thesis
+              </button>
+              <button
+                type="button"
+                className={`stance-btn antithesis ${topCommentStance === "antithesis" ? "selected" : ""}`}
+                onClick={() => setTopCommentStance("antithesis")}
+              >
+                🔴 Antithesis
+              </button>
+              <button
+                type="button"
+                className={`stance-btn synthesis ${topCommentStance === "synthesis" ? "selected" : ""}`}
+                onClick={() => setTopCommentStance("synthesis")}
+              >
+                ⚪ Synthesis
+              </button>
+            </div>
+
+            <textarea
+              className="input-textarea"
+              rows={2}
+              placeholder="Contribute your philosophical argument or rebuttal..."
+              value={topCommentText}
+              onChange={(e) => setTopCommentText(e.target.value)}
+            />
+
+            <div className="form-submit-row">
+              <button type="submit" className="connect-btn">
+                Post {topCommentStance.toUpperCase()}
+              </button>
+            </div>
+          </form>
+
+          {/* Comments Content: Nested Mode vs Split View Mode */}
+          {isLoading ? (
+            <div className="loading-state">Loading debate threads...</div>
+          ) : comments.length === 0 ? (
+            <div className="empty-state">No comments yet. Be the first to start the debate!</div>
+          ) : viewMode === "nested" ? (
+            /* NESTED TREE VIEW */
+            <div className="nested-tree-view">
+              {commentRoots.map((root) => renderRecursiveCommentItem(root, 0))}
+            </div>
+          ) : (
+            /* SIDE-BY-SIDE THESIS VS ANTITHESIS SPLIT VIEW */
+            <div className="split-view-container">
+              <div className="split-columns-wrapper">
+                {/* Thesis Column */}
+                <div className="split-column thesis-col">
+                  <div className="split-col-header thesis-header">
+                    <h4>🟢 Thesis / Proponents</h4>
+                    <span className="col-count-chip">{thesisComments.length}</span>
+                  </div>
+                  <div className="split-comments-list">
+                    {thesisComments.length === 0 ? (
+                      <div className="empty-column-text">No thesis arguments.</div>
+                    ) : (
+                      thesisComments.map((c) => (
+                        <div key={c.id} className="split-comment-card thesis-card">
+                          <div className="comment-header-row">
+                            <span className="author-name-text">{c.authorName}</span>
+                            <span className="comment-timestamp">{c.createdAt}</span>
+                          </div>
+                          <p className="comment-content-body">{c.content}</p>
+                          <div className="comment-actions-bar">
+                            <button
+                              type="button"
+                              className="upvote-btn-sm"
+                              onClick={() => handleUpvoteComment(c.id)}
+                            >
+                              ▲ {c.upvotesCount}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Antithesis Column */}
+                <div className="split-column antithesis-col">
+                  <div className="split-col-header antithesis-header">
+                    <h4>🔴 Antithesis / Rebuttals</h4>
+                    <span className="col-count-chip">{antithesisComments.length}</span>
+                  </div>
+                  <div className="split-comments-list">
+                    {antithesisComments.length === 0 ? (
+                      <div className="empty-column-text">No antithesis rebuttals.</div>
+                    ) : (
+                      antithesisComments.map((c) => (
+                        <div key={c.id} className="split-comment-card antithesis-card">
+                          <div className="comment-header-row">
+                            <span className="author-name-text">{c.authorName}</span>
+                            <span className="comment-timestamp">{c.createdAt}</span>
+                          </div>
+                          <p className="comment-content-body">{c.content}</p>
+                          <div className="comment-actions-bar">
+                            <button
+                              type="button"
+                              className="upvote-btn-sm"
+                              onClick={() => handleUpvoteComment(c.id)}
+                            >
+                              ▲ {c.upvotesCount}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Synthesis Panel */}
+              <div className="synthesis-panel">
+                <div className="split-col-header synthesis-header">
+                  <h4>⚪ Synthesis & Neutral Integrations</h4>
+                  <span className="col-count-chip">{synthesisComments.length}</span>
+                </div>
+                <div className="synthesis-grid">
+                  {synthesisComments.length === 0 ? (
+                    <div className="empty-column-text">No synthesis contributions.</div>
+                  ) : (
+                    synthesisComments.map((c) => (
+                      <div key={c.id} className="split-comment-card synthesis-card">
+                        <div className="comment-header-row">
+                          <span className="author-name-text">{c.authorName}</span>
+                          <span className="comment-timestamp">{c.createdAt}</span>
+                        </div>
+                        <p className="comment-content-body">{c.content}</p>
+                        <div className="comment-actions-bar">
+                          <button
+                            type="button"
+                            className="upvote-btn-sm"
+                            onClick={() => handleUpvoteComment(c.id)}
+                          >
+                            ▲ {c.upvotesCount}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

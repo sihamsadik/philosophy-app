@@ -8,12 +8,14 @@ export interface PhilosophicalFeedProps {
   onOpenDebateSummary: (postId: string) => void;
   onOpenDM: (authorUser: User) => void;
   onOpenComposer: () => void;
+  onOpenThreadDrawer?: (postId: string) => void;
 }
 
 export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
   onOpenDebateSummary,
   onOpenDM,
   onOpenComposer,
+  onOpenThreadDrawer,
 }) => {
   const [posts, setPosts] = useState<PhilosophicalPost[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
@@ -175,6 +177,16 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                     >
                       💬 Debate Tree ({post.commentsCount})
                     </button>
+
+                    {onOpenThreadDrawer && (
+                      <button
+                        type="button"
+                        className="action-btn"
+                        onClick={() => onOpenThreadDrawer(post.id)}
+                      >
+                        🔍 Open Thread Drawer
+                      </button>
+                    )}
 
                     <button
                       type="button"

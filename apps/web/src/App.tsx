@@ -10,6 +10,7 @@ import { UserSettingsModal } from "./components/UserSettingsModal.js";
 import { DirectMessageDrawer } from "./components/DirectMessageDrawer.js";
 import { PostComposerModal } from "./components/PostComposerModal.js";
 import { PhilosophicalFeed } from "./components/PhilosophicalFeed.js";
+import { DebateThreadDrawer } from "./components/DebateThreadDrawer.js";
 
 type NavTab = "profile" | "recommendations" | "search" | "debates";
 
@@ -17,6 +18,7 @@ export const App: React.FC = () => {
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>("recommendations");
   const [activeDrawerEntityId, setActiveDrawerEntityId] = useState<string | null>(null);
+  const [activeThreadPostId, setActiveThreadPostId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isUserMenuDropdownOpen, setIsUserMenuDropdownOpen] = useState(false);
@@ -165,6 +167,7 @@ export const App: React.FC = () => {
             onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
             onOpenDM={(authorUser) => handleOpenDM(authorUser)}
             onOpenComposer={() => setIsPostComposerOpen(true)}
+            onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
           />
         )}
 
@@ -215,6 +218,14 @@ export const App: React.FC = () => {
         entityId={activeDrawerEntityId || ""}
         isOpen={!!activeDrawerEntityId}
         onClose={() => setActiveDrawerEntityId(null)}
+      />
+
+      {/* Debate Thread Drawer Modal */}
+      <DebateThreadDrawer
+        isOpen={!!activeThreadPostId}
+        onClose={() => setActiveThreadPostId(null)}
+        postId={activeThreadPostId}
+        onOpenDebateSummary={(postId) => setActiveDrawerEntityId(postId)}
       />
     </div>
   );
