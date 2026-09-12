@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { User, PhilosophyProfile, ConnectionIntent } from "@agora-server/contract";
+import type { User, PhilosophyProfile, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 
 export interface UserSettingsModalProps {

@@ -1,8 +1,8 @@
 {
-  "name": "@agora-server/contract",
+  "name": "@philosophy/contract",
   "version": "0.23.0",
   "type": "module",
-  "description": "Shared Agora API contract — response-model types + zod request schemas (no hono/drizzle).",
+  "description": "Shared Philosophy Platform API contract — response-model types + zod request schemas.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

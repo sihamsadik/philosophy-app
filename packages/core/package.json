@@ -1,9 +1,9 @@
 {
-  "name": "@agora/core",
+  "name": "@philosophy/core",
   "version": "0.23.0",
   "private": true,
   "type": "module",
-  "description": "Shared Agora server kernel — env, logger, db client + schema, http envelope/context, auth/project middleware, validation, suspensions, redis. Consumed by @agora/api and @agora/secure-chat.",
+  "description": "Shared Philosophy App server kernel.",
   "license": "AGPL-3.0-only",
   "exports": {
     "./db": {
@@ -31,7 +31,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@agora-server/contract": "workspace:*",
+    "@philosophy/contract": "workspace:*",
     "@jenova-marie/wonder-logger": "^2.1.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.23",

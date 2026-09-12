@@ -5,7 +5,7 @@ import type {
   CompatibilityScore,
   DiscussionSummary,
   ConnectionIntent,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 
 export interface ApiClientOptions {
   baseUrl?: string;
@@ -34,7 +34,7 @@ export class AgoraPhilosophyClient {
     // Restore saved token from localStorage if available
     let storedToken = "";
     if (typeof window !== "undefined") {
-      storedToken = localStorage.getItem("agora_philosophy_token") || "";
+      storedToken = localStorage.getItem("philosophy_auth_token") || "";
     }
     this.authToken = options?.authToken || storedToken || "mock-auth-token";
   }
@@ -43,9 +43,9 @@ export class AgoraPhilosophyClient {
     this.authToken = token;
     if (typeof window !== "undefined") {
       if (token) {
-        localStorage.setItem("agora_philosophy_token", token);
+        localStorage.setItem("philosophy_auth_token", token);
       } else {
-        localStorage.removeItem("agora_philosophy_token");
+        localStorage.removeItem("philosophy_auth_token");
       }
     }
   }

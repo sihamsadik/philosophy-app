@@ -4,7 +4,7 @@
 import { z } from "zod";
 import { Errors } from "../http/errors.js";
 
-export * from "@agora-server/contract";
+export * from "@philosophy/contract";
 
 /** Validate a parsed JSON body; throw Errors.badRequest with the offending field.
  *  Schema Input is widened to `any` so `.transform()` schemas (field aliases / value remaps) are

@@ -280,3 +280,7 @@ export interface DiscussionSummary {
   unresolvedQuestions: string[];
   generatedAt: string;
 }
+
+export type PhilosophicalSpace = Space;
+export type PhilosophicalPost = Entity;
+

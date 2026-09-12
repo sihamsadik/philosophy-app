@@ -1,6 +1,6 @@
 // Shared Hono context variable types, set by middleware and read by handlers.
-// AuthContext lives in @agora-server/contract (shared with admin); re-exported here.
-import type { AuthContext, SpaceReputationDirective } from "@agora-server/contract";
+// AuthContext lives in @philosophy/contract (shared with admin); re-exported here.
+import type { AuthContext, SpaceReputationDirective } from "@philosophy/contract";
 export type { AuthContext };
 
 export type Variables = {

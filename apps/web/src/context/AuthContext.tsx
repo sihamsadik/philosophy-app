@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import type { User } from "@agora-server/contract";
+import type { User } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 
 export interface AuthContextType {

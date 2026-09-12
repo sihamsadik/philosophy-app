@@ -79,3 +79,8 @@ export interface Event {
 }
 export interface EventRsvp { id: string; eventId: string; userId: string; user?: unknown; status: RsvpStatus; createdAt: string; updatedAt: string }
 export interface EventInvite { id: string; eventId: string; userId: string; user?: unknown; invitedAt: string; createdAt: string; updatedAt: string }
+
+export type PhilosophyEvent = Event;
+export type EventRSVP = EventRsvp;
+export type RSVPStatus = RsvpStatus;
+

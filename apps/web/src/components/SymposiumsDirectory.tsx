@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { User } from "@agora-server/contract";
-import type { EventType, PhilosophyEvent, EventRSVP, RSVPStatus } from "../lib/api-client.js";
-import { agoraClient, DEMO_EVENTS, DEMO_RSVPS } from "../lib/api-client.js";
+import type { User } from "@philosophy/contract";
+import { agoraClient, DEMO_EVENTS, DEMO_RSVPS, type EventType, type PhilosophyEvent, type EventRSVP, type RSVPStatus } from "../lib/api-client.js";
 import { LiveEventJoinModal } from "./LiveEventJoinModal.js";
 
 export interface SymposiumsDirectoryProps {
@@ -17,7 +16,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
 }) => {
   const [events, setEvents] = useState<PhilosophyEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTypeTab, setActiveTypeTab] = useState<"all" | EventType>("all");
+  const [activeTypeTab, setActiveTypeTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEventForRoster, setSelectedEventForRoster] = useState<PhilosophyEvent | null>(null);
   const [selectedLiveEvent, setSelectedLiveEvent] = useState<PhilosophyEvent | null>(null);
@@ -29,7 +28,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
     try {
       setIsLoading(true);
       const res = await agoraClient.getEvents(
-        activeTypeTab !== "all" ? { type: activeTypeTab } : undefined
+        activeTypeTab !== "all" ? ({ type: activeTypeTab } as any) : undefined
       );
       setEvents(res.events);
     } catch (err) {
@@ -71,7 +70,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
     }
   };
 
-  const getEventTypeLabel = (type: EventType) => {
+  const getEventTypeLabel = (type: string) => {
     switch (type) {
       case "symposium":
         return { label: "🏛️ Symposium", colorClass: "badge-symposium" };

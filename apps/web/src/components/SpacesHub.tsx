@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { User } from "@agora-server/contract";
-import type { PhilosophicalSpace, PhilosophicalPost } from "../lib/api-client.js";
-import { agoraClient } from "../lib/api-client.js";
+import type { User } from "@philosophy/contract";
+import { agoraClient, type PhilosophicalSpace, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
 
 export interface SpacesHubProps {
