@@ -1,4 +1,4 @@
-import type { MuteDuration } from "@agora-server/contract";
+import type { MuteDuration } from "@philosophy/contract";
 
 const DELTA_MS: Record<Exclude<MuteDuration, "forever">, number> = {
   "8h": 8 * 60 * 60 * 1000,

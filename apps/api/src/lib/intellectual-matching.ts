@@ -1,4 +1,4 @@
-import type { User, CompatibilityScore } from "@agora-server/contract";
+import type { User, CompatibilityScore } from "@philosophy/contract";
 
 function normalizeStringList(list?: string[] | null): string[] {
   if (!Array.isArray(list)) return [];

@@ -10,7 +10,7 @@ import type { Driver } from "neo4j-driver";
 import { and, eq, inArray } from "drizzle-orm";
 import type {
   NeighborhoodTie, NeighborhoodTieKind, ResolvedSocialConfig, SocialNeighborhood,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 import { getDb } from "../db/index.js";
 import { profiles } from "../db/schema/index.js";
 import { getNeo4j, neo4jDatabase } from "./neo4j.js";

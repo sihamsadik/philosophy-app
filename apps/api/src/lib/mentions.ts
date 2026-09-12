@@ -1,7 +1,7 @@
 // Server-side mention handling. The `mentions[]` array arriving on entity/comment/message writes is
 // untrusted jsonb — parse it to well-formed tokens here, then validate ids against the DB in
 // sanitizeMentions (below) before storing / fanning out. See docs/superpowers/specs/2026-07-07-mentions-design.md.
-import type { Mention } from "@agora-server/contract";
+import type { Mention } from "@philosophy/contract";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "../db/index.js";
 import { profiles, spaces } from "../db/schema/index.js";
