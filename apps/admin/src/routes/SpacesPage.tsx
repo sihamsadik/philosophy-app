@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, Layers, Users } from "lucide-react";
-import type { PaginatedResponse } from "@agora-server/contract";
+import type { PaginatedResponse } from "@philosophy/contract";
 import { useAuth } from "../auth/AuthContext";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Badge } from "../components/ui/Badge";

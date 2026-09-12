@@ -12,7 +12,7 @@ import type {
   SocialSilos,
   SocialEngagement,
   SocialAnalyticsReport,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 import { api } from "./api";
 
 export type {
@@ -26,7 +26,7 @@ export type {
   EngagementMember,
   ChurnRiskBand,
   SocialAnalyticsReport,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 
 export const socialInfluenceKey = ["social-influence"] as const;
 export const socialSilosKey = ["social-silos"] as const;

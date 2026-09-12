@@ -2,7 +2,7 @@
 // basic settings via the existing GET/PATCH /v7/:projectId/spaces — reachable here because
 // requireSpaceRole folds in project admins/operators (see apps/api routes/spaces.ts). Hierarchy moves,
 // rules, and membership management are out of scope for this section.
-import type { PaginatedResponse } from "@agora-server/contract";
+import type { PaginatedResponse } from "@philosophy/contract";
 import { api } from "./api";
 
 export interface Space {

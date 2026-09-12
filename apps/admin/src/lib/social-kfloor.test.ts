@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { adaptiveConstellationFloor } from "@agora-server/contract";
+import { adaptiveConstellationFloor } from "@philosophy/contract";
 import { clampKFloor, KFLOOR_HARD_MIN, KFLOOR_MAX, ADAPTIVE_KFLOOR_TIERS } from "./social-kfloor.js";
 
 describe("clampKFloor", () => {

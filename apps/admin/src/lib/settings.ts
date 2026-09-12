@@ -5,12 +5,12 @@
 import {
   REACTION_TYPES, STEWARD_NOTIFY_POLICIES, STEWARD_MEDIATION_MODES, STEWARD_MEDIATION_ON_CLOSE,
   type StewardNotifyPolicy, type StewardMediationMode, type StewardMediationOnClose, type StewardConfigView,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 // Social-graph config types are the contract's — re-exported so downstream admin code keeps importing
 // them from here, but there's a single source of truth (adding a social_config field no longer needs a
 // matching hand-edit in this file).
-export type { ResolvedSocialConfig, SocialPrivacyTier, SocialConfigPatch, SocialConstellation } from "@agora-server/contract";
-import type { ResolvedSocialConfig, SocialConfigPatch, SocialConstellation } from "@agora-server/contract";
+export type { ResolvedSocialConfig, SocialPrivacyTier, SocialConfigPatch, SocialConstellation } from "@philosophy/contract";
+import type { ResolvedSocialConfig, SocialConfigPatch, SocialConstellation } from "@philosophy/contract";
 import { api } from "./api";
 
 // KNOWN_ALGORITHMS lives in the API's lib/ranking.ts (not the shared contract), so it's mirrored here.
