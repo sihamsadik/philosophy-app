@@ -4,7 +4,7 @@ import {
   B_FLOOR, AGE_CUTOFF_HALF_LIVES, type WarmthPair,
   computeWeather, getSocialWeather, invalidateSocialWeather, WEATHER_PAIRS_CYPHER,
 } from "./social-weather.js";
-import { SOCIAL_TIER_DEFAULTS } from "@agora-server/contract";
+import { SOCIAL_TIER_DEFAULTS } from "@philosophy/contract";
 
 // Formula (docs/AGORA-SOCIAL.md §11): S_w = W/(W+10); φ = F/(F+W+10);
 // B = 0.15 + 0.85·S_w·(1−0.5·φ). All expected values below are hand-computed from that.

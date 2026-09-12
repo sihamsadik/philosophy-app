@@ -2,7 +2,7 @@
 // middleware/space-rep.ts; covered handlers call enrichSpaceReputation on their payload before c.json.
 // This phase implements the `uuid` and `"none"` modes; `"context"` resolves to null (deferred).
 import type { Context } from "hono";
-import type { User, SpaceReputationDirective } from "@agora-server/contract";
+import type { User, SpaceReputationDirective } from "@philosophy/contract";
 import type { Variables } from "../http/context.js";
 import { loadSpaceReputations, validateSpaceReputationParams } from "./space-reputation.js";
 import { assertCanReadSpace } from "./space-access.js";

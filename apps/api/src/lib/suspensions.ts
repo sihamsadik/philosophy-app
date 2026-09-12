@@ -6,9 +6,9 @@ import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { getDb } from "../db/index.js";
 import { userSuspensions } from "../db/schema/index.js";
 import { revokeAllForProfile } from "./tokens.js";
-import { addSuspended, removeSuspended } from "@agora/core/lib/suspension-index";
+import { addSuspended, removeSuspended } from "@philosophy/core/lib/suspension-index";
 
-export { isActiveSuspension, hasActiveSuspension } from "@agora/core/lib/suspensions";
+export { isActiveSuspension, hasActiveSuspension } from "@philosophy/core/lib/suspensions";
 
 type SuspensionRow = typeof userSuspensions.$inferSelect;
 

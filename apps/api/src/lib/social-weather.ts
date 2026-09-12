@@ -7,7 +7,7 @@
 // drops long-dead edges so a dormant community reads "quiet", not "stormy". Per-space Weather is still
 // deferred (spaceId isn't in the graph yet).
 import type { Driver } from "neo4j-driver";
-import type { ResolvedSocialConfig, SocialWeather, WeatherBand } from "@agora-server/contract";
+import type { ResolvedSocialConfig, SocialWeather, WeatherBand } from "@philosophy/contract";
 import { getNeo4j, neo4jDatabase } from "./neo4j.js";
 
 // Design constants — locked by docs/AGORA-SOCIAL.md §11; deliberately NOT in social_config.

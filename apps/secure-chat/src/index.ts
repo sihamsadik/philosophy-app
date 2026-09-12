@@ -5,10 +5,10 @@
 import "dotenv/config"; // load .env before env.ts validates process.env
 import "./instrument.js"; // start OpenTelemetry BEFORE http/db/socket.io imports below (auto-instrumentation)
 import { serve } from "@hono/node-server";
-import { env } from "@agora/core/lib/env";
-import { logger } from "@agora/core/lib/logger";
-import { hydrateSuspensionIndex } from "@agora/core/lib/suspensions";
-import { loadBootModule } from "@agora/core/lib/boot";
+import { env } from "@philosophy/core/lib/env";
+import { logger } from "@philosophy/core/lib/logger";
+import { hydrateSuspensionIndex } from "@philosophy/core/lib/suspensions";
+import { loadBootModule } from "@philosophy/core/lib/boot";
 import { createSecureApp } from "./app.js";
 import { attachSecureRealtime } from "./realtime/secure-socket.js";
 

@@ -9,7 +9,7 @@
 import { and, eq, isNull, inArray, desc, count, countDistinct, ne, or } from "drizzle-orm";
 import { getDb } from "../db/index.js";
 import { spaces, spaceMembers, entities, readReceipts } from "../db/schema/index.js";
-import { readReceiptCoverage, type SocialReadReceipts, type ReceiptSpace } from "@agora-server/contract";
+import { readReceiptCoverage, type SocialReadReceipts, type ReceiptSpace } from "@philosophy/contract";
 
 // How many recent posts to report per space. Announcement spaces are low-volume; this caps the per-space
 // fan-out and keeps the payload bounded.
