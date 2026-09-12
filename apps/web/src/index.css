@@ -438,6 +438,9 @@ body {
 .auth-modal-pane {
   width: 480px;
   max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #0d1322;
   border-radius: 20px;
   padding: 32px;
@@ -4088,9 +4091,35 @@ body {
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
 }
 
+/* Auth Security & Password Confirmation Styles */
+.jwt-security-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
 
+.jwt-security-note span {
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.85);
+}
 
+.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
 
-
-
-
+.field-error-text {
+  display: block;
+  font-size: 0.78rem;
+  color: #ef4444;
+  font-weight: 600;
+  margin-top: 4px;
+}

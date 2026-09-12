@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.js";
 import type { User } from "@agora-server/contract";
 
@@ -19,13 +19,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   // Sign Up Form State
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
   const [signUpUsername, setSignUpUsername] = useState("");
   const [signUpName, setSignUpName] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Lock background page scroll when modal popup is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
 
   const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +60,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMsg(null);
+
+    // Password Confirmation & Security Validation
+    if (signUpPassword.length < 8) {
+      setErrorMsg("Password must be at least 8 characters long.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (signUpPassword !== signUpConfirmPassword) {
+      setErrorMsg("Passwords do not match. Please re-enter your password.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await register({
         email: signUpEmail,
@@ -174,6 +202,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               />
             </div>
 
+            <div className="jwt-security-note">
+              🔒 <span>Secured by JWT Token Session Authentication & Argon2 Password Hashing</span>
+            </div>
+
             <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
               {isSubmitting ? "Signing In..." : "Sign In to Agora"}
             </button>
@@ -220,10 +252,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             </div>
 
             <div className="form-group">
-              <label className="section-label">Password</label>
+              <label className="section-label">Password (Min. 8 characters)</label>
               <input
                 type="password"
                 required
+                minLength={8}
                 className="input-text"
                 placeholder="••••••••"
                 value={signUpPassword}
@@ -231,7 +264,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               />
             </div>
 
-            <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+            <div className="form-group">
+              <label className="section-label">Confirm Password</label>
+              <input
+                type="password"
+                required
+                minLength={8}
+                className={`input-text ${signUpConfirmPassword && signUpPassword !== signUpConfirmPassword ? "input-error" : ""}`}
+                placeholder="••••••••"
+                value={signUpConfirmPassword}
+                onChange={(e) => setSignUpConfirmPassword(e.target.value)}
+              />
+              {signUpConfirmPassword && signUpPassword !== signUpConfirmPassword && (
+                <span className="field-error-text">Passwords do not match</span>
+              )}
+            </div>
+
+            <div className="jwt-security-note">
+              🛡️ <span>JWT Signed Auth Session • Password Hashing with Argon2</span>
+            </div>
+
+            <button
+              type="submit"
+              className="auth-submit-btn"
+              disabled={isSubmitting || (!!signUpConfirmPassword && signUpPassword !== signUpConfirmPassword)}
+            >
               {isSubmitting ? "Creating Account..." : "Create Philosophical Account"}
             </button>
           </form>
@@ -268,3 +325,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     </div>
   );
 };
+
