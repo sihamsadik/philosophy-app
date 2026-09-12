@@ -8,7 +8,7 @@ import { getDb } from "../db/index.js";
 import { events, eventHosts, eventRsvps, eventInvites, spaceMembers, spaces, profiles } from "../db/schema/index.js";
 import { readPagination, paginate } from "../http/envelope.js";
 import { parseBody } from "../lib/validation.js";
-import { createEventSchema, updateEventSchema, rsvpSchema, eventUserIdSchema, eventTypeEnum, eventStatusEnum, rsvpStatusEnum } from "@agora-server/contract";
+import { createEventSchema, updateEventSchema, rsvpSchema, eventUserIdSchema, eventTypeEnum, eventStatusEnum, rsvpStatusEnum } from "@philosophy/contract";
 import { shapeEvent, shapeEventRsvp, shapeEventInvite, generateShortId, loadUsers, parseInclude } from "../lib/shape.js";
 import { isProjectAdmin } from "../lib/project-roles.js";
 import { removedPolicy, shouldHide } from "../lib/moderation-visibility.js";

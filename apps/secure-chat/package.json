@@ -1,9 +1,9 @@
 {
-  "name": "@agora/secure-chat",
+  "name": "@philosophy/secure-chat",
   "version": "0.23.0",
   "private": true,
   "type": "module",
-  "description": "Agora secure-chat — the blind MLS (E2E) Delivery Service, an independently-deployable service split from @agora/api. Shares the @agora/core kernel (db, env, logger, auth) + Postgres + Redis.",
+  "description": "Philosophy secure-chat — the blind MLS (E2E) Delivery Service, split from @philosophy/api. Shares the @philosophy/core kernel (db, env, logger, auth) + Postgres + Redis.",
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -17,8 +17,8 @@
     "db:purge:restore-blobs": "node scripts/purge-restore-blobs.mjs"
   },
   "dependencies": {
-    "@agora-server/contract": "workspace:*",
-    "@agora/core": "workspace:*",
+    "@philosophy/contract": "workspace:*",
+    "@philosophy/core": "workspace:*",
     "@hono/node-server": "^1.19.14",
     "@jenova-marie/wonder-logger": "^2.1.0",
     "dotenv": "^17.4.2",

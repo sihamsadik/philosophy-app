@@ -17,7 +17,7 @@ import {
 } from "../lib/validation.js";
 import { notifyOnSpaceApproved } from "../lib/notifications.js";
 import * as webhooks from "../lib/webhooks.js";
-import { isProjectAdmin } from "../lib/project-roles.js";
+import { isProjectAdmin, requireProjectAdmin } from "../lib/project-roles.js";
 import { spaceRepGate } from "../middleware/space-rep.js";
 import { enrichSpaceReputation } from "../lib/space-reputation-enrich.js";
 import { discoverableSpacesSql, assertSpaceVisible, assertSpaceVisibleById, spaceVisibleToViewer } from "../lib/space-visibility.js";
@@ -160,7 +160,7 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     return c.json(shaped, 201);
   })
   .post("/seed-philosophy", requireAuth, async (c) => {
-    await requireProjectAdmin(c);
+    requireProjectAdmin(c);
     const defaultSpaces = [
       {
         name: "Existentialism",
@@ -244,8 +244,8 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
             await getDb().insert(spaceRules).values({
               projectId: c.var.projectId,
               spaceId: row.id,
-              title: seed.rules[i].title,
-              description: seed.rules[i].description,
+              title: seed.rules[i]!.title,
+              description: seed.rules[i]!.description,
               order: i,
               lastApprovedBy: c.var.auth!.userId,
             });

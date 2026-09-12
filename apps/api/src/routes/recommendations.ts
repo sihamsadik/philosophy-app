@@ -7,16 +7,16 @@ import { getDb } from "../db/index.js";
 import { profiles } from "../db/schema/index.js";
 import { shapeUser } from "../lib/shape.js";
 import { calculateIntellectualCompatibility } from "../lib/intellectual-matching.js";
-import type { UserRecommendation, ConnectionIntent } from "@agora-server/contract";
+import type { UserRecommendation, ConnectionIntent, User } from "@philosophy/contract";
 
 export const recommendationRoutes = new Hono<{ Variables: Variables }>()
   .get("/people", requireAuth, async (c) => {
     const currentUserId = c.var.auth!.userId;
     const projectId = c.var.projectId;
 
-    const intentQuery = (c.req.query("connectionIntent") || c.req.query("intent")) as ConnectionIntent | undefined;
-    const schoolQuery = c.req.query("school")?.trim().toLowerCase();
-    const thinkerQuery = c.req.query("thinker")?.trim().toLowerCase();
+    const intentQuery = c.req.query("intent") as ConnectionIntent | undefined;
+    const schoolQuery = c.req.query("school")?.toLowerCase();
+    const thinkerQuery = c.req.query("thinker")?.toLowerCase();
     const limitQuery = parseInt(c.req.query("limit") ?? "10", 10);
     const limit = isNaN(limitQuery) ? 10 : Math.min(Math.max(limitQuery, 1), 50);
 
@@ -31,6 +31,9 @@ export const recommendationRoutes = new Hono<{ Variables: Variables }>()
     }
 
     const targetUser = shapeUser(targetRow);
+    if (!targetUser) {
+      throw Errors.notFound("users/not-found", "Target user profile not found");
+    }
 
     const candidateRows = await getDb()
       .select()
@@ -38,7 +41,7 @@ export const recommendationRoutes = new Hono<{ Variables: Variables }>()
       .where(and(eq(profiles.projectId, projectId), ne(profiles.id, currentUserId)))
       .limit(200);
 
-    let candidates = candidateRows.map(shapeUser);
+    let candidates = candidateRows.map(shapeUser).filter((u): u is User => u !== null);
 
     if (intentQuery) {
       candidates = candidates.filter((candidate) => {

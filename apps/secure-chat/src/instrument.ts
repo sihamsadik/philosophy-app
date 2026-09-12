@@ -10,8 +10,8 @@
 // Honors otel.enabled in the YAML + the standard OTEL_SDK_DISABLED env var. Shutdown (SIGTERM/SIGINT
 // → sdk.shutdown()) is auto-registered by wonder-logger.
 import { createTelemetryFromConfig } from "@jenova-marie/wonder-logger";
-import { wonderLoggerConfigPath } from "@agora/core/lib/wonder-logger-config";
-import { serviceVersion } from "@agora/core/lib/version";
+import { wonderLoggerConfigPath } from "@philosophy/core/lib/wonder-logger-config";
+import { serviceVersion } from "@philosophy/core/lib/version";
 
 // Default this process to a distinct service name BEFORE the YAML is read (here and, later in index.ts,
 // by the @agora/core logger — imported after this module). The shared core YAML defaults service.name to

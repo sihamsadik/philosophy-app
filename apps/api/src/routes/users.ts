@@ -82,6 +82,8 @@ export const userRoutes = new Hono<{ Variables: Variables }>()
 
     const authUser = shapeUser(authRow);
     const targetUser = shapeUser(targetRow);
+    if (!authUser || !targetUser) throw Errors.notFound("users/not-found", "User profile not found");
+
     const compatibility = calculateIntellectualCompatibility(authUser, targetUser);
 
     return c.json({

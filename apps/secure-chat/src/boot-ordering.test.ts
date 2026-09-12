@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { resetDbResolver, setDbResolver } from "@agora/core/db";
+import { resetDbResolver, setDbResolver } from "@philosophy/core/db";
 import { createSecureApp } from "./app.js";
 
 beforeEach(() => resetDbResolver());

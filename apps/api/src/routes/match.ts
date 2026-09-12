@@ -4,7 +4,7 @@ import { and, eq, ne } from "drizzle-orm";
 import type { Variables } from "../http/context.js";
 import { requireAuth } from "../middleware/auth.js";
 import { parseBody } from "../lib/validation.js";
-import { matchUsersSchema } from "@agora-server/contract";
+import { matchUsersSchema, type User } from "@philosophy/contract";
 import { getDb } from "../db/index.js";
 import { profiles } from "../db/schema/index.js";
 import { shapeUser } from "../lib/shape.js";
@@ -27,6 +27,7 @@ export const matchRoutes = new Hono<{ Variables: Variables }>()
     }
 
     const targetUser = shapeUser(targetRow);
+    if (!targetUser) return c.json({ results: [] });
 
     const candidateRows = await getDb()
       .select()
@@ -34,7 +35,7 @@ export const matchRoutes = new Hono<{ Variables: Variables }>()
       .where(and(eq(profiles.projectId, projectId), ne(profiles.id, currentUserId)))
       .limit(100);
 
-    const candidates = candidateRows.map(shapeUser);
+    const candidates = candidateRows.map(shapeUser).filter((u): u is User => u !== null);
 
     const results = candidates.map((candidate) => {
       const compatibility = calculateIntellectualCompatibility(targetUser, candidate);

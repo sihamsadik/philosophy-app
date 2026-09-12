@@ -18,7 +18,7 @@ import { getFeedConfig, invalidateFeedConfig, feedConfigView } from "../lib/feed
 import { getStewardConfig, invalidateStewardConfig, stewardConfigView } from "../lib/steward-config.js";
 import { safeFetchText } from "../lib/ssrf.js";
 import { parseBody, oauthAuthorizeSchema, signTestingJwtSchema, webhookConfigSchema, feedConfigSchema, moderatorConfigSchema, stewardConfigSchema, socialConfigSchema, forbiddenSocialKeys, resolveSocialConfig, resultingSocialTier, SOCIAL_PRIVACY_TIERS, DEFAULT_MODERATION_CATEGORIES } from "../lib/validation.js";
-import type { SocialPrivacyTier } from "@agora-server/contract";
+import type { SocialPrivacyTier } from "@philosophy/contract";
 import { invalidateSocialConfig, socialConfigView } from "../lib/social-config.js";
 import { invalidateSocialWeather } from "../lib/social-weather.js";
 import { isProjectAdmin, assertSettingsWritable } from "../lib/project-roles.js";

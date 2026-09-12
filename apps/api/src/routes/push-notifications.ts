@@ -7,7 +7,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
 import { pushDevices, pushNotificationPreferences } from "../db/schema/index.js";
 import { parseBody } from "../lib/validation.js";
-import { pushDeviceSchema, updateNotificationPreferencesSchema, type PushDeviceIdentifier } from "@agora-server/contract";
+import { pushDeviceSchema, updateNotificationPreferencesSchema, type PushDeviceIdentifier } from "@philosophy/contract";
 import { getVapidKeys } from "../lib/push/vapid.js";
 
 // Upsert: native dedupes on (project,user,platform,token); web on (project,user,endpoint).

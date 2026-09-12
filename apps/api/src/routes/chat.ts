@@ -2,7 +2,7 @@
 // REST writes fan out durable socket.io events (realtime/socket.ts) after the DB commit.
 import { Hono } from "hono";
 import { and, eq, desc, asc, count, inArray, gt, ne, sql } from "drizzle-orm";
-import { muteConversationSchema } from "@agora-server/contract";
+import { muteConversationSchema } from "@philosophy/contract";
 import type { Variables } from "../http/context.js";
 import { Errors } from "../http/errors.js";
 import { requireAuth } from "../middleware/auth.js";

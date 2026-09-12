@@ -6,16 +6,16 @@
 import crypto from "node:crypto";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
-import type { Variables } from "@agora/core/http/context";
-import { ApiError, Errors } from "@agora/core/http/errors";
-import { env } from "@agora/core/lib/env";
-import { logger } from "@agora/core/lib/logger";
-import { requestLog } from "@agora/core/middleware/request-log";
-import { resolveProject } from "@agora/core/middleware/project";
-import { hydrateSuspensionIndex } from "@agora/core/lib/suspensions";
-import { suspensionIndexReady } from "@agora/core/lib/suspension-index";
-import { getDb, isDbConnectionError } from "@agora/core/db";
-import { secureRestoreBlobs } from "@agora/core/db/schema";
+import type { Variables } from "@philosophy/core/http/context";
+import { ApiError, Errors } from "@philosophy/core/http/errors";
+import { env } from "@philosophy/core/lib/env";
+import { logger } from "@philosophy/core/lib/logger";
+import { requestLog } from "@philosophy/core/middleware/request-log";
+import { resolveProject } from "@philosophy/core/middleware/project";
+import { hydrateSuspensionIndex } from "@philosophy/core/lib/suspensions";
+import { suspensionIndexReady } from "@philosophy/core/lib/suspension-index";
+import { getDb, isDbConnectionError } from "@philosophy/core/db";
+import { secureRestoreBlobs } from "@philosophy/core/db/schema";
 import { lte } from "drizzle-orm";
 import { secureChatRoutes } from "./routes/secure-chat.js";
 

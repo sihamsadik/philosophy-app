@@ -19,7 +19,7 @@ import { markDeprecated } from "../http/deprecation.js";
 import { assertEntityInternetPublic, assertForeignIdInternetPublic, notFound } from "../lib/public-access.js";
 import { publicCacheControl } from "../lib/public-cache.js";
 import { shapeComment, shapeEntity, parseInclude, loadUsers, loadEntityFiles } from "../lib/shape.js";
-import type { User } from "@agora-server/contract";
+import type { User } from "@philosophy/contract";
 
 // Anonymous surface: least-privilege redaction — the internet gets username/name/avatar/bio,
 // never birthdate or the free-form profile metadata jsonb. Applied at every ?include=user site
