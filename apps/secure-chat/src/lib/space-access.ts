@@ -6,9 +6,9 @@
 // provider — or disable space-gated channels entirely — without touching the route handlers.
 // (See docs/SECURE_CHAT.md → v2 deferrals.)
 import { and, eq } from "drizzle-orm";
-import { getDb } from "@agora/core/db";
-import { spaces, spaceMembers } from "@agora/core/db/schema";
-import { Errors } from "@agora/core/http/errors";
+import { getDb } from "@philosophy/core/db";
+import { spaces, spaceMembers } from "@philosophy/core/db/schema";
+import { Errors } from "@philosophy/core/http/errors";
 
 /** Channel conversations are gated by space membership (space owner ⇒ allowed), mirroring chat.ts. */
 export async function assertSpaceAccess(projectId: string, spaceId: string, userId: string): Promise<void> {

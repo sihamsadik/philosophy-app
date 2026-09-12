@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { User } from "@agora-server/contract";
+import type { User } from "@philosophy/contract";
 import { useAuth } from "./context/AuthContext.js";
 import { PhilosophyProfileEditor } from "./components/PhilosophyProfileEditor.js";
 import { PeopleRecommendationsFeed } from "./components/PeopleRecommendationsFeed.js";

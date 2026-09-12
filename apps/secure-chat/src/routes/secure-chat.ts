@@ -8,14 +8,14 @@
 // NOTE: deliberately no analytics/embedding/moderation calls here — secure chat is private by design.
 import { Hono } from "hono";
 import { and, eq, desc, asc, count, gt, lt, or, inArray, isNull, sql } from "drizzle-orm";
-import type { Variables } from "@agora/core/http/context";
-import { Errors } from "@agora/core/http/errors";
-import { requireAuth } from "@agora/core/middleware/auth";
-import { getDb } from "@agora/core/db";
+import type { Variables } from "@philosophy/core/http/context";
+import { Errors } from "@philosophy/core/http/errors";
+import { requireAuth } from "@philosophy/core/middleware/auth";
+import { getDb } from "@philosophy/core/db";
 import {
   secureDevices, secureKeyPackages, secureConversations, secureConversationMembers,
   secureMessages, secureHandshakeMessages, secureKeyBackups, secureRestoreBlobs,
-} from "@agora/core/db/schema";
+} from "@philosophy/core/db/schema";
 import {
   shapeSecureDevice, shapeSecureConversation, shapeSecureConversationMember,
   shapeSecureMessage, shapeSecureHandshake, shapeSecureKeyBackup, shapeSecureRestoreBlob,
@@ -25,10 +25,10 @@ import {
   parseBody, registerDeviceSchema, publishKeyPackagesSchema, createSecureConversationSchema,
   addSecureMemberSchema, removeSecureMemberSchema, sendSecureMessageSchema, uploadKeyBackupSchema,
   uploadRestoreBlobSchema,
-} from "@agora/core/lib/validation";
+} from "@philosophy/core/lib/validation";
 import { emitToSecureConversation, emitToSecureDevice } from "../realtime/secure-socket.js";
-import { env } from "@agora/core/lib/env";
-import { logger } from "@agora/core/lib/logger";
+import { env } from "@philosophy/core/lib/env";
+import { logger } from "@philosophy/core/lib/logger";
 
 type DeviceRow = typeof secureDevices.$inferSelect;
 type ConversationRow = typeof secureConversations.$inferSelect;
@@ -151,7 +151,7 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
   .post("/devices/:deviceId/key-packages", requireAuth, async (c) => {
     const dev = await getMyDevice(c, c.req.param("deviceId"));
     const body = parseBody(publishKeyPackagesSchema, await c.req.json().catch(() => ({})), "secure-chat");
-    const values = body.keyPackages.map((kp) => ({
+    const values = body.keyPackages.map((kp: any) => ({
       projectId: c.var.projectId, deviceId: dev.id, keyPackageRef: kp.keyPackageRef,
       keyPackage: assertSize(kp.keyPackage, env.MAX_SECURE_HANDSHAKE_BYTES, "secure-chat/key-package-too-large"),
       ciphersuite: kp.ciphersuite, expiresAt: kp.expiresAt ? new Date(kp.expiresAt) : null,
@@ -218,7 +218,7 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
     // The caller's active conversations (broadcast Commits/Proposals are visible to all members).
     const convRows = await getDb().select({ id: secureConversationMembers.conversationId }).from(secureConversationMembers)
       .where(and(eq(secureConversationMembers.projectId, c.var.projectId), eq(secureConversationMembers.userId, me), eq(secureConversationMembers.isActive, true)));
-    const convIds = convRows.map((r) => r.id);
+    const convIds = convRows.map((r: any) => r.id);
     const broadcastCond = convIds.length
       ? and(isNull(secureHandshakeMessages.targetDeviceId), inArray(secureHandshakeMessages.conversationId, convIds))
       : sql`false`;
@@ -239,7 +239,7 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
       // Commit/Proposal. A device that never sees a targeted Welcome can't build its local group.
       logger.debug({
         projectId: c.var.projectId, deviceRowId: dev.id,
-        delivered: delivered.map((r) => ({ seq: String(r.seq), kind: r.kind, epoch: String(r.epoch), targeted: !!r.targetDeviceId, conversationId: r.conversationId })),
+        delivered: delivered.map((r: any) => ({ seq: String(r.seq), kind: r.kind, epoch: String(r.epoch), targeted: !!r.targetDeviceId, conversationId: r.conversationId })),
       }, "secure-chat: handshakes delivered");
     }
     return c.json({ handshakes: delivered.map(shapeSecureHandshake), hasMore });
@@ -353,7 +353,7 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
       throw Errors.badRequest("secure-chat/space-only-channel", "spaceId is only valid for channels", "spaceId");
     }
     const mlsGroupId = b64ToBuf(body.mlsGroupId);
-    const welcomeValues = (body.welcomes ?? []).map((w) => ({
+    const welcomeValues = (body.welcomes ?? []).map((w: any) => ({
       projectId: c.var.projectId, conversationId: "", kind: "welcome" as const, epoch: BigInt(w.epoch),
       payload: assertSize(w.payload, env.MAX_SECURE_HANDSHAKE_BYTES, "secure-chat/welcome-too-large"),
       targetDeviceId: w.targetDeviceId, senderDeviceId: null,
@@ -364,10 +364,10 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
     // leaving it at the column default 0 desyncs the counter and makes the NEXT commit (add member, or
     // add a newly-registered device) fail the `currentEpoch == newEpoch - 1` guard with a spurious
     // secure-chat/epoch-conflict. No Welcomes (solo group) → stays at epoch 0.
-    const initialEpoch = welcomeValues.reduce((mx, w) => (w.epoch > mx ? w.epoch : mx), 0n);
+    const initialEpoch = welcomeValues.reduce((mx: bigint, w: any) => (w.epoch > mx ? w.epoch : mx), 0n);
     let result: { convo: ConversationRow; welcomeRows: (typeof secureHandshakeMessages.$inferSelect)[]; memberCount: number };
     try {
-      result = await getDb().transaction(async (tx) => {
+      result = await getDb().transaction(async (tx: any) => {
         const [convo] = await tx.insert(secureConversations)
           .values({ projectId: c.var.projectId, type: body.type, mlsGroupId, spaceId: body.spaceId ?? null, name: body.name ?? null, createdById: me, currentEpoch: initialEpoch })
           .returning();
@@ -379,7 +379,7 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
         let welcomeRows: (typeof secureHandshakeMessages.$inferSelect)[] = [];
         if (welcomeValues.length) {
           welcomeRows = await tx.insert(secureHandshakeMessages)
-            .values(welcomeValues.map((w) => ({ ...w, conversationId: convo!.id }))).returning();
+            .values(welcomeValues.map((w: any) => ({ ...w, conversationId: convo!.id }))).returning();
         }
         return { convo: convo!, welcomeRows, memberCount: memberIds.length };
       });
@@ -416,7 +416,7 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
       .orderBy(sql`COALESCE(${secureConversations.lastMessageAt}, ${secureConversations.createdAt}) DESC`)
       .limit(limit + 1);
     const hasMore = rows.length > limit;
-    const conversations = await Promise.all(rows.slice(0, limit).map(async ({ convo, member }) => {
+    const conversations = await Promise.all(rows.slice(0, limit).map(async ({ convo, member }: any) => {
       const [{ mc } = { mc: 0 }] = await getDb().select({ mc: count() }).from(secureConversationMembers)
         .where(and(eq(secureConversationMembers.conversationId, convo.id), eq(secureConversationMembers.isActive, true)));
       const [{ u } = { u: 0 }] = await getDb().select({ u: count() }).from(secureMessages)
@@ -447,12 +447,12 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
     const body = parseBody(addSecureMemberSchema, await c.req.json().catch(() => ({})), "secure-chat");
     const newEpoch = BigInt(body.commit.epoch);
     const commitBuf = assertSize(body.commit.payload, env.MAX_SECURE_HANDSHAKE_BYTES, "secure-chat/commit-too-large");
-    const welcomeValues = body.welcomes.map((w) => ({
+    const welcomeValues = body.welcomes.map((w: any) => ({
       projectId: c.var.projectId, conversationId: convo.id, kind: "welcome" as const, epoch: BigInt(w.epoch),
       payload: assertSize(w.payload, env.MAX_SECURE_HANDSHAKE_BYTES, "secure-chat/welcome-too-large"),
       targetDeviceId: w.targetDeviceId, senderDeviceId: null,
     }));
-    const out = await getDb().transaction(async (tx) => {
+    const out = await getDb().transaction(async (tx: any) => {
       // Optimistic commit ordering: only advance if we're exactly one epoch behind the commit.
       const bumped = await tx.update(secureConversations).set({ currentEpoch: newEpoch, updatedAt: new Date() })
         .where(and(eq(secureConversations.id, convo.id), eq(secureConversations.currentEpoch, newEpoch - 1n))).returning({ id: secureConversations.id });
@@ -489,7 +489,7 @@ export const secureChatRoutes = new Hono<{ Variables: Variables }>()
     const body = parseBody(removeSecureMemberSchema, await c.req.json().catch(() => ({})), "secure-chat");
     const newEpoch = BigInt(body.commit.epoch);
     const commitBuf = assertSize(body.commit.payload, env.MAX_SECURE_HANDSHAKE_BYTES, "secure-chat/commit-too-large");
-    const out = await getDb().transaction(async (tx) => {
+    const out = await getDb().transaction(async (tx: any) => {
       const bumped = await tx.update(secureConversations).set({ currentEpoch: newEpoch, updatedAt: new Date() })
         .where(and(eq(secureConversations.id, convo.id), eq(secureConversations.currentEpoch, newEpoch - 1n))).returning({ id: secureConversations.id });
       if (!bumped.length) {

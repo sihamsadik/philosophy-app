@@ -1,5 +1,5 @@
 {
-  "name": "@agora/web",
+  "name": "@philosophy/web",
   "version": "0.23.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@agora-server/contract": "workspace:*",
+    "@philosophy/contract": "workspace:*",
     "lucide-react": "^1.17.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

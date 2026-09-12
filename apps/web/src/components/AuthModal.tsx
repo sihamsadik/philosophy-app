@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.js";
-import type { User } from "@agora-server/contract";
+import type { User } from "@philosophy/contract";
 
 export interface AuthModalProps {
   isOpen: boolean;

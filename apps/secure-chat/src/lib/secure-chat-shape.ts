@@ -5,11 +5,11 @@
 import type {
   secureDevices, secureConversations, secureConversationMembers,
   secureMessages, secureHandshakeMessages, secureKeyBackups, secureKeyPackages, secureRestoreBlobs,
-} from "@agora/core/db/schema";
+} from "@philosophy/core/db/schema";
 import type {
   SecureDeviceModel, SecureConversationModel, SecureConversationMemberModel,
   SecureMessageModel, SecureHandshakeModel, SecureKeyBackupModel, SecureKeyPackageClaim, RestoreBlobModel,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 
 const iso = (d: Date | null | undefined): string | null => (d instanceof Date ? d.toISOString() : null);
 const b64 = (buf: Buffer): string => Buffer.from(buf).toString("base64");

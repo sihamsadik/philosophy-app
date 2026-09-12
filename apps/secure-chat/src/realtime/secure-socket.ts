@@ -10,13 +10,13 @@
 import { Server, type Namespace, type Socket } from "socket.io";
 import { type Server as HttpServer } from "node:http";
 import { and, eq, isNull } from "drizzle-orm";
-import { getDb } from "@agora/core/db";
-import { secureConversationMembers, secureDevices } from "@agora/core/db/schema";
+import { getDb } from "@philosophy/core/db";
+import { secureConversationMembers, secureDevices } from "@philosophy/core/db/schema";
 import { jwtVerify } from "jose";
-import { env } from "@agora/core/lib/env";
-import { hasActiveSuspension } from "@agora/core/lib/suspensions";
-import { logger } from "@agora/core/lib/logger";
-import type { SecureMessageModel, SecureHandshakeModel } from "@agora-server/contract";
+import { env } from "@philosophy/core/lib/env";
+import { hasActiveSuspension } from "@philosophy/core/lib/suspensions";
+import { logger } from "@philosophy/core/lib/logger";
+import type { SecureMessageModel, SecureHandshakeModel } from "@philosophy/contract";
 
 export interface SecureServerToClientEvents {
   "secure:message": (p: SecureMessageModel) => void;
@@ -154,7 +154,7 @@ export function attachSecureRealtime(httpServer: HttpServer): Server {
       // realtime if THIS socket joined that device's room. The set of joined device-row ids tells
       // you exactly whether the browser's live device is reachable — and surfaces device churn
       // (many stale rows ⇒ Welcomes addressed to a device this connection no longer represents).
-      logger.debug({ projectId: socket.data.projectId, userId: socket.data.userId, socketId: socket.id, deviceRooms: devices.map((d) => d.id) }, "secure-socket: device rooms auto-joined");
+      logger.debug({ projectId: socket.data.projectId, userId: socket.data.userId, socketId: socket.id, deviceRooms: devices.map((d: any) => d.id) }, "secure-socket: device rooms auto-joined");
     })().catch((err) => logHandlerFailure("connection", err)); // a DB hiccup here must not crash the server
 
     safeOn(socket, "join:secure-conversation", async ({ conversationId }) => {

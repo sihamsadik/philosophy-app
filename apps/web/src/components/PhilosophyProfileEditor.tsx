@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { PhilosophyProfile, ConnectionIntent } from "@agora-server/contract";
+import type { User, PhilosophyProfile, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 
 const POPULAR_SCHOOLS = [

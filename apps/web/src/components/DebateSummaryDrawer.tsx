@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { DiscussionSummary } from "@agora-server/contract";
+import type { DiscussionSummary } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 
 export interface DebateSummaryDrawerProps {
