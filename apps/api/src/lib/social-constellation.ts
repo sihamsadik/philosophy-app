@@ -10,7 +10,7 @@ import {
   adaptiveConstellationFloor,
   BLOB_SIZE_BUCKETS, WEATHER_BANDS,
   type BlobSizeBucket, type ConstellationBlob, type SocialConstellation,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 import { getDb } from "../db/index.js";
 import { profiles, projects, spaceMembers, socialConstellation } from "../db/schema/index.js";
 import { getNeo4j, isNeo4jError } from "./neo4j.js";

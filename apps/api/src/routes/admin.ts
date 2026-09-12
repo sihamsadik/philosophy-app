@@ -12,7 +12,7 @@ import { parseBody } from "../lib/validation.js";
 import {
   SOCIAL_ANALYTICS_REPORTS, socialAnalyticsRecomputeSchema, readReceiptsToggleSchema,
   type SocialAnalyticsReport,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 import { getSocialConfig } from "../lib/social-config.js";
 import {
   ANALYTICS_REPORT_FLAG, getEngagement, getInfluence, getSilos, rollupAnalytics,

@@ -12,12 +12,12 @@ import {
   stewardCases, stewardCaseEvents, userSuspensions,
   events, eventRsvps, eventInvites,
 } from "../db/schema/index.js";
-import { REACTION_TYPES, philosophyProfileSchema, philosophicalTaxonomySchema, philosophySpaceMetadataSchema } from "@agora-server/contract";
-import type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile, PhilosophicalTaxonomy, PhilosophySpaceMetadata, Space } from "@agora-server/contract";
+import { REACTION_TYPES, philosophyProfileSchema, philosophicalTaxonomySchema, philosophySpaceMetadataSchema } from "@philosophy/contract";
+import type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile, PhilosophicalTaxonomy, PhilosophySpaceMetadata, Space } from "@philosophy/contract";
 
-// ─── Shared contract surface (re-exported from @agora-server/contract) ──────────────
-// The reaction taxonomy + API model interfaces now live in @agora-server/contract (shared with the
-// admin frontend). Re-exported here so existing `./shape.js` importers keep working unchanged.
+// ─── Shared contract surface (re-exported from @philosophy/contract) ──────────────
+// The reaction taxonomy + API model interfaces now live in @philosophy/contract. Re-exported here
+// so existing `./shape.js` importers keep working unchanged.
 export { REACTION_TYPES };
 export type { ReactionType, ReactionCounts, User, Entity, Comment, AuthUser, Report, PhilosophyProfile, PhilosophicalTaxonomy, PhilosophySpaceMetadata, Space };
 
@@ -268,7 +268,6 @@ export async function loadUsers(
 
 // ─── Space / membership / rule / collection / notification / report shapers ──
 
-type SpaceRow = typeof spaces.$inferSelect;
 type RuleRow = typeof spaceRules.$inferSelect;
 type CollectionRow = typeof collections.$inferSelect;
 type NotificationRow = typeof appNotifications.$inferSelect;

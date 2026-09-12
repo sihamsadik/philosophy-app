@@ -4,7 +4,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../db/index.js";
 import { projects } from "../db/schema/index.js";
-import { resolveSocialConfig, type ResolvedSocialConfig } from "@agora-server/contract";
+import { resolveSocialConfig, type ResolvedSocialConfig } from "@philosophy/contract";
 
 const CONFIG_TTL_MS = 30_000;
 const cache = new Map<string, { cfg: ResolvedSocialConfig; at: number }>();

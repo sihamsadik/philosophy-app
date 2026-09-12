@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sizeBucket, blobsFromCommunities } from "./social-constellation.js";
-import { adaptiveConstellationFloor, BLOB_SIZE_BUCKETS } from "@agora-server/contract";
+import { adaptiveConstellationFloor, BLOB_SIZE_BUCKETS } from "@philosophy/contract";
 
 const [B5, B10, B20, B50, B100] = BLOB_SIZE_BUCKETS;
 const community = (n: number, prefix: string) => Array.from({ length: n }, (_, i) => `${prefix}${i}`);

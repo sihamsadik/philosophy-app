@@ -3,7 +3,7 @@ import {
   neighborhoodFromRows, getSocialNeighborhood, NEIGHBORHOOD_CYPHER, type NeighborhoodRow,
 } from "./social-neighborhood.js";
 import { pairBrightness, AGE_CUTOFF_HALF_LIVES } from "./social-weather.js";
-import { SOCIAL_TIER_DEFAULTS } from "@agora-server/contract";
+import { SOCIAL_TIER_DEFAULTS } from "@philosophy/contract";
 
 const cfg = SOCIAL_TIER_DEFAULTS.community;
 const round2 = (x: number) => Math.round(x * 100) / 100;

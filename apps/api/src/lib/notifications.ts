@@ -14,7 +14,7 @@
 // Realtime: delivered over socket.io via emitToUser() in insert() — the recipient's open sockets get a
 // `notification:created` event with the shaped row. Falls back to inbox polling when no socket is open.
 import { and, desc, eq } from "drizzle-orm";
-import type { StewardNotifyPolicy } from "@agora-server/contract";
+import type { StewardNotifyPolicy } from "@philosophy/contract";
 import { getDb } from "../db/index.js";
 import { appNotifications, profiles, entities, comments, reactions } from "../db/schema/index.js";
 import { shapeNotification } from "./shape.js";

@@ -12,7 +12,7 @@ import {
   SOCIAL_ANALYTICS_REPORTS,
   type ChurnRiskBand, type EngagementMember, type InfluenceMember, type ResolvedSocialConfig,
   type Silo, type SocialAnalyticsReport, type SocialEngagement, type SocialInfluence, type SocialSilos,
-} from "@agora-server/contract";
+} from "@philosophy/contract";
 import { getDb } from "../db/index.js";
 import { profiles, projects, spaceMembers, spaces, socialAnalytics } from "../db/schema/index.js";
 import { getNeo4j, isNeo4jError } from "./neo4j.js";

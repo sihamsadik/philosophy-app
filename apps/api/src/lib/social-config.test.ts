@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SOCIAL_TIER_DEFAULTS, resolveSocialConfig } from "@agora-server/contract";
+import { SOCIAL_TIER_DEFAULTS, resolveSocialConfig } from "@philosophy/contract";
 import { socialConfigView, transparencyView } from "./social-config.js";
 
 describe("socialConfigView", () => {
