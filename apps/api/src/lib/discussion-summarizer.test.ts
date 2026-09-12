@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { discussionSummarySchema } from "@agora-server/contract";
+import { discussionSummarySchema } from "@philosophy/contract";
 
 describe("Discussion Summary Schema", () => {
   it("validates a structured discussion summary object", () => {

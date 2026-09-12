@@ -6,7 +6,7 @@
 // This is the ops-observability layer; it is deliberately independent of lib/metrics.ts / api_usage,
 // which remains the per-project PRODUCT metering behind the admin dashboard.
 import { createTelemetryFromConfig } from "@jenova-marie/wonder-logger";
-import { serviceVersion } from "@agora/core/lib/version";
+import { serviceVersion } from "@philosophy/core/lib/version";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 

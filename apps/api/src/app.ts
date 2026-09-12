@@ -21,7 +21,7 @@ import { rollupConstellation } from "./lib/social-constellation.js";
 import { rollupAnalytics } from "./lib/social-analytics.js";
 import { applyClientModeration } from "./lib/client-moderation.js";
 import { drainPendingEmbeddings } from "./lib/pending-embeddings.js";
-import { hydrateSuspensionIndex } from "@agora/core/lib/suspensions";
+import { hydrateSuspensionIndex } from "@philosophy/core/lib/suspensions";
 
 function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a);

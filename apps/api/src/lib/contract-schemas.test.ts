@@ -10,7 +10,7 @@ import {
   createCollectionSchema,
   moderationSchema,
 } from "./validation.js";
-import { createEventSchema, updateEventSchema, rsvpSchema, rsvpStatusEnum, pushDeviceSchema, commentSortBySchema, sortDirSchema, entityVisibilitySchema } from "@agora-server/contract";
+import { createEventSchema, updateEventSchema, rsvpSchema, rsvpStatusEnum, pushDeviceSchema, commentSortBySchema, sortDirSchema, entityVisibilitySchema } from "@philosophy/contract";
 
 describe("SDK contract — request field names (Class 1)", () => {
   describe("change-password: SDK sends `password` for the current password", () => {

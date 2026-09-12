@@ -1,5 +1,5 @@
 import { and, eq, isNull, asc } from "drizzle-orm";
-import type { DiscussionSummary, PhilosophicalPosition, ArgumentRebuttal } from "@agora-server/contract";
+import type { DiscussionSummary, PhilosophicalPosition, ArgumentRebuttal } from "@philosophy/contract";
 import { getDb } from "../db/index.js";
 import { entities, comments, profiles } from "../db/schema/index.js";
 import { Errors } from "../http/errors.js";
@@ -8,7 +8,7 @@ import { env } from "./env.js";
 interface CommentWithAuthor {
   id: string;
   parentId: string | null;
-  content: string;
+  content: string | null;
   createdAt: Date;
   authorName: string | null;
   username: string | null;
@@ -45,6 +45,7 @@ function analyzeDebateHeuristically(
   const disagreeKeywords = ["disagree", "however", "contrary", "flaw", "objection", "rebuttal", "counterargument"];
 
   for (const c of commentsList) {
+    if (!c.content) continue;
     const text = c.content.trim();
     const author = c.authorName || c.username || "Anonymous thinker";
 

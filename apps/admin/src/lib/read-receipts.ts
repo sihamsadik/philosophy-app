@@ -2,10 +2,10 @@
 // PATCH /admin/social/read-receipts/spaces/:spaceId. The coverage read serves LIVE Postgres counts (no
 // snapshot). Both are operator-gated + corporate-tier-gated server-side; a community-tier project 400s
 // `social/read-receipts-disabled`, which the UI renders as a "corporate tier required" state.
-import type { SocialReadReceipts } from "@agora-server/contract";
+import type { SocialReadReceipts } from "@philosophy/contract";
 import { api } from "./api";
 
-export type { SocialReadReceipts, ReceiptSpace, ReceiptAnnouncement } from "@agora-server/contract";
+export type { SocialReadReceipts, ReceiptSpace, ReceiptAnnouncement } from "@philosophy/contract";
 
 export const readReceiptsKey = ["read-receipts"] as const;
 

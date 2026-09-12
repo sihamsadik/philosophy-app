@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { calculateIntellectualCompatibility } from "./intellectual-matching.js";
-import type { User } from "@agora-server/contract";
+import type { User } from "@philosophy/contract";
 
 describe("calculateIntellectualCompatibility", () => {
   const userA: User = {

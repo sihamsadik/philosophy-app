@@ -10,8 +10,8 @@ import { logger } from "./lib/logger.js";
 import { startMetricsFlush } from "./lib/metrics.js";
 import { startRateLimitSweep } from "./lib/rate-limit.js";
 import { startEmbedThrottleSweep } from "./lib/embed-throttle.js";
-import { hydrateSuspensionIndex } from "@agora/core/lib/suspensions";
-import { loadBootModule } from "@agora/core/lib/boot";
+import { hydrateSuspensionIndex } from "@philosophy/core/lib/suspensions";
+import { loadBootModule } from "@philosophy/core/lib/boot";
 
 // Last-resort safety net: a stray rejection/throw from a background task (socket handler, fan-out,
 // fire-and-forget index/embeds) must NOT take the whole API down. Node's default is to crash on an
