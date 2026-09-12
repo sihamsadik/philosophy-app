@@ -50,7 +50,7 @@
 #
 # Isolated project name so this stack's containers/volumes/network never collide with a
 # docker-compose.yml stack you may also have up.
-name: agora-dev
+name: philosophy-dev
 
 services:
   # ── backing services ─────────────────────────────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ services:
   # :9001 (console) → host S3_ENDPOINT=http://localhost:9000. The host API creates the bucket +
   # public-read policy on first upload; the Caddy front door serves public objects at /media.
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     profiles: ["selfhost"]
     command: ["server", "/data", "--console-address", ":9001"]
     environment:

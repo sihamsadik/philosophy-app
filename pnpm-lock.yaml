@@ -10,7 +10,7 @@ importers:
 
   apps/admin:
     dependencies:
-      '@agora-server/contract':
+      '@philosophy/contract':
         specifier: workspace:*
         version: link:../../packages/contract
       '@radix-ui/react-avatar':
@@ -95,12 +95,6 @@ importers:
 
   apps/api:
     dependencies:
-      '@agora-server/contract':
-        specifier: workspace:*
-        version: link:../../packages/contract
-      '@agora/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@aws-sdk/client-s3':
         specifier: ^3.901.0
         version: 3.1072.0
@@ -116,6 +110,12 @@ importers:
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.1
+      '@philosophy/contract':
+        specifier: workspace:*
+        version: link:../../packages/contract
+      '@philosophy/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@socket.io/redis-adapter':
         specifier: ^8.3.0
         version: 8.3.0(socket.io-adapter@2.5.7)
@@ -186,18 +186,18 @@ importers:
 
   apps/secure-chat:
     dependencies:
-      '@agora-server/contract':
-        specifier: workspace:*
-        version: link:../../packages/contract
-      '@agora/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@hono/node-server':
         specifier: ^1.19.14
         version: 1.19.14(hono@4.12.23)
       '@jenova-marie/wonder-logger':
         specifier: ^2.1.0
         version: 2.1.4(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
+      '@philosophy/contract':
+        specifier: workspace:*
+        version: link:../../packages/contract
+      '@philosophy/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -244,7 +244,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@agora-server/contract':
+      '@philosophy/contract':
         specifier: workspace:*
         version: link:../../packages/contract
       lucide-react:
@@ -294,12 +294,12 @@ importers:
 
   packages/core:
     dependencies:
-      '@agora-server/contract':
-        specifier: workspace:*
-        version: link:../contract
       '@jenova-marie/wonder-logger':
         specifier: ^2.1.0
         version: 2.1.4(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
+      '@philosophy/contract':
+        specifier: workspace:*
+        version: link:../contract
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.15.5)(postgres@3.4.9)
