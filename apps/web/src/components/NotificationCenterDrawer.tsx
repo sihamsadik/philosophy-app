@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { User } from "@agora-server/contract";
-import type { PhilosophyNotification, ConnectionRequest } from "../lib/api-client.js";
-import { agoraClient } from "../lib/api-client.js";
+import type { User } from "@philosophy/contract";
+import { agoraClient, type PhilosophyNotification, type ConnectionRequest } from "../lib/api-client.js";
 
 export interface NotificationCenterDrawerProps {
   isOpen: boolean;

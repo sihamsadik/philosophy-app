@@ -1,4 +1,4 @@
-import type { User } from "@agora-server/contract";
+import type { User } from "@philosophy/contract";
 import type { PhilosophyEvent } from "../lib/api-client.js";
 
 export interface LiveEventJoinModalProps {

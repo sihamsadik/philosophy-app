@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { User } from "@agora-server/contract";
+import type { User } from "@philosophy/contract";
 import type { DirectConversation, ChatMessage } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 

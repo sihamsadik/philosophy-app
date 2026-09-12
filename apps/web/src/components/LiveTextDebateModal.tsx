@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { User } from "@agora-server/contract";
+import type { User } from "@philosophy/contract";
 
 export interface LiveTextDebateModalProps {
   isOpen: boolean;

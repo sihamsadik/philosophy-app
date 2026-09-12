@@ -1,5 +1,5 @@
 import React from "react";
-import type { CompatibilityScore } from "@agora-server/contract";
+import type { User, CompatibilityScore } from "@philosophy/contract";
 
 export interface DualAxisCompatibilityGaugeProps {
   compatibility: CompatibilityScore;

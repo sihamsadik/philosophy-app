@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { PhilosophicalComment } from "../lib/api-client.js";
+import type { PhilosophicalPost, PhilosophicalComment } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 
 export interface DebateThreadDrawerProps {

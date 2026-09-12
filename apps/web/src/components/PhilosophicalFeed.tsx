@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { User } from "@agora-server/contract";
-import type { PhilosophicalPost } from "../lib/api-client.js";
-import { agoraClient } from "../lib/api-client.js";
+import type { User } from "@philosophy/contract";
+import { agoraClient, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
 
 export interface PhilosophicalFeedProps {
@@ -151,7 +150,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                     <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
                       Key Thinkers:
                     </span>
-                    {post.keyThinkers.map((thinker, i) => (
+                    {(post as any).keyThinkers.map((thinker: string, i: number) => (
                       <span key={i} className="chip thinker-chip">
                         🧠 {thinker}
                       </span>

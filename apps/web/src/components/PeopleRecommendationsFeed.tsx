@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { User, UserRecommendation, ConnectionIntent } from "@agora-server/contract";
+import type { User, UserRecommendation, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 import { DualAxisCompatibilityGauge } from "./DualAxisCompatibilityGauge.js";
 

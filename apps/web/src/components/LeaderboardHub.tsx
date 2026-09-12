@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { User } from "@agora-server/contract";
-import type { LeaderboardEntry, PhilosophicalBadge } from "../lib/api-client.js";
-import { agoraClient, DEMO_LEADERBOARD, ALL_PLATFORM_BADGES } from "../lib/api-client.js";
+import type { User } from "@philosophy/contract";
+import { agoraClient, DEMO_LEADERBOARD, ALL_PLATFORM_BADGES, type LeaderboardEntry, type PhilosophicalBadge } from "../lib/api-client.js";
 
 export interface LeaderboardHubProps {
   onOpenDM?: (targetUser: User) => void;
@@ -118,7 +117,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   </div>
 
                   <div className="podium-badges-row">
-                    {topThree[1].badges.map((b) => (
+                    {topThree[1].badges.map((b: PhilosophicalBadge) => (
                       <span key={b.id} className="badge-pill-sm" title={b.description}>
                         {b.icon}
                       </span>
@@ -154,7 +153,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   </div>
 
                   <div className="podium-badges-row">
-                    {topThree[0].badges.map((b) => (
+                    {topThree[0].badges.map((b: PhilosophicalBadge) => (
                       <span key={b.id} className="badge-pill-sm" title={b.description}>
                         {b.icon}
                       </span>
@@ -189,7 +188,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   </div>
 
                   <div className="podium-badges-row">
-                    {topThree[2].badges.map((b) => (
+                    {topThree[2].badges.map((b: PhilosophicalBadge) => (
                       <span key={b.id} className="badge-pill-sm" title={b.description}>
                         {b.icon}
                       </span>
