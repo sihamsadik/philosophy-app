@@ -10,7 +10,11 @@ let provider: StorageProvider | null = null;
 /** The configured storage backend (memoized singleton). `s3` with missing S3_* throws a clear error. */
 export function getStorage(): StorageProvider {
   if (provider) return provider;
-  provider = env.STORAGE_PROVIDER === "s3" ? new S3StorageProvider() : new SupabaseStorageProvider();
+  if (env.STORAGE_PROVIDER === "s3" || (!env.SUPABASE_URL && env.S3_ENDPOINT)) {
+    provider = new S3StorageProvider();
+  } else {
+    provider = new SupabaseStorageProvider();
+  }
   return provider;
 }
 

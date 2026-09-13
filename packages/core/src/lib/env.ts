@@ -3,14 +3,15 @@ import { z } from "zod";
 
 const schema = z.object({
   PORT: z.coerce.number().default(4000),
-  // The @agora/secure-chat process listens here (it's a SEPARATE deployable from @agora/api). The api
-  // ignores this; secure-chat ignores PORT. Both share this one validated schema (kernel @agora/core).
+  // The @philosophy/secure-chat process listens here (it's a SEPARATE deployable from @philosophy/api). The api
+  // ignores this; secure-chat ignores PORT. Both share this one validated schema (kernel @philosophy/core).
   SECURE_CHAT_PORT: z.coerce.number().default(4002),
   // Supabase transaction pooler — Drizzle owns DB access.
   DATABASE_URL: z.string().url(),
-  // Optional deployment boot hook (see @agora/core/lib/boot). A module specifier the entrypoint
+  // Optional deployment boot hook (see @philosophy/core/lib/boot). A module specifier the entrypoint
   // side-effect-imports ONCE before serving — the documented way for a prebuilt image to register a
   // per-project DB resolver without editing the bundle. Unset → no-op. Empty string treated as unset.
+  PHILOSOPHY_BOOT_MODULE: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   AGORA_BOOT_MODULE: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   // Supabase Auth + Storage only. Optional until those handlers are built, so the
   // DB-backed server boots without them. Empty strings in .env are treated as unset.
@@ -24,7 +25,7 @@ const schema = z.object({
   // project-creation route, so this is how a Supabase-less deployment makes its first project use the
   // native (in-API password) auth backend instead of Supabase. Existing projects switch via admin
   // settings / SQL; getAuthProvider() reads projects.auth_provider, never this. Empty=unset→supabase.
-  DEFAULT_AUTH_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["supabase", "native"]).default("supabase")),
+  DEFAULT_AUTH_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["supabase", "native"]).default("native")),
   ACCESS_TOKEN_TTL: z.coerce.number().default(1800),
   REFRESH_TOKEN_TTL: z.coerce.number().default(2592000),
   // HS256 signing key for access JWTs — must be high-entropy. Generate: `openssl rand -base64 48`.
@@ -67,7 +68,7 @@ const schema = z.object({
   // cap holds across API replicas; unset → in-process (per-replica) limiting. The app fail-opens to
   // in-memory if Redis is unreachable. A single replica needs no Redis. e.g. redis://redis:6379
   REDIS_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
-  // Cap on concurrently-open per-DSN connection pools in the @agora/core/db registry
+  // Cap on concurrently-open per-DSN connection pools in the @philosophy/core/db registry
   // (getDbForDsn). Purely generic pool tuning; irrelevant to a single-DATABASE_URL deployment
   // (which never opens more than a handful). Past the cap the least-recently-used IDLE pool is
   // drained; pools used within the last 5 minutes are never evicted (the registry may grow
@@ -99,7 +100,7 @@ const schema = z.object({
   S3_REGION: z.string().default("us-east-1"),
   S3_ACCESS_KEY_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   S3_SECRET_ACCESS_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
-  S3_BUCKET: z.string().default("agora"),
+  S3_BUCKET: z.string().default("philosophy"),
   S3_PUBLIC_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
   // NB: a plain z.coerce.boolean() would read the STRING "false" as true — parse the truthy/falsy
   // tokens explicitly so S3_FORCE_PATH_STYLE=false actually disables path-style.
@@ -167,7 +168,7 @@ const schema = z.object({
   // otherwise the ConsoleEmailSender only LOGS the confirm link (dev) and NO mail is delivered.
   POSTMARK_SERVER_TOKEN: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   // From address for those emails — MUST be a Postmark-verified Sender Signature or a verified domain.
-  AUTH_EMAIL_FROM: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("noreply@agora-oss.org")),
+  AUTH_EMAIL_FROM: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("noreply@philosophy.app")),
   // Postmark Message Stream id (Postmark → Servers → Message Streams). Default transactional stream.
   POSTMARK_MESSAGE_STREAM: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("outbound")),
   // Postmark API base — override only for testing / an outbound proxy. Default is the public API.
@@ -177,7 +178,7 @@ const schema = z.object({
   // This is the DEFAULT/fallback base; per-front-end selection is layered on via the allowlist below.
   AUTH_EMAIL_LINK_BASE: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().default("http://localhost:5173")),
   // Native-auth link-base ALLOWLIST. Comma-separated app origins a client may request via the
-  // sign-up/reset/resend `emailRedirectTo` field (e.g. https://agora-oss.org,https://demo.agora-oss.org).
+  // sign-up/reset/resend `emailRedirectTo` field (e.g. https://philosophy.app,https://demo.philosophy.app).
   // The server ONLY builds emailed links to an allowlisted origin (open-redirect / phishing guard) and
   // 400s a non-allowlisted emailRedirectTo. REQUIRED for native-auth email: unset → the confirm/reset/
   // resend paths fail closed (503 auth/email-not-configured + a warning log) rather than trust an

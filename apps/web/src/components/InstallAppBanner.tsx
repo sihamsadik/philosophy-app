@@ -32,7 +32,7 @@ export const InstallAppBanner: React.FC<InstallAppBannerProps> = ({ onInstalled 
     setIsIOS(isIPhoneOrIPad);
 
     // Check if user previously dismissed
-    const dismissedAt = localStorage.getItem("agora_pwa_install_dismissed");
+    const dismissedAt = localStorage.getItem("philosophy_pwa_install_dismissed");
     const isRecentlyDismissed = dismissedAt && Date.now() - parseInt(dismissedAt, 10) < 86400000 * 3; // 3 days
 
     // Listen for beforeinstallprompt
@@ -70,7 +70,7 @@ export const InstallAppBanner: React.FC<InstallAppBannerProps> = ({ onInstalled 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
       if (isIOS) {
-        alert("To install Agora Philosophy on iOS:\n1. Tap the Share button in Safari (icon with box and arrow)\n2. Select 'Add to Home Screen' 📲");
+        alert("To install Philosophy App on iOS:\n1. Tap the Share button in Safari (icon with box and arrow)\n2. Select 'Add to Home Screen' 📲");
       }
       return;
     }
@@ -90,7 +90,7 @@ export const InstallAppBanner: React.FC<InstallAppBannerProps> = ({ onInstalled 
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem("agora_pwa_install_dismissed", Date.now().toString());
+    localStorage.setItem("philosophy_pwa_install_dismissed", Date.now().toString());
   };
 
   if (!isVisible || isStandalone) {

@@ -373,6 +373,7 @@ body {
   display: flex;
   justify-content: flex-end;
   z-index: 1000;
+  touch-action: none;
 }
 
 .drawer-content-pane {
@@ -510,6 +511,39 @@ body {
   border-radius: 8px;
   margin-bottom: 16px;
   font-size: 0.85rem;
+}
+
+body.modal-open,
+html.modal-open {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  touch-action: none;
+  overscroll-behavior: none !important;
+}
+
+.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.input-success {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+}
+
+.field-error-text {
+  display: block;
+  color: #fca5a5;
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+.field-success-text {
+  display: block;
+  color: #6ee7b7;
+  font-size: 0.78rem;
+  margin-top: 4px;
 }
 
 .demo-users-section {

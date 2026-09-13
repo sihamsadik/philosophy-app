@@ -26,15 +26,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Lock background page scroll when modal popup is open
+  // Lock background page scroll on body + html when modal popup is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      document.body.classList.add("modal-open");
+      document.documentElement.classList.add("modal-open");
     } else {
       document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.classList.remove("modal-open");
+      document.documentElement.classList.remove("modal-open");
     }
     return () => {
       document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.body.classList.remove("modal-open");
+      document.documentElement.classList.remove("modal-open");
     };
   }, [isOpen]);
 
@@ -148,7 +157,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     <div className="drawer-overlay" onClick={onClose}>
       <div className="auth-modal-pane" onClick={(e) => e.stopPropagation()}>
         <div className="auth-modal-header">
-          <h2>🏛️ Welcome to Agora Philosophy</h2>
+          <h2>🏛️ Welcome to Philosophy App</h2>
           <p className="auth-modal-subtitle">
             Sign in or create your account to discover intellectual connections.
           </p>
@@ -184,7 +193,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 type="email"
                 required
                 className="input-text"
-                placeholder="sartre@agora.org"
+                placeholder="sartre@philosophy.app"
                 value={signInEmail}
                 onChange={(e) => setSignInEmail(e.target.value)}
               />
@@ -207,7 +216,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             </div>
 
             <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? "Signing In..." : "Sign In to Agora"}
+              {isSubmitting ? "Signing In..." : "Sign In to Philosophy App"}
             </button>
           </form>
         )}
@@ -245,7 +254,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 type="email"
                 required
                 className="input-text"
-                placeholder="sartre@agora.org"
+                placeholder="sartre@philosophy.app"
                 value={signUpEmail}
                 onChange={(e) => setSignUpEmail(e.target.value)}
               />
@@ -257,11 +266,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 type="password"
                 required
                 minLength={8}
-                className="input-text"
+                className={`input-text ${signUpPassword && signUpPassword.length < 8 ? "input-error" : signUpPassword ? "input-success" : ""}`}
                 placeholder="••••••••"
                 value={signUpPassword}
                 onChange={(e) => setSignUpPassword(e.target.value)}
               />
+              {signUpPassword && signUpPassword.length < 8 && (
+                <span className="field-error-text">⚠️ Password must be at least 8 characters long</span>
+              )}
+              {signUpPassword && signUpPassword.length >= 8 && (
+                <span className="field-success-text">✓ Password length requirement met</span>
+              )}
             </div>
 
             <div className="form-group">
@@ -270,13 +285,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 type="password"
                 required
                 minLength={8}
-                className={`input-text ${signUpConfirmPassword && signUpPassword !== signUpConfirmPassword ? "input-error" : ""}`}
+                className={`input-text ${
+                  signUpConfirmPassword && signUpPassword !== signUpConfirmPassword
+                    ? "input-error"
+                    : signUpConfirmPassword && signUpPassword === signUpConfirmPassword && signUpPassword.length >= 8
+                    ? "input-success"
+                    : ""
+                }`}
                 placeholder="••••••••"
                 value={signUpConfirmPassword}
                 onChange={(e) => setSignUpConfirmPassword(e.target.value)}
               />
               {signUpConfirmPassword && signUpPassword !== signUpConfirmPassword && (
-                <span className="field-error-text">Passwords do not match</span>
+                <span className="field-error-text">❌ Passwords do not match</span>
+              )}
+              {signUpConfirmPassword && signUpPassword === signUpConfirmPassword && signUpPassword.length >= 8 && (
+                <span className="field-success-text">✓ Passwords match</span>
               )}
             </div>
 
@@ -287,7 +311,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             <button
               type="submit"
               className="auth-submit-btn"
-              disabled={isSubmitting || (!!signUpConfirmPassword && signUpPassword !== signUpConfirmPassword)}
+              disabled={
+                isSubmitting ||
+                !signUpName ||
+                !signUpUsername ||
+                !signUpEmail ||
+                signUpPassword.length < 8 ||
+                !signUpConfirmPassword ||
+                signUpPassword !== signUpConfirmPassword
+              }
             >
               {isSubmitting ? "Creating Account..." : "Create Philosophical Account"}
             </button>

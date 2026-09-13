@@ -17,7 +17,11 @@
 -- projects.moderation_webhook_url/secret), which has since been removed (migration 0035 drops the
 -- columns); webhooks.ts now serves only the external project webhook + sign-up validation.
 
-create extension if not exists pgmq;
+do $$ begin
+  create extension if not exists pgmq;
+exception when others then
+  null; -- fallback for vanilla postgres without pgmq extension
+end $$;
 --> statement-breakpoint
 -- Re-pin search_path: when pgmq is NOT already installed, CREATE EXTENSION pgmq runs its install
 -- script which resets the session search_path to '' (a non-local set_config). The migrator applies
