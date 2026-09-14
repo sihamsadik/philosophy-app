@@ -16,13 +16,14 @@ import * as webhooks from "../lib/webhooks.js";
 import { notifyOnEntityMentions, notifyOnReaction } from "../lib/notifications.js";
 import { sanitizeMentions } from "../lib/mentions.js";
 import { parseBracketQuery, buildFeedConditions, buildFeedOrder } from "../lib/entity-filters.js";
-import { entities, reactions, collections, collectionEntities, spaces, spaceMembers, readReceipts } from "../db/schema/index.js";
+import { entities, comments, reactions, collections, collectionEntities, spaces, spaceMembers, readReceipts } from "../db/schema/index.js";
 import { isProjectAdmin } from "../lib/project-roles.js";
 import { getSocialConfig } from "../lib/social-config.js";
 import { readPagination, paginate } from "../http/envelope.js";
 import { markDeprecated, isDeprecatedEntitySort } from "../http/deprecation.js";
 import {
   shapeEntity,
+  shapeComment,
   shapeFile,
   parseInclude,
   parseBoolFlag,
@@ -274,6 +275,42 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
     const id = c.req.param("id");
     const summary = await generateDiscussionSummary(c.var.projectId, id);
     return c.json(summary);
+  })
+  .get("/:id/comments", async (c) => {
+    const projectId = c.var.projectId;
+    const entityId = c.req.param("id");
+    const { page, limit, offset } = readPagination(c);
+    const include = parseInclude(c);
+
+    const conds: SQL[] = [
+      eq(comments.projectId, projectId),
+      eq(comments.entityId, entityId),
+      isNull(comments.deletedAt),
+    ];
+    const removed = await removedPolicy(c);
+    const excludeRemoved = excludeRemovedSql(removed, comments);
+    if (excludeRemoved) conds.push(excludeRemoved);
+    const where = and(...conds);
+
+    const rows = await getDb()
+      .select()
+      .from(comments)
+      .where(where)
+      .orderBy(desc(comments.createdAt))
+      .limit(limit)
+      .offset(offset);
+    const totals = await getDb().select({ total: count() }).from(comments).where(where);
+    const total = totals[0]?.total ?? 0;
+
+    const reactionMap = await attachUserReactions(projectId, "comment", rows.map((r) => r.id), c.var.auth?.userId);
+    const userMap = include.has("user") ? await loadUsers(projectId, rows.map((r) => r.userId)) : null;
+    const shaped = rows.map((r) =>
+      shapeComment(r, {
+        userReaction: reactionMap.get(r.id) ?? null,
+        ...(userMap ? { user: r.userId ? userMap.get(r.userId) ?? null : null } : {}),
+      })
+    );
+    return c.json(await enrichSpaceReputation(c, { comments: shaped, ...paginate(shaped, total, page, limit) }));
   })
   .get("/:id", async (c) => {
     const id = c.req.param("id");

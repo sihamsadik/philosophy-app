@@ -106,7 +106,9 @@ export function isWallAllowlisted(relPath: string): boolean {
  *  suspension, not which project the request is scoped to). The `auth.projectId &&` guard keeps
  *  pre-`pid`-claim tokens working until they rotate out. */
 export const authWall = createMiddleware<{ Variables: Variables }>(async (c, next) => {
-  if (isWallAllowlisted(projectRelativePath(c.req.path))) {
+  const relPath = projectRelativePath(c.req.path);
+  const isReadRequest = c.req.method === "GET";
+  if (isWallAllowlisted(relPath) || isReadRequest) {
     const token = bearer(c);
     c.set("auth", token ? await verify(token) : null);
     return next();

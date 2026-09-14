@@ -26,7 +26,9 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
     const fetchPosts = async () => {
       setIsLoading(true);
       try {
-        const { posts: list } = await agoraClient.getPosts();
+        const res = await agoraClient.getPosts();
+        const rawList = res?.posts || (res as any)?.data || [];
+        const list = Array.isArray(rawList) ? rawList : [];
         setPosts(list);
         // Expand comments by default for the first post so user immediately sees live debate tree
         if (list.length > 0 && list[0]?.id) {
@@ -34,6 +36,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
         }
       } catch (err) {
         console.error("Failed to load posts:", err);
+        setPosts([]);
       } finally {
         setIsLoading(false);
       }
@@ -48,7 +51,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
     );
 
     setPosts((prev) =>
-      prev.map((p) =>
+      (Array.isArray(prev) ? prev : []).map((p) =>
         p.id === postId
           ? { ...p, upvotesCount: p.upvotesCount + (hasUpvoted ? -1 : 1) }
           : p
@@ -62,8 +65,9 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
     );
   };
 
+  const safePosts = Array.isArray(posts) ? posts : [];
   const filteredPosts =
-    filterType === "all" ? posts : posts.filter((p) => p.postType === filterType);
+    filterType === "all" ? safePosts : safePosts.filter((p) => p && p.postType === filterType);
 
   return (
     <div className="feed-container">
@@ -100,11 +104,11 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
       {/* Posts List */}
       {isLoading ? (
         <div className="loading-state">Loading posts feed...</div>
-      ) : filteredPosts.length === 0 ? (
+      ) : !filteredPosts || filteredPosts.length === 0 ? (
         <div className="empty-state">No posts found for selected filter.</div>
       ) : (
         <div className="posts-list-grid">
-          {filteredPosts.map((post) => {
+          {(filteredPosts || []).map((post) => {
             const isUpvoted = upvotedPostIds.includes(post.id);
             const isCommentsExpanded = expandedCommentsPostIds.includes(post.id);
 

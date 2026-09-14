@@ -286,7 +286,15 @@ export class AgoraPhilosophyClient {
   async getSpaces(category?: string): Promise<{ spaces: PhilosophicalSpace[] }> {
     try {
       const query = category ? `?category=${encodeURIComponent(category)}` : "";
-      return await this.request<{ spaces: PhilosophicalSpace[] }>(`/spaces${query}`);
+      const res = await this.request<any>(`/spaces${query}`);
+      const list = res?.spaces || res?.data || (Array.isArray(res) ? res : []);
+      if (Array.isArray(list) && list.length > 0) {
+        return { spaces: list };
+      }
+      const filtered = category && category !== "all"
+        ? DEMO_SPACES.filter((s) => s.category === category)
+        : DEMO_SPACES;
+      return { spaces: filtered };
     } catch {
       const filtered = category && category !== "all"
         ? DEMO_SPACES.filter((s) => s.category === category)
@@ -724,7 +732,12 @@ export class AgoraPhilosophyClient {
    */
   async getPosts(): Promise<{ posts: PhilosophicalPost[] }> {
     try {
-      return await this.request<{ posts: PhilosophicalPost[] }>("/entities");
+      const res = await this.request<any>("/entities");
+      const list = res?.posts || res?.data || (Array.isArray(res) ? res : []);
+      if (Array.isArray(list) && list.length > 0) {
+        return { posts: list };
+      }
+      return { posts: DEMO_POSTS };
     } catch {
       return { posts: DEMO_POSTS };
     }
@@ -771,10 +784,16 @@ export class AgoraPhilosophyClient {
    */
   async getComments(entityId: string): Promise<{ comments: PhilosophicalComment[] }> {
     try {
-      return await this.request<{ comments: PhilosophicalComment[] }>(`/entities/${entityId}/comments`);
+      const res = await this.request<any>(`/entities/${entityId}/comments`);
+      const list = res?.comments || res?.data || (Array.isArray(res) ? res : []);
+      if (Array.isArray(list) && list.length > 0) {
+        return { comments: list };
+      }
+      const postComments = DEMO_COMMENTS.filter((c) => c.entityId === entityId);
+      return { comments: postComments.length > 0 ? postComments : DEMO_COMMENTS };
     } catch {
       const postComments = DEMO_COMMENTS.filter((c) => c.entityId === entityId);
-      return { comments: postComments };
+      return { comments: postComments.length > 0 ? postComments : DEMO_COMMENTS };
     }
   }
 

@@ -54,6 +54,7 @@ export function mountRoutes() {
   project.route("/collections", collectionRoutes);
   project.route("/db", dbRoutes);
   project.route("/app-notifications", notificationRoutes);
+  project.route("/notifications", notificationRoutes);
   project.route("/reports", reportRoutes);
   project.route("/search", searchRoutes);
   project.route("/storage", storageRoutes);

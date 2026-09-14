@@ -22,6 +22,7 @@ import { MomentsCarousel } from "./components/MomentsCarousel.js";
 import { LiveTextDebateModal } from "./components/LiveTextDebateModal.js";
 import { BottomNavDock, type NavTab as BottomNavTab } from "./components/BottomNavDock.js";
 import { agoraClient } from "./lib/api-client.js";
+import { ErrorBoundary } from "./components/ErrorBoundary.js";
 
 type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | "symposiums" | "leaderboard";
 
@@ -174,56 +175,58 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="app-main-content">
-        {activeTab === "spaces" && (
-          <SpacesHub
-            onOpenDM={(targetUser) => handleOpenDM(targetUser)}
-            onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
-            onOpenComposerForSpace={(space) => {
-              setComposerSpaceId(space.id);
-              setIsPostComposerOpen(true);
-            }}
-          />
-        )}
+        <ErrorBoundary fallbackTitle="Philosophical Feed Recovered">
+          {activeTab === "spaces" && (
+            <SpacesHub
+              onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+              onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
+              onOpenComposerForSpace={(space) => {
+                setComposerSpaceId(space.id);
+                setIsPostComposerOpen(true);
+              }}
+            />
+          )}
 
-        {activeTab === "symposiums" && (
-          <SymposiumsDirectory
-            onOpenComposer={() => setIsEventComposerOpen(true)}
-            onOpenDM={(targetUser) => handleOpenDM(targetUser)}
-            onOpenTextDebate={(hostUser) => setLiveDebateThinker(hostUser)}
-          />
-        )}
+          {activeTab === "symposiums" && (
+            <SymposiumsDirectory
+              onOpenComposer={() => setIsEventComposerOpen(true)}
+              onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+              onOpenTextDebate={(hostUser) => setLiveDebateThinker(hostUser)}
+            />
+          )}
 
-        {activeTab === "leaderboard" && (
-          <LeaderboardHub onOpenDM={(targetUser) => handleOpenDM(targetUser)} />
-        )}
+          {activeTab === "leaderboard" && (
+            <LeaderboardHub onOpenDM={(targetUser) => handleOpenDM(targetUser)} />
+          )}
 
-        {activeTab === "recommendations" && (
-          <PeopleRecommendationsFeed
-            onOpenDM={(targetUser) => handleOpenDM(targetUser)}
-            onOpenConnectModal={(targetUser) => setConnectTargetUser(targetUser)}
-          />
-        )}
+          {activeTab === "recommendations" && (
+            <PeopleRecommendationsFeed
+              onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+              onOpenConnectModal={(targetUser) => setConnectTargetUser(targetUser)}
+            />
+          )}
 
-        {activeTab === "debates" && (
-          <PhilosophicalFeed
-            onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
-            onOpenDM={(authorUser) => handleOpenDM(authorUser)}
-            onOpenComposer={() => {
-              setComposerSpaceId(undefined);
-              setIsPostComposerOpen(true);
-            }}
-            onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
-          />
-        )}
+          {activeTab === "debates" && (
+            <PhilosophicalFeed
+              onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
+              onOpenDM={(authorUser) => handleOpenDM(authorUser)}
+              onOpenComposer={() => {
+                setComposerSpaceId(undefined);
+                setIsPostComposerOpen(true);
+              }}
+              onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
+            />
+          )}
 
-        {activeTab === "profile" && (
-          <PhilosophyProfileEditor
-            userId={user?.id || "00000000-0000-0000-0000-000000000001"}
-            initialProfile={user?.philosophyProfile}
-          />
-        )}
+          {activeTab === "profile" && (
+            <PhilosophyProfileEditor
+              userId={user?.id || "00000000-0000-0000-0000-000000000001"}
+              initialProfile={user?.philosophyProfile}
+            />
+          )}
 
-        {activeTab === "search" && <SemanticSearch />}
+          {activeTab === "search" && <SemanticSearch />}
+        </ErrorBoundary>
       </main>
 
       {/* Fixed Bottom Navigation Dock (Responsive Mobile & Desktop Bar) */}
