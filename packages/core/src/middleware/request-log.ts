@@ -11,8 +11,9 @@ export const requestLog = createMiddleware<{ Variables: Variables }>(async (c, n
   } finally {
     const durationMs = Math.round((performance.now() - start) * 10) / 10;
     const fields = { method: c.req.method, path: c.req.path, status: c.res.status, durationMs };
-    if (c.res.status >= 500) logger.error(fields, "request");
-    else if (c.res.status >= 400) logger.warn(fields, "request");
-    else logger.info(fields, "request");
+    const msg = `${c.req.method} ${c.req.path} ${c.res.status} (${durationMs}ms)`;
+    if (c.res.status >= 500) logger.error(fields, msg);
+    else if (c.res.status >= 400) logger.warn(fields, msg);
+    else logger.info(fields, msg);
   }
 });

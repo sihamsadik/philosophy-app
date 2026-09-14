@@ -96,6 +96,13 @@ export const authRoutes = new Hono<{ Variables: Variables }>()
   .post("/sign-up", async (c) => {
     const projectId = c.var.projectId;
     const body = parseBody(signUpSchema, await c.req.json().catch(() => ({})), "auth");
+    if (body.username) {
+      const [takenUsername] = await getDb().select({ id: profiles.id }).from(profiles)
+        .where(and(eq(profiles.projectId, projectId), eq(profiles.username, body.username))).limit(1);
+      if (takenUsername) {
+        throw Errors.conflict("auth/username-exists", "Username is already taken", "username");
+      }
+    }
     const provider = await getAuthProvider(projectId);
     const linkBase = provider.usesEmailLinks ? requireEmailLinkBase(body.emailRedirectTo) : undefined;
     const check = await webhooks.validate(projectId, "user.created", { email: body.email, name: body.name, username: body.username });

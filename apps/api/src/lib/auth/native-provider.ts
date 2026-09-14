@@ -26,22 +26,32 @@ export class NativeAuthProvider implements AuthProvider {
     const [existing] = await getDb().select({ id: authCredentials.id }).from(authCredentials)
       .where(and(eq(authCredentials.projectId, projectId), eq(authCredentials.email, email))).limit(1);
     if (existing) {
-      // Anti-enumeration: don't reveal, don't recreate. Run a throwaway hash so the existing-email
-      // path takes ~the same time as the new-account path below (no argon2 timing oracle).
-      await hashPassword(password);
-      return { status: "confirmation_required" };
+      throw Errors.conflict("auth/email-exists", "An account with this email address already exists", "email");
     }
     const passwordHash = await hashPassword(password);
-    const [cred] = await getDb().insert(authCredentials).values({ projectId, email, passwordHash }).returning({ id: authCredentials.id });
-    await this.sendConfirm(projectId, cred!.id, email, linkBase);
-    return { status: "confirmation_required" };
+    const autoConfirm = !env.POSTMARK_SERVER_TOKEN || env.PHILOSOPHY_ENV === "dev";
+    const emailConfirmedAt = autoConfirm ? new Date() : null;
+
+    const [cred] = await getDb().insert(authCredentials).values({ projectId, email, passwordHash, emailConfirmedAt }).returning({ id: authCredentials.id });
+    if (!autoConfirm) {
+      await this.sendConfirm(projectId, cred!.id, email, linkBase);
+      return { status: "confirmation_required" };
+    }
+    return { status: "active", authUserId: cred!.id };
   }
 
   async verifyCredentials(projectId: string, emailRaw: string, password: string) {
     const email = normalizeEmail(emailRaw);
     const [cred] = await getDb().select().from(authCredentials)
       .where(and(eq(authCredentials.projectId, projectId), eq(authCredentials.email, email))).limit(1);
-    if (!cred || !cred.emailConfirmedAt || cred.disabledAt) return null; // unknown / unconfirmed / disabled
+    if (!cred || cred.disabledAt) return null; // unknown / disabled
+    if (!cred.emailConfirmedAt) {
+      if (!env.POSTMARK_SERVER_TOKEN || env.PHILOSOPHY_ENV === "dev") {
+        await getDb().update(authCredentials).set({ emailConfirmedAt: new Date(), updatedAt: new Date() }).where(eq(authCredentials.id, cred.id));
+      } else {
+        return null;
+      }
+    }
     return (await verifyPassword(cred.passwordHash, password)) ? { authUserId: cred.id } : null;
   }
 

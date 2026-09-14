@@ -184,7 +184,9 @@ export function createApp() {
     return c.json({ success: true });
   });
 
-  // Replyke contract: everything lives under /v7/:projectId
+  // Clean API endpoints (/api and /philosophy/api) + legacy /v7
+  app.route("/api", mountRoutes());
+  app.route("/philosophy/api", mountRoutes());
   app.route("/v7", mountRoutes());
 
   // Error envelopes are never cacheable. A thrown ApiError unwinds past every middleware's
