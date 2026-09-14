@@ -90,7 +90,7 @@ const schema = z.object({
   // public bucket; `s3` → any S3-compatible store (MinIO for fully self-hosted, or real AWS S3). The
   // self-contained stack runs MinIO behind `s3`. Keys are unguessable UUID paths in a public-read bucket
   // (same posture as the Supabase public bucket — see SECURITY.md). Empty=unset→supabase.
-  STORAGE_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["supabase", "s3"]).default("supabase")),
+  STORAGE_PROVIDER: z.preprocess((v) => (v === "" ? undefined : v), z.enum(["supabase", "s3", "none", "disabled"]).default("none")),
   // S3-compatible storage config — only consulted when STORAGE_PROVIDER=s3 (validated lazily in
   // lib/storage/s3.ts so a Supabase deploy never needs them). S3_ENDPOINT is the API origin
   // (e.g. http://minio:9000); S3_PUBLIC_URL is the browser-reachable base the public object URL is built

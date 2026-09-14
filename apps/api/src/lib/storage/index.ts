@@ -4,16 +4,21 @@ import { env } from "../env.js";
 import type { StorageProvider } from "./provider.js";
 import { SupabaseStorageProvider } from "./supabase.js";
 import { S3StorageProvider } from "./s3.js";
+import { NoopStorageProvider } from "./noop.js";
 
 let provider: StorageProvider | null = null;
 
-/** The configured storage backend (memoized singleton). `s3` with missing S3_* throws a clear error. */
+/** The configured storage backend (memoized singleton). */
 export function getStorage(): StorageProvider {
   if (provider) return provider;
-  if (env.STORAGE_PROVIDER === "s3" || (!env.SUPABASE_URL && env.S3_ENDPOINT)) {
+  if (env.STORAGE_PROVIDER === "none" || env.STORAGE_PROVIDER === "disabled") {
+    provider = new NoopStorageProvider();
+  } else if (env.STORAGE_PROVIDER === "s3" && env.S3_ENDPOINT) {
     provider = new S3StorageProvider();
-  } else {
+  } else if (env.STORAGE_PROVIDER === "supabase" && env.SUPABASE_URL) {
     provider = new SupabaseStorageProvider();
+  } else {
+    provider = new NoopStorageProvider();
   }
   return provider;
 }
