@@ -1,17 +1,7 @@
-const CACHE_NAME = "philosophy-pwa-cache-v1";
-const ASSETS_TO_CACHE = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/pwa-icon.svg"
-];
+const CACHE_NAME = "philosophy-pwa-v2";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -29,27 +19,38 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Only intercept GET requests
-  if (event.request.method !== "GET") return;
-  
+  const url = new URL(event.request.url);
+
+  // NEVER intercept non-GET, API requests (/v7/), or Vite dev server modules
+  if (
+    event.request.method !== "GET" ||
+    url.pathname.startsWith("/v7") ||
+    url.pathname.startsWith("/@") ||
+    url.pathname.includes("/src/") ||
+    url.pathname.includes("/node_modules/") ||
+    url.search.includes("v=") ||
+    url.hostname === "localhost" ||
+    url.hostname === "127.0.0.1"
+  ) {
+    return; // Let network handle it directly
+  }
+
+  // Network-first strategy for HTML and assets
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== "basic") {
-          return networkResponse;
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === "basic") {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
         }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
         return networkResponse;
-      }).catch(() => {
-        // Offline fallback if needed
-        return caches.match("/");
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          return cachedResponse || caches.match("/");
+        });
+      })
   );
 });
