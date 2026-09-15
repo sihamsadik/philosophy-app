@@ -23,17 +23,20 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
   const [rosterRsvps, setRosterRsvps] = useState<EventRSVP[]>([]);
   const [rosterTab, setRosterTab] = useState<"all" | RSVPStatus>("all");
   const [isRosterLoading, setIsRosterLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadEvents = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const res = await agoraClient.getEvents(
         activeTypeTab !== "all" ? ({ type: activeTypeTab } as any) : undefined
       );
       setEvents(res.events);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch events:", err);
-      setEvents(DEMO_EVENTS);
+      setError(err.message || "Could not fetch events from database.");
+      setEvents([]);
     } finally {
       setIsLoading(false);
     }
@@ -196,11 +199,21 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
           <div className="spinner" />
           <p>Loading philosophical assemblies...</p>
         </div>
+      ) : error ? (
+        <div className="error-banner" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: 20, margin: "16px 0", color: "#f87171", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}>⚠️ Database / Backend Connection Error</strong>
+            <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>{error}. Unable to load events from database.</span>
+          </div>
+          <button type="button" onClick={loadEvents} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            🔄 Retry
+          </button>
+        </div>
       ) : filteredEvents.length === 0 ? (
         <div className="empty-directory-card">
           <span className="empty-icon">🏛️</span>
           <h3>No events found</h3>
-          <p>Be the first to host a symposium or reading group for the community.</p>
+          <p>{searchQuery ? `No events matched search "${searchQuery}".` : "There are currently no events or live symposiums scheduled in the database."}</p>
           <button className="btn-primary" onClick={onOpenComposer}>
             📅 Schedule First Symposium
           </button>

@@ -10,16 +10,19 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [badges, setBadges] = useState<PhilosophicalBadge[]>(ALL_PLATFORM_BADGES);
 
   const loadLeaderboard = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const res = await agoraClient.getLeaderboard(selectedSchool);
       setEntries(res.entries);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load leaderboard:", err);
-      setEntries(DEMO_LEADERBOARD);
+      setError(err.message || "Unable to fetch leaderboard data from database.");
+      setEntries([]);
     } finally {
       setIsLoading(false);
     }
@@ -94,6 +97,24 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
         <div className="loading-state">
           <div className="spinner" />
           <p>Calculating community reputation scores...</p>
+        </div>
+      ) : error ? (
+        <div className="error-banner" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: 20, margin: "16px 0", color: "#f87171", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}>⚠️ Database / Backend Connection Error</strong>
+            <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>{error}. Unable to load leaderboard from database.</span>
+          </div>
+          <button type="button" onClick={loadLeaderboard} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            🔄 Retry
+          </button>
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="empty-state" style={{ padding: 40, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12, border: "1px dashed rgba(255,255,255,0.1)", margin: "16px 0" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>🏆</div>
+          <h3 style={{ fontSize: "1.25rem", margin: "8px 0" }}>No Leaderboard Scores Available</h3>
+          <p style={{ color: "#94a3b8", maxWidth: 450, margin: "0 auto 16px auto" }}>
+            {selectedSchool !== "all" ? `No thinkers found in school "${selectedSchool}".` : "There are currently no registered profiles in the database."}
+          </p>
         </div>
       ) : (
         <>

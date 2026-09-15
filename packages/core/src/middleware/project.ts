@@ -15,8 +15,10 @@ const cache = new Map<string, boolean>();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const resolveProject = createMiddleware<{ Variables: Variables }>(async (c, next) => {
-  const projectId = c.req.param("projectId") || "00000000-0000-0000-0000-000000000000";
-  if (!UUID_RE.test(projectId)) throw Errors.notFound("project/not-found", "Unknown project");
+  let projectId = c.req.param("projectId");
+  if (!projectId || !UUID_RE.test(projectId)) {
+    projectId = "00000000-0000-0000-0000-000000000000";
+  }
 
   // The seam: an external deployment may have registered a
   // per-project resolver; unregistered this IS the shared handle (today's behavior).

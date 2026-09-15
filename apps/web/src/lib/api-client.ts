@@ -28,7 +28,7 @@ export class AgoraPhilosophyClient {
   private authToken: string;
 
   constructor(options?: ApiClientOptions) {
-    this.baseUrl = options?.baseUrl || "/v7";
+    this.baseUrl = options?.baseUrl || "/api";
     this.projectId = options?.projectId || "00000000-0000-0000-0000-000000000000";
     
     // Restore saved token from localStorage if available
@@ -36,7 +36,7 @@ export class AgoraPhilosophyClient {
     if (typeof window !== "undefined") {
       storedToken = localStorage.getItem("philosophy_auth_token") || "";
     }
-    this.authToken = options?.authToken || storedToken || "mock-auth-token";
+    this.authToken = options?.authToken || storedToken || "";
   }
 
   setAuthToken(token: string) {
@@ -59,7 +59,8 @@ export class AgoraPhilosophyClient {
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const url = `${this.baseUrl}/${this.projectId}${path}`;
+    const isCleanApi = this.baseUrl === "/api" || this.baseUrl === "/philosophy/api" || !this.baseUrl.includes("/v7");
+    const url = isCleanApi ? `${this.baseUrl}${path}` : `${this.baseUrl}/${this.projectId}${path}`;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {}),
@@ -88,80 +89,30 @@ export class AgoraPhilosophyClient {
     username?: string;
     name?: string;
   }): Promise<AuthSessionResponse> {
-    try {
-      const res = await this.request<AuthSessionResponse>("/auth/sign-up", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      const token = res.accessToken || res.token?.accessToken;
-      if (token) {
-        this.setAuthToken(token);
-      }
-      return res;
-    } catch {
-      const fallbackToken = "fallback-jwt-token-guest";
-      this.setAuthToken(fallbackToken);
-      return {
-        user: {
-          id: "usr-guest-001",
-          projectId: this.projectId,
-          foreignId: null,
-          role: "visitor",
-          name: data.name || data.username || "Philosophical Guest",
-          username: data.username || "guest",
-          avatar: null,
-          avatarFileId: null,
-          bannerFileId: null,
-          bio: "Seeker of wisdom and existential truth.",
-          birthdate: null,
-          location: "Athens",
-          metadata: {},
-          reputation: 100,
-          createdAt: new Date().toISOString(),
-        },
-        accessToken: fallbackToken,
-      };
+    const res = await this.request<AuthSessionResponse>("/auth/sign-up", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const token = res.accessToken || res.token?.accessToken;
+    if (token) {
+      this.setAuthToken(token);
     }
+    return res;
   }
 
   /**
    * POST /v7/:projectId/auth/sign-in
    */
   async signIn(data: { email: string; password?: string }): Promise<AuthSessionResponse> {
-    try {
-      const res = await this.request<AuthSessionResponse>("/auth/sign-in", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-      const token = res.accessToken || res.token?.accessToken;
-      if (token) {
-        this.setAuthToken(token);
-      }
-      return res;
-    } catch {
-      const fallbackToken = "fallback-jwt-token-signed-in";
-      this.setAuthToken(fallbackToken);
-      return {
-        user: {
-          id: "usr-guest-001",
-          projectId: this.projectId,
-          foreignId: null,
-          role: "visitor",
-          name: "Philosophical Guest",
-          username: "guest",
-          avatar: null,
-          avatarFileId: null,
-          bannerFileId: null,
-          bio: "Seeker of wisdom and existential truth.",
-          birthdate: null,
-          location: "Athens",
-          metadata: {},
-          reputation: 150,
-          createdAt: new Date().toISOString(),
-        },
-        accessToken: fallbackToken,
-      };
+    const res = await this.request<AuthSessionResponse>("/auth/sign-in", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const token = res.accessToken || res.token?.accessToken;
+    if (token) {
+      this.setAuthToken(token);
     }
+    return res;
   }
 
   /**
@@ -239,7 +190,38 @@ export class AgoraPhilosophyClient {
     if (params?.limit) query.set("limit", params.limit.toString());
 
     const queryString = query.toString() ? `?${query.toString()}` : "";
-    return this.request<{ recommendations: UserRecommendation[] }>(`/recommendations/people${queryString}`);
+    const res = await this.request<any>(`/recommendations/people${queryString}`).catch(async () => {
+      return await this.request<any>(`/users${queryString}`);
+    });
+    const list = res?.recommendations || res?.data || (Array.isArray(res) ? res : []);
+    const mapped = (Array.isArray(list) ? list : []).map((u: any) => {
+      const profile = u.philosophyProfile || u.user?.philosophyProfile || u.metadata?.philosophyProfile || {
+        worldviewSummary: u.bio || u.user?.bio || "Exploring dialectics and truth.",
+        primarySchools: u.metadata?.primarySchools || ["Rationalism"],
+        keyThinkers: u.metadata?.keyThinkers || ["Descartes"],
+      };
+      return {
+        user: {
+          id: u.id || u.user?.id || "usr-001",
+          name: u.name || u.user?.name || "Thinker Peer",
+          username: u.username || u.user?.username || "thinker",
+          avatar: u.avatar || u.user?.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+          bio: u.bio || u.user?.bio || "",
+          reputation: u.reputation || u.user?.reputation || 500,
+          philosophyProfile: profile,
+        } as User,
+        compatibility: u.compatibility || {
+          overallPercentage: 85,
+          alignmentCategory: "HIGH_ALIGNMENT",
+          sharedGroundScore: 88,
+          productiveTensionScore: 82,
+          resonanceAreas: ["Epistemology", "Ethics"],
+          dialecticalDivergences: ["Determinism vs Agency"],
+          matchReasoning: "Strong resonance in rationalist foundations with engaging debate capacity.",
+        },
+      };
+    });
+    return { recommendations: mapped };
   }
 
   /**
@@ -284,23 +266,24 @@ export class AgoraPhilosophyClient {
    * Philosophical Spaces & Community Circles
    */
   async getSpaces(category?: string): Promise<{ spaces: PhilosophicalSpace[] }> {
-    try {
-      const query = category ? `?category=${encodeURIComponent(category)}` : "";
-      const res = await this.request<any>(`/spaces${query}`);
-      const list = res?.spaces || res?.data || (Array.isArray(res) ? res : []);
-      if (Array.isArray(list) && list.length > 0) {
-        return { spaces: list };
-      }
-      const filtered = category && category !== "all"
-        ? DEMO_SPACES.filter((s) => s.category === category)
-        : DEMO_SPACES;
-      return { spaces: filtered };
-    } catch {
-      const filtered = category && category !== "all"
-        ? DEMO_SPACES.filter((s) => s.category === category)
-        : DEMO_SPACES;
-      return { spaces: filtered };
-    }
+    const query = category ? `?category=${encodeURIComponent(category)}` : "";
+    const res = await this.request<any>(`/spaces${query}`);
+    const list = res?.spaces || res?.data || (Array.isArray(res) ? res : []);
+    const mapped = (Array.isArray(list) ? list : []).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      slug: s.slug || s.shortId || s.id,
+      description: s.description || "",
+      category: s.category || s.metadata?.category || "school",
+      primarySchool: s.primarySchool || s.metadata?.primarySchool || s.name,
+      keyThinkers: s.keyThinkers || s.metadata?.keyThinkers || [],
+      avatarImage: s.avatarImage || s.avatar || "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=200&q=80",
+      membersCount: s.membersCount || s.members_count || 0,
+      postsCount: s.postsCount || 0,
+      isJoined: Boolean(s.isJoined),
+      createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "Established",
+    }));
+    return { spaces: mapped };
   }
 
   async getSpace(spaceId: string): Promise<{ space: PhilosophicalSpace }> {
@@ -487,21 +470,35 @@ export class AgoraPhilosophyClient {
    * Symposiums & Scheduled Events
    */
   async getEvents(params?: { type?: EventType; spaceId?: string }): Promise<{ events: PhilosophyEvent[] }> {
-    try {
-      const query = new URLSearchParams();
-      if (params?.type) query.set("type", params.type);
-      if (params?.spaceId) query.set("spaceId", params.spaceId);
-      return await this.request<{ events: PhilosophyEvent[] }>(`/events?${query.toString()}`);
-    } catch {
-      let filtered = [...DEMO_EVENTS];
-      if (params?.type) {
-        filtered = filtered.filter((e) => e.type === params.type);
-      }
-      if (params?.spaceId) {
-        filtered = filtered.filter((e) => e.spaceId === params.spaceId);
-      }
-      return { events: filtered };
-    }
+    const query = new URLSearchParams();
+    if (params?.type) query.set("type", params.type);
+    if (params?.spaceId) query.set("spaceId", params.spaceId);
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    const res = await this.request<any>(`/events${queryString}`);
+    const list = res?.events || res?.data || (Array.isArray(res) ? res : []);
+    const mapped = (Array.isArray(list) ? list : []).map((e: any) => ({
+      id: e.id,
+      title: e.title,
+      type: e.metadata?.eventType || e.type || "symposium",
+      description: e.description || "",
+      startTime: e.startTime || e.start_time,
+      endTime: e.endTime || e.end_time,
+      locationUrl: e.url || "https://agora.philosophy/symposium/live",
+      hostUser: e.user || e.hostUser || {
+        id: e.userId || "usr-001",
+        name: e.metadata?.hostName || "Immanuel Kant",
+        username: e.metadata?.hostHandle || "kantian_critique",
+        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+      },
+      spaceId: e.spaceId,
+      spaceName: e.metadata?.spaceName || "Philosophy Circle",
+      maxCapacity: e.capacity || 50,
+      attendeeCount: e.metadata?.attendeeCount || 1,
+      userRsvpStatus: e.metadata?.userRsvpStatus || "not_going",
+      tags: e.metadata?.tags || ["Ethics", "Dialogue"],
+      createdAt: e.createdAt || new Date().toISOString(),
+    }));
+    return { events: mapped };
   }
 
   async createEvent(data: {
@@ -622,22 +619,32 @@ export class AgoraPhilosophyClient {
    * Community Intellectual Leaderboard & Achievement Badges
    */
   async getLeaderboard(school?: string): Promise<{ entries: LeaderboardEntry[] }> {
-    try {
-      const query = school ? `?school=${encodeURIComponent(school)}` : "";
-      return await this.request<{ entries: LeaderboardEntry[] }>(`/leaderboard${query}`);
-    } catch {
-      let filtered = [...DEMO_LEADERBOARD];
-      if (school && school !== "all") {
-        filtered = filtered.filter(
-          (e) =>
-            e.primarySchool.toLowerCase().includes(school.toLowerCase()) ||
-            e.user.philosophyProfile?.primarySchools?.some((s) =>
-              s.toLowerCase().includes(school.toLowerCase())
-            )
-        );
-      }
-      return { entries: filtered };
-    }
+    const query = school ? `?school=${encodeURIComponent(school)}` : "";
+    const res = await this.request<any>(`/leaderboard${query}`).catch(async () => {
+      return await this.request<any>(`/users${query}`);
+    });
+    const list = res?.entries || res?.data || (Array.isArray(res) ? res : []);
+    const mapped = (Array.isArray(list) ? list : []).map((u: any, idx: number) => ({
+      rank: idx + 1,
+      user: {
+        id: u.id || u.user?.id || `usr-${idx}`,
+        name: u.name || u.user?.name || "Philosopher",
+        username: u.username || u.user?.username || "thinker",
+        avatar: u.avatar || u.user?.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+        bio: u.bio || u.user?.bio || "",
+        reputation: u.reputation || u.user?.reputation || (1000 - idx * 100),
+        philosophyProfile: u.metadata?.philosophyProfile || u.user?.philosophyProfile || {
+          primarySchools: u.metadata?.primarySchools || ["Philosophy"],
+          keyThinkers: u.metadata?.keyThinkers || [],
+        },
+      } as User,
+      reputationScore: u.reputation || u.user?.reputation || (1000 - idx * 100),
+      primarySchool: u.metadata?.primarySchools?.[0] || u.primarySchool || "General Philosophy",
+      argumentsPublished: u.argumentsPublished || 12,
+      debatesWon: u.debatesWon || 5,
+      badges: u.badges || ALL_PLATFORM_BADGES.slice(0, (idx % 3) + 1),
+    }));
+    return { entries: mapped };
   }
 
   async getUserBadges(userId: string): Promise<{ badges: PhilosophicalBadge[] }> {
@@ -731,16 +738,27 @@ export class AgoraPhilosophyClient {
    * Philosophical Posts & Feed
    */
   async getPosts(): Promise<{ posts: PhilosophicalPost[] }> {
-    try {
-      const res = await this.request<any>("/entities");
-      const list = res?.posts || res?.data || (Array.isArray(res) ? res : []);
-      if (Array.isArray(list) && list.length > 0) {
-        return { posts: list };
-      }
-      return { posts: DEMO_POSTS };
-    } catch {
-      return { posts: DEMO_POSTS };
-    }
+    const res = await this.request<any>("/entities");
+    const list = res?.posts || res?.data || (Array.isArray(res) ? res : []);
+    const mapped = (Array.isArray(list) ? list : []).map((p: any) => {
+      const meta = p.metadata || {};
+      return {
+        id: p.id,
+        title: p.title || "Untitled Debate",
+        content: p.content || "",
+        authorId: p.userId || "usr-001",
+        authorName: meta.authorName || p.user?.name || "Anonymous Thinker",
+        authorHandle: meta.authorHandle || p.user?.username || "thinker",
+        authorAvatar: p.user?.avatar || meta.authorAvatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+        postType: meta.postType || "argument",
+        primarySchool: meta.primarySchool || "General Philosophy",
+        keyThinkers: meta.keyThinkers || [],
+        upvotesCount: p.reactionCounts?.insightful || p.upvotesCount || 1,
+        commentsCount: p.repliesCount || p.commentsCount || 0,
+        createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "Recently",
+      };
+    });
+    return { posts: mapped };
   }
 
   async createPost(postData: {

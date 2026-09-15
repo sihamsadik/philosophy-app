@@ -21,26 +21,29 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
   const [upvotedPostIds, setUpvotedPostIds] = useState<string[]>([]);
   const [expandedCommentsPostIds, setExpandedCommentsPostIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPosts = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await agoraClient.getPosts();
+      const rawList = res?.posts || (res as any)?.data || [];
+      const list = Array.isArray(rawList) ? rawList : [];
+      setPosts(list);
+      if (list.length > 0 && list[0]?.id) {
+        setExpandedCommentsPostIds([list[0].id]);
+      }
+    } catch (err: any) {
+      console.error("Failed to load posts:", err);
+      setError(err.message || "Could not connect to database/backend service.");
+      setPosts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      setIsLoading(true);
-      try {
-        const res = await agoraClient.getPosts();
-        const rawList = res?.posts || (res as any)?.data || [];
-        const list = Array.isArray(rawList) ? rawList : [];
-        setPosts(list);
-        // Expand comments by default for the first post so user immediately sees live debate tree
-        if (list.length > 0 && list[0]?.id) {
-          setExpandedCommentsPostIds([list[0].id]);
-        }
-      } catch (err) {
-        console.error("Failed to load posts:", err);
-        setPosts([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchPosts();
   }, []);
 
@@ -104,8 +107,27 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
       {/* Posts List */}
       {isLoading ? (
         <div className="loading-state">Loading posts feed...</div>
+      ) : error ? (
+        <div className="error-banner" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: 20, margin: "16px 0", color: "#f87171", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}>⚠️ Database / Backend Connection Error</strong>
+            <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>{error}. Unable to load live debates from database.</span>
+          </div>
+          <button type="button" onClick={fetchPosts} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            🔄 Retry
+          </button>
+        </div>
       ) : !filteredPosts || filteredPosts.length === 0 ? (
-        <div className="empty-state">No posts found for selected filter.</div>
+        <div className="empty-state" style={{ padding: 40, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12, border: "1px dashed rgba(255,255,255,0.1)", margin: "16px 0" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>📜</div>
+          <h3 style={{ fontSize: "1.25rem", margin: "8px 0" }}>No Active Philosophical Debates</h3>
+          <p style={{ color: "#94a3b8", maxWidth: 450, margin: "0 auto 16px auto" }}>
+            {filterType !== "all" ? `No posts matched filter "${filterType}".` : "There are no debate posts available in the local database right now. Publish the first one!"}
+          </p>
+          <button type="button" className="connect-btn" onClick={onOpenComposer}>
+            ✍️ Publish First Post
+          </button>
+        </div>
       ) : (
         <div className="posts-list-grid">
           {(filteredPosts || []).map((post) => {

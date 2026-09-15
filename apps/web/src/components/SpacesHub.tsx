@@ -26,16 +26,20 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
 
   // Active view tab inside detailed space view
   const [spaceViewTab, setSpaceViewTab] = useState<"feed" | "roster">("feed");
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSpaces = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const { spaces: list } = await agoraClient.getSpaces(
         activeCategory === "all" ? undefined : activeCategory
       );
       setSpaces(list);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load spaces:", err);
+      setError(err.message || "Unable to fetch spaces from database");
+      setSpaces([]);
     } finally {
       setIsLoading(false);
     }
@@ -194,8 +198,24 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           {/* Spaces Cards Grid */}
           {isLoading ? (
             <div className="loading-state">Loading philosophical spaces...</div>
+          ) : error ? (
+            <div className="error-banner" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: 20, margin: "16px 0", color: "#f87171", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}>⚠️ Server / Database Connection Error</strong>
+                <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>{error}. Unable to connect to local database.</span>
+              </div>
+              <button type="button" onClick={fetchSpaces} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                🔄 Retry
+              </button>
+            </div>
           ) : filteredSpaces.length === 0 ? (
-            <div className="empty-state">No philosophical spaces found matching your search.</div>
+            <div className="empty-state" style={{ padding: 40, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12, border: "1px dashed rgba(255,255,255,0.1)", margin: "16px 0" }}>
+              <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>⭕</div>
+              <h3 style={{ fontSize: "1.25rem", margin: "8px 0" }}>No Philosophical Circles Found</h3>
+              <p style={{ color: "#94a3b8", maxWidth: 450, margin: "0 auto 16px auto" }}>
+                {searchTerm ? `No circles matched "${searchTerm}".` : "There are no active circles in the database."}
+              </p>
+            </div>
           ) : (
             <div className="spaces-grid-list">
               {filteredSpaces.map((space) => (

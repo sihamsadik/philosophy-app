@@ -87,9 +87,10 @@ export const AUTH_WALL_ALLOWLIST: { prefixes: readonly string[]; exact: readonly
   ],
 };
 
-/** /v7/<projectId>/auth/sign-in → /auth/sign-in (segment 3 onward; c.req.path carries no query string). */
+/** Strips base API prefix (/api, /philosophy/api, /v7) and optional UUID segment to get relative route path. */
 export function projectRelativePath(fullPath: string): string {
-  return "/" + fullPath.split("/").slice(3).join("/");
+  const cleaned = fullPath.replace(/^\/(?:api|philosophy\/api|v7)(?:\/[0-9a-fA-F-]{36})?/, "");
+  return cleaned.startsWith("/") ? cleaned : "/" + cleaned;
 }
 
 export function isWallAllowlisted(relPath: string): boolean {

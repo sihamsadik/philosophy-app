@@ -24,21 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchCurrentUser = async () => {
     const token = agoraClient.getAuthToken();
     if (!token || token === "mock-auth-token") {
-      // Fallback default demo user for instant prototype preview if token not active
-      setUser({
-        id: "00000000-0000-0000-0000-000000000001",
-        name: "Jean-Paul Sartre",
-        username: "sartre",
-        reputation: 120,
-        philosophyProfile: {
-          worldviewSummary: "Existence precedes essence. Freedom implies total responsibility.",
-          primarySchools: ["Existentialism", "Phenomenology"],
-          keyThinkers: ["Martin Heidegger", "Edmund Husserl"],
-          coreQuestions: ["How to live authentically without bad faith?"],
-          favoriteTexts: ["Being and Nothingness"],
-          connectionIntents: ["discussion", "intellectual"],
-        },
-      } as User);
+      setUser(null);
       setIsLoading(false);
       return;
     }
@@ -47,7 +33,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const currentUser = await agoraClient.getMe();
       setUser(currentUser);
     } catch {
-      // If fetching auth user fails, clear token
       agoraClient.setAuthToken("");
       setUser(null);
     } finally {

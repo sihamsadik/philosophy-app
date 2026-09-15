@@ -90,6 +90,23 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     return list;
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setSaveStatus("Image file exceeds 5MB limit.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setAvatar(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -202,17 +219,40 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="section-label">Profile Photo / Avatar URL</label>
+                <label className="section-label">📷 Profile Photo / Avatar</label>
+                
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", margin: "8px 0 12px 0" }}>
+                  <label className="connect-btn" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    📁 Upload Photo from Device
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={handleFileUpload}
+                    />
+                  </label>
+                  {avatar && (
+                    <button
+                      type="button"
+                      className="remove-btn"
+                      style={{ fontSize: "0.85rem", padding: "6px 12px" }}
+                      onClick={() => setAvatar("")}
+                    >
+                      Remove Photo
+                    </button>
+                  )}
+                </div>
+
                 <input
-                  type="url"
+                  type="text"
                   className="input-text"
-                  value={avatar}
+                  value={avatar.startsWith("data:") ? "[Uploaded Custom Photo]" : avatar}
                   onChange={(e) => setAvatar(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
+                  placeholder="Or paste photo image URL..."
                 />
 
-                <div className="sample-avatars-row">
-                  <span className="sample-label">Or pick sample photo:</span>
+                <div className="sample-avatars-row" style={{ marginTop: 12 }}>
+                  <span className="sample-label">Or pick sample thinker photo:</span>
                   <div className="avatar-pick-grid">
                     {SAMPLE_AVATARS.map((item, i) => (
                       <button
