@@ -512,13 +512,71 @@ export class AgoraPhilosophyClient {
     spaceId?: string;
     spaceName?: string;
     tags?: string[];
+    hostUser?: User;
   }): Promise<PhilosophyEvent> {
     try {
-      return await this.request<PhilosophyEvent>("/events", {
+      const apiPayload = {
+        title: data.title,
+        type: "online",
+        description: data.description,
+        startTime: data.startTime,
+        endTime: data.endTime || undefined,
+        url: data.locationUrl || "https://agora.philosophy/symposium/live",
+        capacity: data.maxCapacity || 30,
+        spaceId: data.spaceId || undefined,
+        metadata: {
+          eventType: data.type,
+          spaceName: data.spaceName || "Philosophy Circle",
+          tags: data.tags || ["Ethics", "Dialogue"],
+        },
+      };
+
+      const res = await this.request<any>("/events", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify(apiPayload),
       });
+
+      const e = res?.event || res;
+      const defaultHost: User = data.hostUser || {
+        id: "00000000-0000-0000-0000-000000000001",
+        name: "You (Event Organizer)",
+        username: "you",
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        philosophyProfile: {
+          primarySchools: ["Philosophy"],
+          keyThinkers: ["Socrates"],
+        },
+      } as unknown as User;
+
+      return {
+        id: e.id || `event-${Date.now()}`,
+        title: e.title || data.title,
+        type: e.metadata?.eventType || data.type,
+        description: e.description || data.description,
+        startTime: e.startTime || data.startTime,
+        endTime: e.endTime || data.endTime,
+        locationUrl: e.url || data.locationUrl || "https://agora.philosophy/symposium/live",
+        hostUser: e.user || e.hostUser || defaultHost,
+        spaceId: e.spaceId || data.spaceId,
+        spaceName: e.metadata?.spaceName || data.spaceName || "Philosophy Circle",
+        maxCapacity: e.capacity || data.maxCapacity || 30,
+        attendeeCount: 1,
+        userRsvpStatus: "going",
+        tags: e.metadata?.tags || data.tags || ["Ethics", "Dialogue"],
+        createdAt: e.createdAt || new Date().toISOString(),
+      };
     } catch {
+      const defaultHost: User = data.hostUser || {
+        id: "00000000-0000-0000-0000-000000000001",
+        name: "You (Event Organizer)",
+        username: "you",
+        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        philosophyProfile: {
+          primarySchools: ["Philosophy"],
+          keyThinkers: ["Socrates"],
+        },
+      } as unknown as User;
+
       const newEvent: PhilosophyEvent = {
         id: `event-${Date.now()}`,
         title: data.title,
@@ -527,16 +585,7 @@ export class AgoraPhilosophyClient {
         startTime: data.startTime,
         endTime: data.endTime,
         locationUrl: data.locationUrl || "https://agora.philosophy/symposium/live",
-        hostUser: {
-          id: "00000000-0000-0000-0000-000000000001",
-          name: "Immanuel Kant",
-          username: "kantian_critique",
-          avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-          philosophyProfile: {
-            primarySchools: ["Kantian Idealism"],
-            keyThinkers: ["Kant", "Rousseau"],
-          },
-        } as unknown as User,
+        hostUser: defaultHost,
         spaceId: data.spaceId,
         spaceName: data.spaceName,
         maxCapacity: data.maxCapacity || 30,

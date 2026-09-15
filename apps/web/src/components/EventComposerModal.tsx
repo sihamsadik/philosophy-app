@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { EventType, PhilosophicalSpace, PhilosophyEvent } from "../lib/api-client.js";
 import { agoraClient, DEMO_SPACES } from "../lib/api-client.js";
+import { useAuth } from "../context/AuthContext.js";
 
 export interface EventComposerModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
   onCreated,
   initialSpaceId,
 }) => {
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [type, setType] = useState<EventType>("symposium");
   const [description, setDescription] = useState("");
@@ -70,6 +72,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
         spaceId: chosenSpace?.id,
         spaceName: chosenSpace?.name,
         tags: tags.length > 0 ? tags : undefined,
+        hostUser: user || undefined,
       });
 
       if (onCreated) {
@@ -89,9 +92,38 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div
+      className="modal-backdrop"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "rgba(0, 0, 0, 0.75)",
+        backdropFilter: "blur(8px)",
+        zIndex: 99999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
       <div
         className="modal-pane event-composer-pane"
+        style={{
+          background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+          border: "1px solid rgba(255, 255, 255, 0.15)",
+          borderRadius: 24,
+          maxWidth: 580,
+          width: "100%",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          padding: 24,
+          color: "#f8fafc",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
