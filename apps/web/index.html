@@ -20,29 +20,21 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Service Worker Management -->
+    <!-- Service Worker & PWA Event Management -->
     <script>
+      window.deferredPwaPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPwaPrompt = e;
+        console.log('✓ Captured PWA beforeinstallprompt event globally!');
+      });
+
       if ('serviceWorker' in navigator) {
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          navigator.serviceWorker.getRegistrations().then(registrations => {
-            for (let reg of registrations) {
-              reg.unregister();
-            }
-          });
-          if ('caches' in window) {
-            caches.keys().then(names => {
-              for (let name of names) {
-                caches.delete(name);
-              }
-            });
-          }
-        } else {
-          window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-              .then(reg => console.log('PWA Service Worker registered:', reg.scope))
-              .catch(err => console.log('Service Worker registration failed:', err));
-          });
-        }
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('PWA Service Worker registered:', reg.scope))
+            .catch(err => console.log('Service Worker registration failed:', err));
+        });
       }
     </script>
   </body>

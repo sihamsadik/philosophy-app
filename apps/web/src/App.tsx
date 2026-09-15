@@ -18,6 +18,7 @@ import { SymposiumsDirectory } from "./components/SymposiumsDirectory.js";
 import { EventComposerModal } from "./components/EventComposerModal.js";
 import { LeaderboardHub } from "./components/LeaderboardHub.js";
 import { InstallAppBanner } from "./components/InstallAppBanner.js";
+import { PwaInstallModal } from "./components/PwaInstallModal.js";
 import { MomentsCarousel } from "./components/MomentsCarousel.js";
 import { LiveTextDebateModal } from "./components/LiveTextDebateModal.js";
 import { PublicLandingDashboard } from "./components/PublicLandingDashboard.js";
@@ -34,6 +35,7 @@ export const App: React.FC = () => {
   const [activeThreadPostId, setActiveThreadPostId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"signin" | "signup">("signin");
+  const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isUserMenuDropdownOpen, setIsUserMenuDropdownOpen] = useState(false);
 
@@ -65,6 +67,24 @@ export const App: React.FC = () => {
     setIsDMDrawerOpen(true);
   };
 
+  const handleTriggerPwaInstall = async () => {
+    const activePrompt = (window as any).deferredPwaPrompt;
+    if (activePrompt) {
+      try {
+        await activePrompt.prompt();
+        const choice = await activePrompt.userChoice;
+        if (choice && choice.outcome === "accepted") {
+          (window as any).deferredPwaPrompt = null;
+          setIsPwaModalOpen(false);
+          return;
+        }
+      } catch (err) {
+        console.error("Native PWA prompt error:", err);
+      }
+    }
+    setIsPwaModalOpen(true);
+  };
+
   return (
     <div className="app-container">
       {/* Mobile & Desktop Header Bar (Inspired by Telegram / Rize App Screenshot) */}
@@ -88,6 +108,16 @@ export const App: React.FC = () => {
         </div>
 
         <div className="top-header-right">
+          <button
+            type="button"
+            className="top-action-circle-btn"
+            onClick={handleTriggerPwaInstall}
+            title="Install App (PWA)"
+            style={{ fontSize: "0.9rem" }}
+          >
+            📲
+          </button>
+
           <button
             type="button"
             className="top-action-circle-btn notif-btn"
@@ -284,6 +314,13 @@ export const App: React.FC = () => {
       {/* Floating PWA Install App Banner (Positioned above bottom dock) */}
       <InstallAppBanner />
 
+      <PwaInstallModal
+        isOpen={isPwaModalOpen}
+        onClose={() => setIsPwaModalOpen(false)}
+        deferredPrompt={null}
+        onTriggerInstall={() => {}}
+      />
+
       {/* Modals & Drawers */}
       <AuthModal
         isOpen={isAuthModalOpen}
@@ -355,6 +392,13 @@ export const App: React.FC = () => {
         isOpen={!!liveDebateThinker}
         onClose={() => setLiveDebateThinker(null)}
         thinker={liveDebateThinker}
+      />
+
+      <PwaInstallModal
+        isOpen={isPwaModalOpen}
+        onClose={() => setIsPwaModalOpen(false)}
+        deferredPrompt={(window as any).deferredPwaPrompt}
+        onTriggerInstall={handleTriggerPwaInstall}
       />
     </div>
   );

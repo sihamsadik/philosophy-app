@@ -73,6 +73,13 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
     }
   };
 
+  const [nowTime, setNowTime] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const getEventTypeLabel = (type: string) => {
     switch (type) {
       case "symposium":
@@ -91,27 +98,25 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
   const getStatusCountdown = (startTimeStr: string, endTimeStr?: string) => {
     const start = new Date(startTimeStr).getTime();
     const end = endTimeStr ? new Date(endTimeStr).getTime() : start + 2 * 3600 * 1000;
-    const now = Date.now();
+    const now = nowTime;
 
     if (now >= start && now <= end) {
-      return { status: "live", text: "🔴 LIVE NOW" };
+      const elapsedMins = Math.floor((now - start) / 60000);
+      return { status: "live", text: `🔴 LIVE NOW (${elapsedMins}m elapsed)` };
     }
     if (now > end) {
       return { status: "past", text: "📜 Concluded" };
     }
 
     const diffMs = start - now;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
+    const mins = Math.floor(diffMs / 60000);
+    const secs = Math.floor((diffMs % 60000) / 1000);
+    const hours = Math.floor(mins / 60);
 
-    if (diffDays > 0) {
-      return { status: "upcoming", text: `📅 In ${diffDays} day${diffDays > 1 ? "s" : ""}` };
+    if (hours > 0) {
+      return { status: "upcoming", text: `⏳ Starts in ${hours}h ${mins % 60}m ${secs}s` };
     }
-    if (diffHours > 0) {
-      return { status: "upcoming", text: `⏳ Starts in ${diffHours}h` };
-    }
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    return { status: "upcoming", text: `⚡ Starts in ${diffMins}m` };
+    return { status: "upcoming", text: `⚡ Starts in ${mins}m ${secs}s` };
   };
 
   const filteredEvents = events.filter((e) => {

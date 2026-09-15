@@ -1,6 +1,8 @@
 {
+  "id": "/",
+  "scope": "/",
   "name": "Philosophy App — Intellectual Platform",
-  "short_name": "Philosophy",
+  "short_name": "Philosophy App",
   "description": "Discover thinkers, engage in structured side-by-side philosophical debates, and join circles.",
   "start_url": "/",
   "display": "standalone",
@@ -9,11 +11,36 @@
   "orientation": "any",
   "icons": [
     {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/pwa-icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
+  "prefer_related_applications": false,
   "categories": ["education", "social", "lifestyle"]
 }
