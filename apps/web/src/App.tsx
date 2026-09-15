@@ -20,6 +20,7 @@ import { LeaderboardHub } from "./components/LeaderboardHub.js";
 import { InstallAppBanner } from "./components/InstallAppBanner.js";
 import { MomentsCarousel } from "./components/MomentsCarousel.js";
 import { LiveTextDebateModal } from "./components/LiveTextDebateModal.js";
+import { PublicLandingDashboard } from "./components/PublicLandingDashboard.js";
 import { BottomNavDock, type NavTab as BottomNavTab } from "./components/BottomNavDock.js";
 import { agoraClient } from "./lib/api-client.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
@@ -32,6 +33,7 @@ export const App: React.FC = () => {
   const [activeDrawerEntityId, setActiveDrawerEntityId] = useState<string | null>(null);
   const [activeThreadPostId, setActiveThreadPostId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"signin" | "signup">("signin");
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isUserMenuDropdownOpen, setIsUserMenuDropdownOpen] = useState(false);
 
@@ -156,9 +158,39 @@ export const App: React.FC = () => {
               )}
             </div>
           ) : (
-            <button className="connect-btn-sm" onClick={() => setIsAuthModalOpen(true)}>
-              Sign In
-            </button>
+            <div className="auth-header-action-group" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <button
+                type="button"
+                className="connect-btn-sm"
+                onClick={() => {
+                  setAuthModalMode("signin");
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className="connect-btn-sm primary-signup-btn"
+                style={{
+                  background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                  color: "#ffffff",
+                  borderRadius: 20,
+                  border: "none",
+                  padding: "6px 14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  boxShadow: "0 2px 8px rgba(37, 99, 235, 0.3)",
+                }}
+                onClick={() => {
+                  setAuthModalMode("signup");
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                Sign Up
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -176,65 +208,78 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="app-main-content">
         <ErrorBoundary fallbackTitle="Philosophical Feed Recovered">
-          {activeTab === "spaces" && (
-            <SpacesHub
-              onOpenDM={(targetUser) => handleOpenDM(targetUser)}
-              onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
-              onOpenComposerForSpace={(space) => {
-                setComposerSpaceId(space.id);
-                setIsPostComposerOpen(true);
+          {!isAuthenticated || !user ? (
+            <PublicLandingDashboard
+              onOpenAuth={(mode) => {
+                setAuthModalMode(mode);
+                setIsAuthModalOpen(true);
               }}
             />
-          )}
+          ) : (
+            <>
+              {activeTab === "spaces" && (
+                <SpacesHub
+                  onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+                  onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
+                  onOpenComposerForSpace={(space) => {
+                    setComposerSpaceId(space.id);
+                    setIsPostComposerOpen(true);
+                  }}
+                />
+              )}
 
-          {activeTab === "symposiums" && (
-            <SymposiumsDirectory
-              onOpenComposer={() => setIsEventComposerOpen(true)}
-              onOpenDM={(targetUser) => handleOpenDM(targetUser)}
-              onOpenTextDebate={(hostUser) => setLiveDebateThinker(hostUser)}
-            />
-          )}
+              {activeTab === "symposiums" && (
+                <SymposiumsDirectory
+                  onOpenComposer={() => setIsEventComposerOpen(true)}
+                  onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+                  onOpenTextDebate={(hostUser) => setLiveDebateThinker(hostUser)}
+                />
+              )}
 
-          {activeTab === "leaderboard" && (
-            <LeaderboardHub onOpenDM={(targetUser) => handleOpenDM(targetUser)} />
-          )}
+              {activeTab === "leaderboard" && (
+                <LeaderboardHub onOpenDM={(targetUser) => handleOpenDM(targetUser)} />
+              )}
 
-          {activeTab === "recommendations" && (
-            <PeopleRecommendationsFeed
-              onOpenDM={(targetUser) => handleOpenDM(targetUser)}
-              onOpenConnectModal={(targetUser) => setConnectTargetUser(targetUser)}
-            />
-          )}
+              {activeTab === "recommendations" && (
+                <PeopleRecommendationsFeed
+                  onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+                  onOpenConnectModal={(targetUser) => setConnectTargetUser(targetUser)}
+                />
+              )}
 
-          {activeTab === "debates" && (
-            <PhilosophicalFeed
-              onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
-              onOpenDM={(authorUser) => handleOpenDM(authorUser)}
-              onOpenComposer={() => {
-                setComposerSpaceId(undefined);
-                setIsPostComposerOpen(true);
-              }}
-              onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
-            />
-          )}
+              {activeTab === "debates" && (
+                <PhilosophicalFeed
+                  onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
+                  onOpenDM={(authorUser) => handleOpenDM(authorUser)}
+                  onOpenComposer={() => {
+                    setComposerSpaceId(undefined);
+                    setIsPostComposerOpen(true);
+                  }}
+                  onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
+                />
+              )}
 
-          {activeTab === "profile" && (
-            <PhilosophyProfileEditor
-              userId={user?.id || "00000000-0000-0000-0000-000000000001"}
-              initialProfile={user?.philosophyProfile}
-            />
-          )}
+              {activeTab === "profile" && (
+                <PhilosophyProfileEditor
+                  userId={user?.id || "00000000-0000-0000-0000-000000000001"}
+                  initialProfile={user?.philosophyProfile}
+                />
+              )}
 
-          {activeTab === "search" && <SemanticSearch />}
+              {activeTab === "search" && <SemanticSearch />}
+            </>
+          )}
         </ErrorBoundary>
       </main>
 
-      {/* Fixed Bottom Navigation Dock (Responsive Mobile & Desktop Bar) */}
-      <BottomNavDock
-        activeTab={activeTab as BottomNavTab}
-        onTabChange={(tab) => setActiveTab(tab as NavTab)}
-        unreadNotifCount={unreadNotifCount}
-      />
+      {/* Fixed Bottom Navigation Dock (Shown for authenticated users) */}
+      {isAuthenticated && user && (
+        <BottomNavDock
+          activeTab={activeTab as BottomNavTab}
+          onTabChange={(tab) => setActiveTab(tab as NavTab)}
+          unreadNotifCount={unreadNotifCount}
+        />
+      )}
 
       {/* Floating PWA Install App Banner (Positioned above bottom dock) */}
       <InstallAppBanner />
@@ -242,6 +287,7 @@ export const App: React.FC = () => {
       {/* Modals & Drawers */}
       <AuthModal
         isOpen={isAuthModalOpen}
+        initialMode={authModalMode}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={() => setActiveTab("profile")}
       />

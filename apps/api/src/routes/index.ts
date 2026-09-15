@@ -68,10 +68,11 @@ export function mountRoutes() {
   // oauth, projects, crypto, utils — small, grouped in misc
   project.route("/", miscRoutes);
 
-  const v7 = new Hono<{ Variables: Variables }>();
-  // Connections live at the /v7 root (project derived from the auth user), NOT under :projectId.
-  // Registered before the param route so the static /connections + /users segments win.
-  v7.route("/", connectionRoutes);
-  v7.route("/:projectId", project);
-  return v7;
+  const router = new Hono<{ Variables: Variables }>();
+  router.route("/", connectionRoutes);
+  // Match explicit UUID project IDs (e.g. /v7/00000000-0000-0000-0000-000000000000/auth/sign-up)
+  router.route("/:projectId([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})", project);
+  // Direct clean paths (e.g. /api/auth/sign-up, /api/entities, /api/notifications)
+  router.route("/", project);
+  return router;
 }

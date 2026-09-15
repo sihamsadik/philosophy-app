@@ -166,6 +166,15 @@ export const authRoutes = new Hono<{ Variables: Variables }>()
         : undefined,
     });
   })
+  .get("/me", requireAuth, async (c) => {
+    const projectId = c.var.projectId;
+    const [profile] = await getDb().select().from(profiles)
+      .where(and(eq(profiles.projectId, projectId), eq(profiles.id, c.var.auth!.userId))).limit(1);
+    if (!profile) throw Errors.notFound("auth/user-not-found", "User profile not found");
+    const suspensions = await getDb().select().from(userSuspensions).where(eq(userSuspensions.profileId, profile.id));
+    const bits = await authBits(projectId, profile);
+    return c.json(shapeAuthUser(profile, suspensions, bits.operator, bits.steward, bits.owner, bits.admin));
+  })
   .post("/change-password", requireAuth, async (c) => {
     const projectId = c.var.projectId;
     const body = parseBody(changePasswordSchema, await c.req.json().catch(() => ({})), "auth");

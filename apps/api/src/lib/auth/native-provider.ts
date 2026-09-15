@@ -5,6 +5,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { getDb } from "../../db/index.js";
 import { authCredentials, authEmailTokens } from "../../db/schema/index.js";
 import { Errors } from "../../http/errors.js";
+import { env } from "../env.js";
 import { hashPassword, verifyPassword } from "./password.js";
 import { generateEmailToken, hashEmailToken } from "./email-token.js";
 import { confirmLink, resetLink, type EmailSender } from "./email/sender.js";
@@ -29,7 +30,7 @@ export class NativeAuthProvider implements AuthProvider {
       throw Errors.conflict("auth/email-exists", "An account with this email address already exists", "email");
     }
     const passwordHash = await hashPassword(password);
-    const autoConfirm = !env.POSTMARK_SERVER_TOKEN || env.PHILOSOPHY_ENV === "dev";
+    const autoConfirm = !env.POSTMARK_SERVER_TOKEN || process.env.AGORA_ENV === "dev" || process.env.PHILOSOPHY_ENV === "dev" || process.env.NODE_ENV !== "production";
     const emailConfirmedAt = autoConfirm ? new Date() : null;
 
     const [cred] = await getDb().insert(authCredentials).values({ projectId, email, passwordHash, emailConfirmedAt }).returning({ id: authCredentials.id });
@@ -37,7 +38,7 @@ export class NativeAuthProvider implements AuthProvider {
       await this.sendConfirm(projectId, cred!.id, email, linkBase);
       return { status: "confirmation_required" };
     }
-    return { status: "active", authUserId: cred!.id };
+    return { status: "confirmed", authUserId: cred!.id };
   }
 
   async verifyCredentials(projectId: string, emailRaw: string, password: string) {
@@ -46,7 +47,7 @@ export class NativeAuthProvider implements AuthProvider {
       .where(and(eq(authCredentials.projectId, projectId), eq(authCredentials.email, email))).limit(1);
     if (!cred || cred.disabledAt) return null; // unknown / disabled
     if (!cred.emailConfirmedAt) {
-      if (!env.POSTMARK_SERVER_TOKEN || env.PHILOSOPHY_ENV === "dev") {
+      if (!env.POSTMARK_SERVER_TOKEN || process.env.AGORA_ENV === "dev" || process.env.PHILOSOPHY_ENV === "dev" || process.env.NODE_ENV !== "production") {
         await getDb().update(authCredentials).set({ emailConfirmedAt: new Date(), updatedAt: new Date() }).where(eq(authCredentials.id, cred.id));
       } else {
         return null;
