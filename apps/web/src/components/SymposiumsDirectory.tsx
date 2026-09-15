@@ -7,12 +7,14 @@ export interface SymposiumsDirectoryProps {
   onOpenComposer: () => void;
   onOpenDM?: (targetUser: User) => void;
   onOpenTextDebate?: (hostUser: User) => void;
+  lastCreatedEvent?: PhilosophyEvent | null;
 }
 
 export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
   onOpenComposer,
   onOpenDM,
   onOpenTextDebate,
+  lastCreatedEvent,
 }) => {
   const [events, setEvents] = useState<PhilosophyEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +26,16 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
   const [rosterTab, setRosterTab] = useState<"all" | RSVPStatus>("all");
   const [isRosterLoading, setIsRosterLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (lastCreatedEvent) {
+      setEvents((prev) => {
+        const exists = prev.some((e) => e.id === lastCreatedEvent.id);
+        if (exists) return prev;
+        return [lastCreatedEvent, ...prev];
+      });
+    }
+  }, [lastCreatedEvent]);
 
   const loadEvents = async () => {
     try {
@@ -120,6 +132,14 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
   };
 
   const filteredEvents = events.filter((e) => {
+    if (activeTypeTab === "live_now") {
+      const start = new Date(e.startTime).getTime();
+      const end = e.endTime ? new Date(e.endTime).getTime() : start + 2 * 3600 * 1000;
+      if (nowTime < start || nowTime > end) return false;
+    } else if (activeTypeTab !== "all") {
+      if (e.type !== activeTypeTab) return false;
+    }
+
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -129,6 +149,12 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
       (e.hostUser.username && e.hostUser.username.toLowerCase().includes(q)) ||
       (e.tags && e.tags.some((t) => t.toLowerCase().includes(q)))
     );
+  });
+
+  const liveNowEvents = events.filter((e) => {
+    const start = new Date(e.startTime).getTime();
+    const end = e.endTime ? new Date(e.endTime).getTime() : start + 2 * 3600 * 1000;
+    return nowTime >= start && nowTime <= end;
   });
 
   const filteredRsvps = rosterRsvps.filter((r) => {
@@ -171,6 +197,18 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
           onClick={() => setActiveTypeTab("all")}
         >
           🔥 All Assemblies
+        </button>
+        <button
+          className={`tab-btn ${activeTypeTab === "live_now" ? "active" : ""}`}
+          onClick={() => setActiveTypeTab("live_now")}
+          style={{ position: "relative" }}
+        >
+          🔴 LIVE NOW
+          {liveNowEvents.length > 0 && (
+            <span style={{ background: "#ef4444", color: "#fff", borderRadius: 10, padding: "2px 6px", fontSize: "0.72rem", marginLeft: 6, fontWeight: 700 }}>
+              {liveNowEvents.length}
+            </span>
+          )}
         </button>
         <button
           className={`tab-btn ${activeTypeTab === "symposium" ? "active" : ""}`}

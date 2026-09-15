@@ -21,6 +21,7 @@ import { InstallAppBanner } from "./components/InstallAppBanner.js";
 import { PwaInstallModal } from "./components/PwaInstallModal.js";
 import { MomentsCarousel } from "./components/MomentsCarousel.js";
 import { LiveTextDebateModal } from "./components/LiveTextDebateModal.js";
+import { LiveEventJoinModal } from "./components/LiveEventJoinModal.js";
 import { PublicLandingDashboard } from "./components/PublicLandingDashboard.js";
 import { BottomNavDock, type NavTab as BottomNavTab } from "./components/BottomNavDock.js";
 import { agoraClient } from "./lib/api-client.js";
@@ -48,6 +49,8 @@ export const App: React.FC = () => {
   const [isPostComposerOpen, setIsPostComposerOpen] = useState(false);
   const [composerSpaceId, setComposerSpaceId] = useState<string | undefined>(undefined);
   const [isEventComposerOpen, setIsEventComposerOpen] = useState(false);
+  const [lastCreatedEvent, setLastCreatedEvent] = useState<any | null>(null);
+  const [selectedLiveEvent, setSelectedLiveEvent] = useState<any | null>(null);
 
   // Notification Drawer & Connection Request Modal
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
@@ -61,6 +64,8 @@ export const App: React.FC = () => {
       .then((res) => setUnreadNotifCount(res.unreadCount))
       .catch((err) => console.error("Failed to load notification badge:", err));
   }, []);
+
+  const [liveDebateEvent, setLiveDebateEvent] = useState<any | null>(null);
 
   const handleOpenDM = (targetUser?: User | null) => {
     setDmTargetUser(targetUser || null);
@@ -228,11 +233,10 @@ export const App: React.FC = () => {
       {/* Thinker Moments / Stories Carousel Bar */}
       <MomentsCarousel
         currentUser={user}
-        onOpenComposer={() => {
-          setComposerSpaceId(undefined);
-          setIsPostComposerOpen(true);
-        }}
+        onOpenComposer={() => setIsEventComposerOpen(true)}
         onSelectThinker={(thinker) => setLiveDebateThinker(thinker)}
+        onSelectEvent={(event) => setSelectedLiveEvent(event)}
+        lastCreatedEvent={lastCreatedEvent}
       />
 
       {/* Main Content Area */}
@@ -263,6 +267,7 @@ export const App: React.FC = () => {
                   onOpenComposer={() => setIsEventComposerOpen(true)}
                   onOpenDM={(targetUser) => handleOpenDM(targetUser)}
                   onOpenTextDebate={(hostUser) => setLiveDebateThinker(hostUser)}
+                  lastCreatedEvent={lastCreatedEvent}
                 />
               )}
 
@@ -384,14 +389,32 @@ export const App: React.FC = () => {
       <EventComposerModal
         isOpen={isEventComposerOpen}
         onClose={() => setIsEventComposerOpen(false)}
-        onCreated={() => setActiveTab("symposiums")}
+        onCreated={(newEvent) => {
+          setLastCreatedEvent(newEvent);
+          setActiveTab("symposiums");
+        }}
+      />
+
+      <LiveEventJoinModal
+        isOpen={!!selectedLiveEvent}
+        onClose={() => setSelectedLiveEvent(null)}
+        event={selectedLiveEvent}
+        onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+        onOpenTextDebate={(hostUser, evt) => {
+          setLiveDebateThinker(hostUser);
+          setLiveDebateEvent(evt || selectedLiveEvent);
+        }}
       />
 
       {/* Live Text Debate / Moment Modal for Story Circles */}
       <LiveTextDebateModal
         isOpen={!!liveDebateThinker}
-        onClose={() => setLiveDebateThinker(null)}
+        onClose={() => {
+          setLiveDebateThinker(null);
+          setLiveDebateEvent(null);
+        }}
         thinker={liveDebateThinker}
+        event={liveDebateEvent}
       />
 
       <PwaInstallModal

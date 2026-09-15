@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { User } from "@philosophy/contract";
+import type { PhilosophyEvent } from "../lib/api-client.js";
 
 export interface LiveTextDebateModalProps {
   isOpen: boolean;
   onClose: () => void;
   thinker: User | null;
+  event?: PhilosophyEvent | null;
 }
 
 interface DebateMessage {
@@ -151,6 +153,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
   isOpen,
   onClose,
   thinker,
+  event,
 }) => {
   const [userReply, setUserReply] = useState("");
   const [selectedStance, setSelectedStance] = useState<"thesis" | "antithesis" | "synthesis">("antithesis");
@@ -160,7 +163,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
   const [newIncomingNotification, setNewIncomingNotification] = useState<string | null>(null);
   const streamRef = useRef<HTMLDivElement>(null);
 
-  const thinkerId = thinker?.id || "usr-sartre-001";
+  const thinkerId = thinker?.id || (event ? `evt-${event.id}` : "usr-sartre-001");
 
   // Live Timer & Dynamic Room Viewer Counter
   useEffect(() => {
@@ -185,7 +188,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
 
   // Real-Time Incoming Messages Stream Simulation (Every 10 seconds)
   useEffect(() => {
-    if (!isOpen || !thinker) return;
+    if (!isOpen || (!thinker && !event)) return;
 
     let simIndex = 0;
     const streamInterval = setInterval(() => {
@@ -221,21 +224,27 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
     }, 10000);
 
     return () => clearInterval(streamInterval);
-  }, [isOpen, thinker, thinkerId]);
+  }, [isOpen, thinker, event, thinkerId]);
 
-  if (!isOpen || !thinker) return null;
+  if (!isOpen || (!thinker && !event)) return null;
+
+  const activeHostName = event?.hostUser?.name || event?.hostUser?.username || thinker?.name || thinker?.username || "Host Philosopher";
+  const activeHostHandle = event?.hostUser?.username || thinker?.username || "thinker";
+  const activeHostAvatar = event?.hostUser?.avatar || thinker?.avatar;
 
   const debateData = INITIAL_DEBATES[thinkerId] || {
-    topic: `Live philosophical text debate hosted by ${thinker.name || thinker.username}`,
-    school: "Philosophy Circle",
+    topic: event
+      ? `${event.title}${event.description ? ` — ${event.description}` : ""}`
+      : `Live philosophical text debate hosted by ${activeHostName}`,
+    school: event?.spaceName || "Philosophy Agora Circle",
     messages: [
       {
         id: "m1",
-        authorName: thinker.name || thinker.username || "Philosopher",
-        authorHandle: thinker.username || "thinker",
-        authorAvatar: thinker.avatar,
+        authorName: activeHostName,
+        authorHandle: activeHostHandle,
+        authorAvatar: activeHostAvatar,
         stance: "thesis",
-        content: "Welcome to this live text argument! Share your thesis, antithesis, or synthesis below.",
+        content: event?.description || "Welcome to this live text debate room! Join the argument with your thesis, antithesis rebuttal, or synthesis.",
         timestamp: "Just now",
         reactions: { upvotes: 5, fire: 2, insights: 4 },
       },
@@ -315,16 +324,16 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
         {/* Header Bar */}
         <div className="live-debate-header" style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>
           <div className="thinker-profile-row" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {thinker.avatar ? (
-              <img src={thinker.avatar} alt="Avatar" className="navbar-avatar-img" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />
+            {activeHostAvatar ? (
+              <img src={activeHostAvatar} alt="Avatar" className="navbar-avatar-img" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />
             ) : (
               <div className="navbar-avatar-circle" style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--primary-accent)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
-                {(thinker.name || thinker.username || "T").charAt(0).toUpperCase()}
+                {activeHostName.charAt(0).toUpperCase()}
               </div>
             )}
             <div>
               <div className="thinker-name-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <h3 style={{ margin: 0, fontSize: "1.1rem" }}>{thinker.name || thinker.username}</h3>
+                <h3 style={{ margin: 0, fontSize: "1.1rem" }}>{activeHostName}</h3>
                 <span className="live-pulse-badge" style={{ background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: 12, padding: "2px 8px", fontSize: "0.75rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", animation: "pulse 1.5s infinite" }}></span>
                   🔴 LIVE NOW — {formatTimer(elapsedSeconds)}

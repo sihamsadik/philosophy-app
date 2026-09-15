@@ -469,9 +469,16 @@ export class AgoraPhilosophyClient {
   /**
    * Symposiums & Scheduled Events
    */
-  async getEvents(params?: { type?: EventType; spaceId?: string }): Promise<{ events: PhilosophyEvent[] }> {
+  async getEvents(params?: { type?: string; spaceId?: string; timeWindow?: "ongoing" | "upcoming" | "past" }): Promise<{ events: PhilosophyEvent[] }> {
     const query = new URLSearchParams();
-    if (params?.type) query.set("type", params.type);
+    if (params?.type) {
+      if (params.type === "live_now") {
+        query.set("timeWindow", "ongoing");
+      } else if (params.type === "online" || params.type === "physical" || params.type === "hybrid") {
+        query.set("type", params.type);
+      }
+    }
+    if (params?.timeWindow) query.set("timeWindow", params.timeWindow);
     if (params?.spaceId) query.set("spaceId", params.spaceId);
     const queryString = query.toString() ? `?${query.toString()}` : "";
     const res = await this.request<any>(`/events${queryString}`);
@@ -485,10 +492,14 @@ export class AgoraPhilosophyClient {
       endTime: e.endTime || e.end_time,
       locationUrl: e.url || "https://agora.philosophy/symposium/live",
       hostUser: e.user || e.hostUser || {
-        id: e.userId || "usr-001",
-        name: e.metadata?.hostName || "Immanuel Kant",
-        username: e.metadata?.hostHandle || "kantian_critique",
-        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+        id: e.userId || "usr-creator",
+        name: e.metadata?.hostName || "You (Event Organizer)",
+        username: e.metadata?.hostHandle || "you",
+        avatar: e.metadata?.hostAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        philosophyProfile: {
+          primarySchools: ["Philosophy"],
+          keyThinkers: ["Socrates"],
+        },
       },
       spaceId: e.spaceId,
       spaceName: e.metadata?.spaceName || "Philosophy Circle",
@@ -514,6 +525,21 @@ export class AgoraPhilosophyClient {
     tags?: string[];
     hostUser?: User;
   }): Promise<PhilosophyEvent> {
+    const hostName = data.hostUser?.name || data.hostUser?.username || "You (Event Organizer)";
+    const hostHandle = data.hostUser?.username || "you";
+    const hostAvatar = data.hostUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
+
+    const defaultHost: User = data.hostUser || ({
+      id: "00000000-0000-0000-0000-000000000001",
+      name: hostName,
+      username: hostHandle,
+      avatar: hostAvatar,
+      philosophyProfile: {
+        primarySchools: ["Philosophy"],
+        keyThinkers: ["Socrates"],
+      },
+    } as unknown as User);
+
     try {
       const apiPayload = {
         title: data.title,
@@ -528,6 +554,9 @@ export class AgoraPhilosophyClient {
           eventType: data.type,
           spaceName: data.spaceName || "Philosophy Circle",
           tags: data.tags || ["Ethics", "Dialogue"],
+          hostName,
+          hostHandle,
+          hostAvatar,
         },
       };
 
@@ -537,18 +566,7 @@ export class AgoraPhilosophyClient {
       });
 
       const e = res?.event || res;
-      const defaultHost: User = data.hostUser || {
-        id: "00000000-0000-0000-0000-000000000001",
-        name: "You (Event Organizer)",
-        username: "you",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-        philosophyProfile: {
-          primarySchools: ["Philosophy"],
-          keyThinkers: ["Socrates"],
-        },
-      } as unknown as User;
-
-      return {
+      const createdEvent: PhilosophyEvent = {
         id: e.id || `event-${Date.now()}`,
         title: e.title || data.title,
         type: e.metadata?.eventType || data.type,
@@ -565,18 +583,11 @@ export class AgoraPhilosophyClient {
         tags: e.metadata?.tags || data.tags || ["Ethics", "Dialogue"],
         createdAt: e.createdAt || new Date().toISOString(),
       };
-    } catch {
-      const defaultHost: User = data.hostUser || {
-        id: "00000000-0000-0000-0000-000000000001",
-        name: "You (Event Organizer)",
-        username: "you",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-        philosophyProfile: {
-          primarySchools: ["Philosophy"],
-          keyThinkers: ["Socrates"],
-        },
-      } as unknown as User;
 
+      // Unshift to client memory array as well
+      DEMO_EVENTS.unshift(createdEvent);
+      return createdEvent;
+    } catch {
       const newEvent: PhilosophyEvent = {
         id: `event-${Date.now()}`,
         title: data.title,
