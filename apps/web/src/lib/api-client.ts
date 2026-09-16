@@ -509,7 +509,21 @@ export class AgoraPhilosophyClient {
       tags: e.metadata?.tags || ["Ethics", "Dialogue"],
       createdAt: e.createdAt || new Date().toISOString(),
     }));
-    return { events: mapped };
+
+    // Filter out concluded events older than 1 day (24 hours)
+    const ONE_DAY_MS = 24 * 3600 * 1000;
+    const now = Date.now();
+    const activeOrRecent = mapped.filter((ev: PhilosophyEvent) => {
+      if (ev.endTime) {
+        const endMs = new Date(ev.endTime).getTime();
+        if (!isNaN(endMs) && endMs < now && (now - endMs > ONE_DAY_MS)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return { events: activeOrRecent };
   }
 
   async createEvent(data: {
@@ -676,6 +690,108 @@ export class AgoraPhilosophyClient {
   }
 
   /**
+   * Live Event Text Debate Chat Messages & Reactions (Persistent Storage & Backend Integration)
+   */
+  async getEventMessages(eventId: string): Promise<{ messages: any[] }> {
+    try {
+      const res = await this.request<any>(`/events/${eventId}/messages`);
+      if (res?.messages) return { messages: res.messages };
+    } catch {}
+
+    try {
+      const stored = localStorage.getItem(`agora_live_event_msgs_${eventId}`);
+      if (stored) return { messages: JSON.parse(stored) };
+    } catch {}
+    return { messages: [] };
+  }
+
+  async postEventMessage(eventId: string, data: {
+    authorName: string;
+    authorHandle: string;
+    authorAvatar?: string;
+    stance: "thesis" | "antithesis" | "synthesis";
+    content: string;
+  }): Promise<{ message: any }> {
+    const newMsg = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      authorName: data.authorName,
+      authorHandle: data.authorHandle,
+      authorAvatar: data.authorAvatar,
+      stance: data.stance,
+      content: data.content,
+      timestamp: "Just now",
+      reactions: { upvotes: 0, fire: 0, insights: 0 },
+    };
+
+    try {
+      await this.request<any>(`/events/${eventId}/messages`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    } catch {}
+
+    try {
+      const current = (await this.getEventMessages(eventId)).messages;
+      const updated = [...current, newMsg];
+      localStorage.setItem(`agora_live_event_msgs_${eventId}`, JSON.stringify(updated));
+    } catch {}
+
+    return { message: newMsg };
+  }
+
+  async reactToEventMessage(eventId: string, messageId: string, reactionType: "upvotes" | "fire" | "insights"): Promise<{ success: boolean; activeReaction?: string | null }> {
+    let userReactionsMap: Record<string, string> = {};
+    try {
+      const raw = localStorage.getItem("agora_user_reactions_map");
+      if (raw) userReactionsMap = JSON.parse(raw);
+    } catch {}
+
+    const prevReaction = userReactionsMap[messageId] || null;
+    let newActiveReaction: "upvotes" | "fire" | "insights" | null = null;
+
+    if (prevReaction === reactionType) {
+      delete userReactionsMap[messageId];
+      newActiveReaction = null;
+    } else {
+      userReactionsMap[messageId] = reactionType;
+      newActiveReaction = reactionType;
+    }
+
+    try {
+      localStorage.setItem("agora_user_reactions_map", JSON.stringify(userReactionsMap));
+    } catch {}
+
+    try {
+      await this.request<any>(`/events/${eventId}/messages/${messageId}/react`, {
+        method: "POST",
+        body: JSON.stringify({ type: reactionType, prevType: prevReaction, activeReaction: newActiveReaction }),
+      });
+    } catch {}
+
+    try {
+      const current = (await this.getEventMessages(eventId)).messages;
+      const updated = current.map((m: any) => {
+        if (m.id === messageId) {
+          const reactions = { ...(m.reactions || { upvotes: 0, fire: 0, insights: 0 }) };
+          if (prevReaction === reactionType) {
+            reactions[reactionType] = Math.max(0, (reactions[reactionType] || 0) - 1);
+          } else {
+            if (prevReaction && reactions[prevReaction as "upvotes" | "fire" | "insights"] > 0) {
+              reactions[prevReaction as "upvotes" | "fire" | "insights"] -= 1;
+            }
+            reactions[reactionType] = (reactions[reactionType] || 0) + 1;
+          }
+          return { ...m, reactions };
+        }
+        return m;
+      });
+      localStorage.setItem(`agora_live_event_msgs_${eventId}`, JSON.stringify(updated));
+    } catch {}
+
+    return { success: true, activeReaction: newActiveReaction };
+  }
+
+  /**
    * Community Intellectual Leaderboard & Achievement Badges
    */
   async getLeaderboard(school?: string): Promise<{ entries: LeaderboardEntry[] }> {
@@ -831,24 +947,57 @@ export class AgoraPhilosophyClient {
     authorHandle?: string;
     authorAvatar?: string;
   }): Promise<PhilosophicalPost> {
+    const authorName = postData.authorName || "You (Thinker)";
+    const authorHandle = postData.authorHandle || "you";
+    const authorAvatar = postData.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+
+    const payload = {
+      title: postData.title,
+      content: postData.content,
+      metadata: {
+        postType: postData.postType,
+        primarySchool: postData.primarySchool || "General Philosophy",
+        keyThinkers: postData.keyThinkers || [],
+        authorName,
+        authorHandle,
+        authorAvatar,
+      },
+    };
+
     try {
-      return await this.request<PhilosophicalPost>("/entities", {
+      const res = await this.request<any>("/entities", {
         method: "POST",
-        body: JSON.stringify(postData),
+        body: JSON.stringify(payload),
       });
+      const meta = res?.metadata || payload.metadata;
+      return {
+        id: res?.id || `post-${Date.now()}`,
+        title: res?.title || postData.title,
+        content: res?.content || postData.content,
+        authorId: res?.userId || "usr-current",
+        authorName: meta.authorName || authorName,
+        authorHandle: meta.authorHandle || authorHandle,
+        authorAvatar: meta.authorAvatar || authorAvatar,
+        postType: meta.postType || postData.postType,
+        primarySchool: meta.primarySchool || "General Philosophy",
+        keyThinkers: meta.keyThinkers || [],
+        upvotesCount: 0,
+        commentsCount: 0,
+        createdAt: "Just now",
+      };
     } catch {
       const newPost: PhilosophicalPost = {
         id: `post-${Date.now()}`,
         title: postData.title,
         content: postData.content,
-        authorId: "00000000-0000-0000-0000-000000000001",
-        authorName: postData.authorName || "Jean-Paul Sartre",
-        authorHandle: postData.authorHandle || "sartre",
-        authorAvatar: postData.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        authorId: "usr-current",
+        authorName,
+        authorHandle,
+        authorAvatar,
         postType: postData.postType,
-        primarySchool: postData.primarySchool || "Existentialism",
-        keyThinkers: postData.keyThinkers || ["Sartre"],
-        upvotesCount: 1,
+        primarySchool: postData.primarySchool || "General Philosophy",
+        keyThinkers: postData.keyThinkers || [],
+        upvotesCount: 0,
         commentsCount: 0,
         createdAt: "Just now",
       };
@@ -882,19 +1031,23 @@ export class AgoraPhilosophyClient {
     stance?: "thesis" | "antithesis" | "synthesis",
     authorData?: { authorName?: string; authorHandle?: string; authorAvatar?: string }
   ): Promise<PhilosophicalComment> {
+    const authorName = authorData?.authorName || "You (Thinker)";
+    const authorHandle = authorData?.authorHandle || "you";
+    const authorAvatar = authorData?.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+
     try {
       return await this.request<PhilosophicalComment>(`/entities/${entityId}/comments`, {
         method: "POST",
-        body: JSON.stringify({ content, parentId, stance }),
+        body: JSON.stringify({ content, parentId, stance, authorName, authorHandle, authorAvatar }),
       });
     } catch {
       const newComment: PhilosophicalComment = {
         id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         entityId,
-        authorId: "00000000-0000-0000-0000-000000000001",
-        authorName: authorData?.authorName || "Jean-Paul Sartre",
-        authorHandle: authorData?.authorHandle || "sartre",
-        authorAvatar: authorData?.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        authorId: "usr-current",
+        authorName,
+        authorHandle,
+        authorAvatar,
         content,
         parentId: parentId || null,
         stance: stance || "synthesis",
@@ -1527,7 +1680,7 @@ export const DEMO_EVENTS: PhilosophyEvent[] = [
     spaceId: "space-1",
     spaceName: "Existentialist Guild",
     maxCapacity: 25,
-    attendeeCount: 18,
+    attendeeCount: 1,
     userRsvpStatus: "going",
     tags: ["Epistemology", "Kant", "Metaphysics"],
     createdAt: "1 day ago",
@@ -1553,7 +1706,7 @@ export const DEMO_EVENTS: PhilosophyEvent[] = [
     spaceId: "space-2",
     spaceName: "Spinozan Monism Hub",
     maxCapacity: 50,
-    attendeeCount: 42,
+    attendeeCount: 1,
     userRsvpStatus: "going",
     tags: ["Free Will", "Determinism", "Ethics"],
     createdAt: "2 days ago",
@@ -1578,8 +1731,8 @@ export const DEMO_EVENTS: PhilosophyEvent[] = [
     } as unknown as User,
     spaceId: "space-3",
     spaceName: "Absurdist Circle",
-    maxCapacity: 100,
-    attendeeCount: 64,
+    maxCapacity: 30,
+    attendeeCount: 1,
     userRsvpStatus: "maybe",
     tags: ["Existentialism", "Ethics", "Freedom"],
     createdAt: "3 days ago",
@@ -1601,67 +1754,14 @@ export const DEMO_EVENTS: PhilosophyEvent[] = [
     spaceId: "space-2",
     spaceName: "Spinozan Monism Hub",
     maxCapacity: 20,
-    attendeeCount: 15,
+    attendeeCount: 1,
     userRsvpStatus: "declined",
     tags: ["Rationalism", "Spinoza", "Metaphysics"],
     createdAt: "4 days ago",
   },
 ];
 
-export const DEMO_RSVPS: EventRSVP[] = [
-  {
-    id: "rsvp-1",
-    eventId: "event-1",
-    user: {
-      id: "00000000-0000-0000-0000-000000000001",
-      name: "Immanuel Kant",
-      username: "kantian_critique",
-      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-    } as User,
-    status: "going",
-    updatedAt: "Host",
-    createdAt: "1 day ago",
-  },
-  {
-    id: "rsvp-2",
-    eventId: "event-1",
-    user: {
-      id: "00000000-0000-0000-0000-000000000002",
-      name: "Baruch Spinoza",
-      username: "spinoza",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-    } as User,
-    status: "going",
-    updatedAt: "1 hour ago",
-    createdAt: "1 hour ago",
-  },
-  {
-    id: "rsvp-3",
-    eventId: "event-1",
-    user: {
-      id: "00000000-0000-0000-0000-000000000005",
-      name: "Friedrich Nietzsche",
-      username: "nietzsche",
-      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
-    } as User,
-    status: "maybe",
-    updatedAt: "2 hours ago",
-    createdAt: "2 hours ago",
-  },
-  {
-    id: "rsvp-4",
-    eventId: "event-2",
-    user: {
-      id: "00000000-0000-0000-0000-000000000004",
-      name: "Jean-Paul Sartre",
-      username: "sartre",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
-    } as User,
-    status: "going",
-    updatedAt: "3 hours ago",
-    createdAt: "3 hours ago",
-  },
-];
+export const DEMO_RSVPS: EventRSVP[] = [];
 
 export const ALL_PLATFORM_BADGES: PhilosophicalBadge[] = [
   {

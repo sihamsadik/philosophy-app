@@ -79,7 +79,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
       setRosterRsvps(res.rsvps);
     } catch (err) {
       console.error("Failed to load RSVPs:", err);
-      setRosterRsvps(DEMO_RSVPS.filter((r) => r.eventId === event.id));
+      setRosterRsvps([]);
     } finally {
       setIsRosterLoading(false);
     }
