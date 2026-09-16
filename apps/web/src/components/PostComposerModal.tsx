@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { PhilosophicalPost, PhilosophicalSpace } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
+import { useAuth } from "../context/AuthContext.js";
 
 export interface PostComposerModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
   authorAvatar,
   initialSpaceId,
 }) => {
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [postType, setPostType] = useState<PhilosophicalPost["postType"]>("argument");
@@ -51,6 +53,10 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
 
   if (!isOpen) return null;
 
+  const currentAuthorName = authorName || user?.name || user?.username || "You (Thinker)";
+  const currentAuthorHandle = authorHandle || user?.username || "you";
+  const currentAuthorAvatar = authorAvatar || user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
@@ -72,9 +78,9 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
         postType,
         primarySchool: primarySchool.trim() || matchedSpace?.primarySchool || "General Philosophy",
         keyThinkers: keyThinkers.length > 0 ? keyThinkers : matchedSpace?.keyThinkers || ["Various Thinkers"],
-        authorName,
-        authorHandle,
-        authorAvatar,
+        authorName: currentAuthorName,
+        authorHandle: currentAuthorHandle,
+        authorAvatar: currentAuthorAvatar,
       });
 
       // Attach space metadata if selected

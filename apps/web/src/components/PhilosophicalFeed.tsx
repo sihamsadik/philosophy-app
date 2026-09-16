@@ -143,12 +143,12 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                       <img src={post.authorAvatar} alt="Avatar" className="author-avatar-img" />
                     ) : (
                       <div className="author-avatar-circle">
-                        {post.authorName.charAt(0).toUpperCase()}
+                        {(post.authorName || post.authorHandle || "T").charAt(0).toUpperCase()}
                       </div>
                     )}
                     <div>
-                      <span className="author-name-text">{post.authorName}</span>
-                      <span className="author-handle-text">@{post.authorHandle}</span>
+                      <span className="author-name-text">{post.authorName || post.authorHandle || "Thinker"}</span>
+                      <span className="author-handle-text">@{post.authorHandle || "thinker"}</span>
                     </div>
                   </div>
 
