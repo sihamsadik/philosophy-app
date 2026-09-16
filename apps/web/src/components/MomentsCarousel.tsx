@@ -16,6 +16,7 @@ interface StoryCircleItem {
   username: string;
   avatar: string;
   isLive: boolean;
+  isUpcoming: boolean;
   event: PhilosophyEvent;
   hostUser: User;
 }
@@ -33,12 +34,12 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
   useEffect(() => {
     setIsLoading(true);
     agoraClient
-      .getEvents({ type: "live_now" })
+      .getEvents()
       .then((res) => {
         setDbEvents(res.events || []);
       })
       .catch((err) => {
-        console.error("Failed to fetch live events for story circles:", err);
+        console.error("Failed to fetch events for story circles:", err);
         setDbEvents([]);
       })
       .finally(() => {
@@ -56,13 +57,14 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
     }
   }, [lastCreatedEvent]);
 
-  // Convert ONLY real DB events into story circle items
+  // Convert real DB events into story circle items (both LIVE and UPCOMING scheduled)
   const now = Date.now();
   const liveStoryCircles: StoryCircleItem[] = dbEvents
     .map((e) => {
       const start = new Date(e.startTime).getTime();
       const end = e.endTime ? new Date(e.endTime).getTime() : start + 2 * 3600 * 1000;
       const isLive = now >= start && now <= end;
+      const isUpcoming = now < start;
 
       const host = e.hostUser || {
         id: "usr-creator",
@@ -77,11 +79,12 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
         username: host.username || "organizer",
         avatar: host.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
         isLive,
+        isUpcoming,
         event: e,
         hostUser: host as User,
       };
     })
-    .filter((item) => item.isLive);
+    .filter((item) => item.isLive || item.isUpcoming);
 
   const handleItemClick = (item: StoryCircleItem) => {
     if (onSelectEvent) {
@@ -109,20 +112,20 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
           <span className="moment-label">Add live</span>
         </div>
 
-        {/* Dynamic Real DB Story Circles List — NO MOCK DATA */}
+        {/* Dynamic Real DB Story Circles List — Displays Newly Created Events First */}
         {liveStoryCircles.map((item) => (
           <div
             key={item.id}
             className="moment-item"
             onClick={() => handleItemClick(item)}
-            title={`Live Now: ${item.event.title}`}
+            title={item.isLive ? `Live Now: ${item.event.title}` : `Scheduled: ${item.event.title}`}
           >
             <div
               className="moment-avatar-ring active-ring"
               style={{
                 position: "relative",
-                border: "2px solid #ef4444",
-                boxShadow: "0 0 12px rgba(239, 68, 68, 0.6)",
+                border: item.isLive ? "2px solid #ef4444" : "2px solid #3b82f6",
+                boxShadow: item.isLive ? "0 0 12px rgba(239, 68, 68, 0.6)" : "0 0 10px rgba(59, 130, 246, 0.5)",
               }}
             >
               <img src={item.avatar} alt={item.name} className="moment-avatar-img" />
@@ -132,21 +135,27 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
                   bottom: -4,
                   left: "50%",
                   transform: "translateX(-50%)",
-                  background: "#ef4444",
+                  background: item.isLive ? "#ef4444" : "#3b82f6",
                   color: "#ffffff",
-                  fontSize: "0.6rem",
+                  fontSize: "0.58rem",
                   fontWeight: 800,
                   padding: "1px 5px",
                   borderRadius: 8,
                   letterSpacing: "0.05em",
                   whiteSpace: "nowrap",
-                  boxShadow: "0 2px 6px rgba(239, 68, 68, 0.5)",
+                  boxShadow: item.isLive ? "0 2px 6px rgba(239, 68, 68, 0.5)" : "0 2px 6px rgba(59, 130, 246, 0.5)",
                 }}
               >
-                LIVE
+                {item.isLive ? "LIVE" : "SOON"}
               </div>
             </div>
-            <span className="moment-label" style={{ fontWeight: 700, color: "#f87171" }}>
+            <span
+              className="moment-label"
+              style={{
+                fontWeight: 700,
+                color: item.isLive ? "#f87171" : "#60a5fa",
+              }}
+            >
               {item.name.split(" ")[0]}
             </span>
           </div>
@@ -154,7 +163,7 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
 
         {!isLoading && liveStoryCircles.length === 0 && (
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontStyle: "italic", marginLeft: 8 }}>
-            No live events in database right now. Click <strong>+</strong> to start one!
+            No live or scheduled events right now. Click <strong>+</strong> to start one!
           </div>
         )}
       </div>

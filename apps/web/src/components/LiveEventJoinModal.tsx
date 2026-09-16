@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { User } from "@philosophy/contract";
 import type { PhilosophyEvent } from "../lib/api-client.js";
+import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
 
 export interface LiveEventJoinModalProps {
@@ -37,23 +38,37 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
   const [userComment, setUserComment] = useState("");
   const [selectedStance, setSelectedStance] = useState<"thesis" | "antithesis" | "synthesis">("antithesis");
   const [liveMessages, setLiveMessages] = useState<DebateMessage[]>([]);
+  const [userReactions, setUserReactions] = useState<Record<string, string>>({});
   const chatStreamRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    try {
+      const raw = localStorage.getItem("agora_user_reactions_map");
+      if (raw) setUserReactions(JSON.parse(raw));
+    } catch {}
+  }, [isOpen]);
 
   useEffect(() => {
     setCurrentEvent(event);
     if (event) {
-      setLiveMessages([
-        {
-          id: `init-${event.id}`,
-          authorName: event.hostUser?.name || event.hostUser?.username || "Event Organizer",
-          authorHandle: event.hostUser?.username || "organizer",
-          authorAvatar: event.hostUser?.avatar,
-          stance: "thesis",
-          content: event.description || `Welcome to "${event.title}". Share your thesis, counter-rebuttal, or synthesis in this live text chat!`,
-          timestamp: "Just now",
-          reactions: { upvotes: 5, fire: 2, insights: 3 },
-        },
-      ]);
+      agoraClient.getEventMessages(event.id).then((res) => {
+        if (res.messages && res.messages.length > 0) {
+          setLiveMessages(res.messages);
+        } else {
+          const initMsg: DebateMessage = {
+            id: `init-${event.id}`,
+            authorName: event.hostUser?.name || event.hostUser?.username || "Event Organizer",
+            authorHandle: event.hostUser?.username || "organizer",
+            authorAvatar: event.hostUser?.avatar || undefined,
+            stance: "thesis",
+            content: event.description || `Welcome to "${event.title}". Share your thesis, counter-rebuttal, or synthesis in this live text chat!`,
+            timestamp: "Just now",
+            reactions: { upvotes: 0, fire: 0, insights: 0 },
+          };
+          setLiveMessages([initMsg]);
+        }
+      });
     }
   }, [event]);
 
@@ -89,6 +104,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
       ...currentEvent,
       startTime: nowIso,
       endTime: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
+      attendeeCount: Math.max(1, currentEvent.attendeeCount || 1),
     };
     setCurrentEvent(updated);
     if (onUpdateEvent) onUpdateEvent(updated);
@@ -101,10 +117,35 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
     const updated: PhilosophyEvent = {
       ...currentEvent,
       endTime: endedIso,
+      attendeeCount: 0,
     };
     setCurrentEvent(updated);
     if (onUpdateEvent) onUpdateEvent(updated);
     alert("🏁 Live Event Concluded.");
+  };
+
+  const handleLeaveAndClose = () => {
+    if (isLiveNow && currentEvent) {
+      const remainingCount = Math.max(0, (currentEvent.attendeeCount || 1) - 1);
+      if (remainingCount === 0 || isHost) {
+        const endedIso = new Date().toISOString();
+        const updated: PhilosophyEvent = {
+          ...currentEvent,
+          attendeeCount: 0,
+          endTime: endedIso,
+        };
+        setCurrentEvent(updated);
+        if (onUpdateEvent) onUpdateEvent(updated);
+      } else {
+        const updated: PhilosophyEvent = {
+          ...currentEvent,
+          attendeeCount: remainingCount,
+        };
+        setCurrentEvent(updated);
+        if (onUpdateEvent) onUpdateEvent(updated);
+      }
+    }
+    onClose();
   };
 
   const getTimingText = () => {
@@ -139,23 +180,25 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
       currentEvent.locationUrl.includes("video"))
   );
 
-  const handleSendComment = (e: React.FormEvent) => {
+  const handleSendComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userComment.trim()) return;
+    if (!userComment.trim() || !currentEvent) return;
 
-    const newMsg: DebateMessage = {
-      id: `msg-${Date.now()}`,
-      authorName: user?.name || user?.username || "You (Thinker)",
-      authorHandle: user?.username || "you",
-      authorAvatar: user?.avatar,
-      stance: selectedStance,
-      content: userComment.trim(),
-      timestamp: "Just now",
-      reactions: { upvotes: 1, fire: 0, insights: 0 },
-    };
-
-    setLiveMessages((prev) => [...prev, newMsg]);
+    const authorName = user?.name || user?.username || "You (Thinker)";
+    const authorHandle = user?.username || "you";
+    const authorAvatar = user?.avatar || undefined;
+    const contentText = userComment.trim();
     setUserComment("");
+
+    const res = await agoraClient.postEventMessage(currentEvent.id, {
+      authorName,
+      authorHandle,
+      authorAvatar,
+      stance: selectedStance,
+      content: contentText,
+    });
+
+    setLiveMessages((prev) => [...prev, res.message]);
 
     // Auto-scroll chat to bottom
     setTimeout(() => {
@@ -165,24 +208,45 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
     }, 100);
   };
 
-  const handleReaction = (msgId: string, reactionType: "upvotes" | "fire" | "insights") => {
+
+
+  const handleReaction = async (msgId: string, reactionType: "upvotes" | "fire" | "insights") => {
+    if (!currentEvent) return;
+
+    const prevReaction = userReactions[msgId] || null;
+    const nextReaction = prevReaction === reactionType ? null : reactionType;
+
+    const nextMap = { ...userReactions };
+    if (nextReaction) {
+      nextMap[msgId] = nextReaction;
+    } else {
+      delete nextMap[msgId];
+    }
+    setUserReactions(nextMap);
+
     setLiveMessages((prev) =>
-      prev.map((m) =>
-        m.id === msgId
-          ? {
-              ...m,
-              reactions: {
-                ...m.reactions,
-                [reactionType]: m.reactions[reactionType] + 1,
-              },
+      prev.map((m) => {
+        if (m.id === msgId) {
+          const reactions = { ...(m.reactions || { upvotes: 0, fire: 0, insights: 0 }) };
+          if (prevReaction === reactionType) {
+            reactions[reactionType] = Math.max(0, (reactions[reactionType] || 0) - 1);
+          } else {
+            if (prevReaction && reactions[prevReaction as "upvotes" | "fire" | "insights"] > 0) {
+              reactions[prevReaction as "upvotes" | "fire" | "insights"] -= 1;
             }
-          : m
-      )
+            reactions[reactionType] = (reactions[reactionType] || 0) + 1;
+          }
+          return { ...m, reactions };
+        }
+        return m;
+      })
     );
+
+    await agoraClient.reactToEventMessage(currentEvent.id, msgId, reactionType);
   };
 
   return (
-    <div className="drawer-overlay" onClick={onClose}>
+    <div className="drawer-overlay" onClick={handleLeaveAndClose}>
       <div
         className="live-event-modal-card"
         onClick={(e) => e.stopPropagation()}
@@ -218,7 +282,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
               {currentEvent.type.toUpperCase().replace("_", " ")}
             </span>
           </div>
-          <button type="button" className="close-drawer-btn" onClick={onClose} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}>
+          <button type="button" className="close-drawer-btn" onClick={handleLeaveAndClose} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}>
             ✕
           </button>
         </div>
@@ -259,7 +323,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
                 className="action-btn"
                 style={{ fontSize: "0.8rem", padding: "6px 12px", background: "rgba(255, 255, 255, 0.1)", border: "1px solid rgba(255, 255, 255, 0.2)", color: "#ffffff", borderRadius: 8, cursor: "pointer" }}
                 onClick={() => {
-                  onClose();
+                  handleLeaveAndClose();
                   onOpenDM(host);
                 }}
               >
@@ -315,7 +379,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
               ⚡ HOST CONTROLS (YOU CREATED THIS EVENT)
             </span>
             <div style={{ display: "flex", gap: 10 }}>
-              {!isLiveNow && !isPast && (
+              {!isLiveNow && (
                 <button
                   type="button"
                   onClick={handleStartLiveNow}
@@ -331,7 +395,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
                     boxShadow: "0 4px 12px rgba(34, 197, 94, 0.4)",
                   }}
                 >
-                  ▶️ Start Live Event Now
+                  {isPast ? "🔄 Restart Live Event" : "▶️ Start Live Event Now"}
                 </button>
               )}
 
@@ -391,14 +455,53 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
                   
                   {/* Reactions */}
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button type="button" onClick={() => handleReaction(msg.id, "upvotes")} style={{ background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 6, padding: "2px 6px", color: "#cbd5e1", fontSize: "0.72rem", cursor: "pointer" }}>
-                      👍 {msg.reactions.upvotes}
+                    <button
+                      type="button"
+                      onClick={() => handleReaction(msg.id, "upvotes")}
+                      style={{
+                        background: userReactions[msg.id] === "upvotes" ? "rgba(59, 130, 246, 0.25)" : "rgba(255,255,255,0.06)",
+                        border: userReactions[msg.id] === "upvotes" ? "1px solid rgba(59, 130, 246, 0.5)" : "1px solid transparent",
+                        borderRadius: 6,
+                        padding: "2px 6px",
+                        color: userReactions[msg.id] === "upvotes" ? "#60a5fa" : "#cbd5e1",
+                        fontSize: "0.72rem",
+                        fontWeight: userReactions[msg.id] === "upvotes" ? 700 : 400,
+                        cursor: "pointer",
+                      }}
+                    >
+                      👍 {msg.reactions?.upvotes || 0}
                     </button>
-                    <button type="button" onClick={() => handleReaction(msg.id, "fire")} style={{ background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 6, padding: "2px 6px", color: "#cbd5e1", fontSize: "0.72rem", cursor: "pointer" }}>
-                      🔥 {msg.reactions.fire}
+                    <button
+                      type="button"
+                      onClick={() => handleReaction(msg.id, "fire")}
+                      style={{
+                        background: userReactions[msg.id] === "fire" ? "rgba(239, 68, 68, 0.25)" : "rgba(255,255,255,0.06)",
+                        border: userReactions[msg.id] === "fire" ? "1px solid rgba(239, 68, 68, 0.5)" : "1px solid transparent",
+                        borderRadius: 6,
+                        padding: "2px 6px",
+                        color: userReactions[msg.id] === "fire" ? "#f87171" : "#cbd5e1",
+                        fontSize: "0.72rem",
+                        fontWeight: userReactions[msg.id] === "fire" ? 700 : 400,
+                        cursor: "pointer",
+                      }}
+                    >
+                      🔥 {msg.reactions?.fire || 0}
                     </button>
-                    <button type="button" onClick={() => handleReaction(msg.id, "insights")} style={{ background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 6, padding: "2px 6px", color: "#cbd5e1", fontSize: "0.72rem", cursor: "pointer" }}>
-                      💡 {msg.reactions.insights}
+                    <button
+                      type="button"
+                      onClick={() => handleReaction(msg.id, "insights")}
+                      style={{
+                        background: userReactions[msg.id] === "insights" ? "rgba(168, 85, 247, 0.25)" : "rgba(255,255,255,0.06)",
+                        border: userReactions[msg.id] === "insights" ? "1px solid rgba(168, 85, 247, 0.5)" : "1px solid transparent",
+                        borderRadius: 6,
+                        padding: "2px 6px",
+                        color: userReactions[msg.id] === "insights" ? "#c084fc" : "#cbd5e1",
+                        fontSize: "0.72rem",
+                        fontWeight: userReactions[msg.id] === "insights" ? 700 : 400,
+                        cursor: "pointer",
+                      }}
+                    >
+                      💡 {msg.reactions?.insights || 0}
                     </button>
                   </div>
                 </div>

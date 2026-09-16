@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from "react";
 import type { PhilosophicalComment } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
+import { useAuth } from "../context/AuthContext.js";
 
 export interface PhilosophicalCommentsSectionProps {
   entityId: string;
+  postAuthorId?: string;
+  postAuthorName?: string;
+  postAuthorHandle?: string;
   onOpenDebateSummary?: (entityId: string) => void;
 }
 
 export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSectionProps> = ({
   entityId,
+  postAuthorId,
+  postAuthorName,
+  postAuthorHandle,
   onOpenDebateSummary,
 }) => {
+  const { user } = useAuth();
   const [comments, setComments] = useState<PhilosophicalComment[]>([]);
   const [viewMode, setViewMode] = useState<"nested" | "split">("nested");
   const [isLoading, setIsLoading] = useState(true);
@@ -50,8 +58,16 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     e.preventDefault();
     if (!topCommentText.trim()) return;
 
+    const authorName = user?.name || user?.username || "You";
+    const authorHandle = user?.username || "you";
+    const authorAvatar = user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+
     try {
-      const created = await agoraClient.createComment(entityId, topCommentText, null, topCommentStance);
+      const created = await agoraClient.createComment(entityId, topCommentText, null, topCommentStance, {
+        authorName,
+        authorHandle,
+        authorAvatar,
+      });
       setComments((prev) => [created, ...prev]);
       setTopCommentText("");
     } catch (err) {
@@ -62,12 +78,21 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
   const handleCreateReply = async (parentId: string, defaultStance?: "thesis" | "antithesis" | "synthesis") => {
     if (!replyText.trim()) return;
 
+    const authorName = user?.name || user?.username || "You";
+    const authorHandle = user?.username || "you";
+    const authorAvatar = user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+
     try {
       const created = await agoraClient.createComment(
         entityId,
         replyText,
         parentId,
-        replyStance || defaultStance || "synthesis"
+        replyStance || defaultStance || "synthesis",
+        {
+          authorName,
+          authorHandle,
+          authorAvatar,
+        }
       );
       setComments((prev) => [...prev, created]);
       setReplyText("");
@@ -130,12 +155,12 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
   const stanceBadge = (stance?: "thesis" | "antithesis" | "synthesis") => {
     switch (stance) {
       case "thesis":
-        return <span className="stance-badge thesis">🟢 Thesis / Proponent</span>;
+        return <span className="stance-badge thesis">🟢 Thesis</span>;
       case "antithesis":
-        return <span className="stance-badge antithesis">🔴 Antithesis / Rebuttal</span>;
+        return <span className="stance-badge antithesis">🔴 Antithesis</span>;
       case "synthesis":
       default:
-        return <span className="stance-badge synthesis">⚪ Synthesis / Integration</span>;
+        return <span className="stance-badge synthesis">⚪ Synthesis</span>;
     }
   };
 
@@ -148,77 +173,120 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     const isUpvoted = upvotedCommentIds.includes(comment.id);
     const childReplies = comment.replies || [];
 
+    const isAuthor = !!(
+      (postAuthorId && comment.authorId === postAuthorId) ||
+      (postAuthorName && comment.authorName && comment.authorName.toLowerCase() === postAuthorName.toLowerCase()) ||
+      (postAuthorHandle && comment.authorHandle && comment.authorHandle.toLowerCase() === postAuthorHandle.toLowerCase())
+    );
+
     return (
       <div
         key={comment.id}
         className={`comment-thread-node stance-${comment.stance || "synthesis"}`}
-        style={{ marginLeft: depth > 0 ? `${Math.min(depth * 20, 80)}px` : 0 }}
+        style={{
+          marginLeft: depth > 0 ? `${Math.min(depth * 24, 96)}px` : 0,
+          borderLeft: depth > 0 ? "2px solid rgba(255, 255, 255, 0.08)" : "none",
+          paddingLeft: depth > 0 ? "12px" : 0,
+          marginTop: depth > 0 ? "10px" : "14px",
+        }}
       >
-        <div className="comment-card">
-          <div className="comment-header-row">
-            <div className="author-identity">
-              {comment.authorAvatar ? (
-                <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" />
-              ) : (
-                <div className="author-avatar-circle-sm">
-                  {comment.authorName.charAt(0).toUpperCase()}
-                </div>
+        <div className="youtube-comment-card" style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "6px 0" }}>
+          {/* Avatar Column */}
+          {comment.authorAvatar ? (
+            <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
+          ) : (
+            <div className="author-avatar-circle-sm" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "#ffffff" }}>
+              {(comment.authorName || comment.authorHandle || "T").charAt(0).toUpperCase()}
+            </div>
+          )}
+
+          {/* Body Column */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* YouTube Header: Name + 👑 Author + @handle + Time + Stance */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
+              <span className="author-name-text" style={{ fontWeight: 700, fontSize: "0.86rem", color: "#f8fafc" }}>
+                {comment.authorName || comment.authorHandle || "Thinker"}
+              </span>
+
+              {isAuthor && (
+                <span
+                  className="author-badge-chip"
+                  style={{
+                    background: "rgba(59, 130, 246, 0.25)",
+                    color: "#60a5fa",
+                    border: "1px solid rgba(59, 130, 246, 0.5)",
+                    borderRadius: 10,
+                    padding: "1px 7px",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  👑 Author
+                </span>
               )}
-              <div className="author-text-info">
-                <span className="author-name-text">{comment.authorName}</span>
-                <span className="author-handle-text">@{comment.authorHandle}</span>
-              </div>
+
+              <span className="author-handle-text" style={{ fontSize: "0.78rem", color: "#94a3b8" }}>
+                @{comment.authorHandle || "thinker"}
+              </span>
+
+              <span className="comment-timestamp" style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                • {comment.createdAt}
+              </span>
+
+              <span style={{ marginLeft: "auto" }}>
+                {stanceBadge(comment.stance)}
+              </span>
             </div>
 
-            <div className="comment-meta-right">
-              {stanceBadge(comment.stance)}
-              <span className="comment-timestamp">{comment.createdAt}</span>
-            </div>
-          </div>
+            {/* Comment Text Content */}
+            <p className="comment-content-body" style={{ margin: "4px 0 6px 0", fontSize: "0.88rem", color: "#e2e8f0", lineHeight: 1.45 }}>
+              {comment.content}
+            </p>
 
-          <p className="comment-content-body">{comment.content}</p>
-
-          <div className="comment-actions-bar">
-            <button
-              type="button"
-              className={`upvote-btn-sm ${isUpvoted ? "active" : ""}`}
-              onClick={() => handleUpvoteComment(comment.id)}
-            >
-              ▲ {comment.upvotesCount}
-            </button>
-
-            <button
-              type="button"
-              className="reply-action-btn"
-              onClick={() => {
-                if (isReplying) {
-                  setReplyingToId(null);
-                } else {
-                  setReplyingToId(comment.id);
-                  // Default reply stance counter to parent stance
-                  setReplyStance(
-                    comment.stance === "thesis"
-                      ? "antithesis"
-                      : comment.stance === "antithesis"
-                      ? "synthesis"
-                      : "thesis"
-                  );
-                }
-              }}
-            >
-              💬 {isReplying ? "Cancel Reply" : "Reply"}
-            </button>
-
-            {childReplies.length > 0 && (
+            {/* YouTube Action Bar */}
+            <div className="comment-actions-bar" style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <button
                 type="button"
-                className="collapse-thread-btn"
-                onClick={() => toggleCollapse(comment.id)}
+                className={`upvote-btn-sm ${isUpvoted ? "active" : ""}`}
+                style={{ background: isUpvoted ? "rgba(59, 130, 246, 0.2)" : "none", border: "none", color: isUpvoted ? "#60a5fa" : "#94a3b8", fontSize: "0.78rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "2px 6px", borderRadius: 6 }}
+                onClick={() => handleUpvoteComment(comment.id)}
               >
-                {isCollapsed ? `▶ Expand (${childReplies.length} replies)` : `▼ Collapse`}
+                👍 {comment.upvotesCount}
               </button>
-            )}
-          </div>
+
+              <button
+                type="button"
+                className="reply-action-btn"
+                style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "2px 6px" }}
+                onClick={() => {
+                  if (isReplying) {
+                    setReplyingToId(null);
+                  } else {
+                    setReplyingToId(comment.id);
+                    setReplyStance(
+                      comment.stance === "thesis"
+                        ? "antithesis"
+                        : comment.stance === "antithesis"
+                        ? "synthesis"
+                        : "thesis"
+                    );
+                  }
+                }}
+              >
+                💬 {isReplying ? "Cancel Reply" : "Reply"}
+              </button>
+
+              {childReplies.length > 0 && (
+                <button
+                  type="button"
+                  className="collapse-thread-btn"
+                  style={{ background: "none", border: "none", color: "#38bdf8", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", padding: "2px 6px" }}
+                  onClick={() => toggleCollapse(comment.id)}
+                >
+                  {isCollapsed ? `▼ ${childReplies.length} replies` : `▲ Hide replies`}
+                </button>
+              )}
+            </div>
 
           {/* Inline Reply Form */}
           {isReplying && (
@@ -268,16 +336,17 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
             </div>
           )}
         </div>
-
-        {/* Recursive Child Replies */}
-        {!isCollapsed && childReplies.length > 0 && (
-          <div className="nested-replies-container">
-            {childReplies.map((child) => renderNestedCommentNode(child, depth + 1))}
-          </div>
-        )}
       </div>
-    );
-  };
+
+      {/* Recursive Child Replies */}
+      {!isCollapsed && childReplies.length > 0 && (
+        <div className="nested-replies-container">
+          {childReplies.map((child) => renderNestedCommentNode(child, depth + 1))}
+        </div>
+      )}
+    </div>
+  );
+};
 
   const commentRoots = buildCommentTree(comments);
   const thesisComments = comments.filter((c) => c.stance === "thesis");

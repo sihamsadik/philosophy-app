@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { User } from "@philosophy/contract";
 import type { PhilosophyEvent } from "../lib/api-client.js";
+import { agoraClient } from "../lib/api-client.js";
 
 export interface LiveTextDebateModalProps {
   isOpen: boolean;
@@ -158,14 +159,31 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
   const [userReply, setUserReply] = useState("");
   const [selectedStance, setSelectedStance] = useState<"thesis" | "antithesis" | "synthesis">("antithesis");
   const [localMessages, setLocalMessages] = useState<Record<string, DebateMessage[]>>({});
-  const [activeViewers, setActiveViewers] = useState<number>(34);
+  const [activeViewers, setActiveViewers] = useState<number>(event?.attendeeCount || 1);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(450);
   const [newIncomingNotification, setNewIncomingNotification] = useState<string | null>(null);
+  const [userReactions, setUserReactions] = useState<Record<string, string>>({});
   const streamRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    try {
+      const raw = localStorage.getItem("agora_user_reactions_map");
+      if (raw) setUserReactions(JSON.parse(raw));
+    } catch {}
+  }, [isOpen]);
 
   const thinkerId = thinker?.id || (event ? `evt-${event.id}` : "usr-sartre-001");
 
-  // Live Timer & Dynamic Room Viewer Counter
+  useEffect(() => {
+    if (event?.attendeeCount !== undefined) {
+      setActiveViewers(event.attendeeCount);
+    } else {
+      setActiveViewers(1);
+    }
+  }, [event]);
+
+  // Live Timer
   useEffect(() => {
     if (!isOpen) return;
 
@@ -173,57 +191,24 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
       setElapsedSeconds((prev) => prev + 1);
     }, 1000);
 
-    const viewerInterval = setInterval(() => {
-      setActiveViewers((prev) => {
-        const delta = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
-        return Math.max(12, prev + delta);
-      });
-    }, 4000);
-
     return () => {
       clearInterval(timerInterval);
-      clearInterval(viewerInterval);
     };
   }, [isOpen]);
 
-  // Real-Time Incoming Messages Stream Simulation (Every 10 seconds)
+  // Load messages from persistent storage / API
   useEffect(() => {
     if (!isOpen || (!thinker && !event)) return;
+    const targetId = event ? event.id : thinkerId;
 
-    let simIndex = 0;
-    const streamInterval = setInterval(() => {
-      const nextMsgData = SIMULATED_LIVE_MESSAGES[simIndex % SIMULATED_LIVE_MESSAGES.length];
-      simIndex += 1;
-
-      const newSimMsg: DebateMessage = {
-        id: `sim-msg-${Date.now()}-${simIndex}`,
-        authorName: nextMsgData.authorName,
-        authorHandle: nextMsgData.authorHandle,
-        authorAvatar: nextMsgData.avatar,
-        stance: nextMsgData.stance,
-        content: nextMsgData.content,
-        timestamp: "Just now",
-        reactions: { upvotes: 1, fire: 0, insights: 1 },
-      };
-
-      setLocalMessages((prev) => ({
-        ...prev,
-        [thinkerId]: [...(prev[thinkerId] || []), newSimMsg],
-      }));
-
-      setNewIncomingNotification(`✨ ${nextMsgData.authorName} joined the live debate with a ${nextMsgData.stance.toUpperCase()} stance!`);
-      setTimeout(() => setNewIncomingNotification(null), 3500);
-
-      if (streamRef.current) {
-        setTimeout(() => {
-          if (streamRef.current) {
-            streamRef.current.scrollTop = streamRef.current.scrollHeight;
-          }
-        }, 100);
+    agoraClient.getEventMessages(targetId).then((res) => {
+      if (res.messages && res.messages.length > 0) {
+        setLocalMessages((prev) => ({
+          ...prev,
+          [thinkerId]: res.messages,
+        }));
       }
-    }, 10000);
-
-    return () => clearInterval(streamInterval);
+    });
   }, [isOpen, thinker, event, thinkerId]);
 
   if (!isOpen || (!thinker && !event)) return null;
@@ -246,14 +231,15 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
         stance: "thesis",
         content: event?.description || "Welcome to this live text debate room! Join the argument with your thesis, antithesis rebuttal, or synthesis.",
         timestamp: "Just now",
-        reactions: { upvotes: 5, fire: 2, insights: 4 },
+        reactions: { upvotes: 0, fire: 0, insights: 0 },
       },
     ],
   };
 
   const currentMessages = [
-    ...debateData.messages,
-    ...(localMessages[thinkerId] || []),
+    ...(localMessages[thinkerId] && localMessages[thinkerId].length > 0
+      ? localMessages[thinkerId]
+      : debateData.messages),
   ];
 
   // Calculate Stance Heatbar Percentages
@@ -265,26 +251,27 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
   const antiPct = Math.round((antithesisCount / totalStances) * 100);
   const synPct = 100 - thesisPct - antiPct;
 
-  const handlePostArgument = (e: React.FormEvent) => {
+  const handlePostArgument = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userReply.trim()) return;
 
-    const newMsg: DebateMessage = {
-      id: `usr-msg-${Date.now()}`,
-      authorName: "You (Philosophical Contributor)",
-      authorHandle: "you",
+    const targetId = event ? event.id : thinkerId;
+    const authorName = "You (Philosophical Contributor)";
+    const authorHandle = "you";
+    const contentText = userReply.trim();
+    setUserReply("");
+
+    const res = await agoraClient.postEventMessage(targetId, {
+      authorName,
+      authorHandle,
       stance: selectedStance,
-      content: userReply.trim(),
-      timestamp: "Just now",
-      reactions: { upvotes: 1, fire: 0, insights: 0 },
-    };
+      content: contentText,
+    });
 
     setLocalMessages((prev) => ({
       ...prev,
-      [thinkerId]: [...(prev[thinkerId] || []), newMsg],
+      [thinkerId]: [...(prev[thinkerId] || (debateData.messages as any)), res.message],
     }));
-
-    setUserReply("");
 
     setTimeout(() => {
       if (streamRef.current) {
@@ -293,23 +280,42 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
     }, 100);
   };
 
-  const handleReaction = (msgId: string, reactionType: "upvotes" | "fire" | "insights") => {
+
+
+  const handleReaction = async (msgId: string, reactionType: "upvotes" | "fire" | "insights") => {
+    const targetId = event ? event.id : thinkerId;
+    const prevReaction = userReactions[msgId] || null;
+    const nextReaction = prevReaction === reactionType ? null : reactionType;
+
+    const nextMap = { ...userReactions };
+    if (nextReaction) {
+      nextMap[msgId] = nextReaction;
+    } else {
+      delete nextMap[msgId];
+    }
+    setUserReactions(nextMap);
+
     setLocalMessages((prev) => {
-      const list = prev[thinkerId] || [];
+      const list = prev[thinkerId] || debateData.messages;
       const updated = list.map((m) => {
         if (m.id === msgId) {
-          return {
-            ...m,
-            reactions: {
-              ...m.reactions,
-              [reactionType]: m.reactions[reactionType] + 1,
-            },
-          };
+          const reactions = { ...(m.reactions || { upvotes: 0, fire: 0, insights: 0 }) };
+          if (prevReaction === reactionType) {
+            reactions[reactionType] = Math.max(0, (reactions[reactionType] || 0) - 1);
+          } else {
+            if (prevReaction && reactions[prevReaction as "upvotes" | "fire" | "insights"] > 0) {
+              reactions[prevReaction as "upvotes" | "fire" | "insights"] -= 1;
+            }
+            reactions[reactionType] = (reactions[reactionType] || 0) + 1;
+          }
+          return { ...m, reactions };
         }
         return m;
       });
       return { ...prev, [thinkerId]: updated };
     });
+
+    await agoraClient.reactToEventMessage(targetId, msgId, reactionType);
   };
 
   const formatTimer = (totalSecs: number) => {
@@ -418,25 +424,61 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
               <p className="bubble-content" style={{ margin: "0 0 10px 0", fontSize: "0.92rem", lineHeight: 1.5, color: "#f1f5f9" }}>{msg.content}</p>
 
               {/* Reaction Buttons Bar */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, pt: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 4 }}>
                 <button
                   type="button"
                   onClick={() => handleReaction(msg.id, "upvotes")}
-                  style={{ background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 8, padding: "4px 8px", color: "#cbd5e1", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                  style={{
+                    background: userReactions[msg.id] === "upvotes" ? "rgba(59, 130, 246, 0.25)" : "rgba(255,255,255,0.06)",
+                    border: userReactions[msg.id] === "upvotes" ? "1px solid rgba(59, 130, 246, 0.5)" : "1px solid transparent",
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    color: userReactions[msg.id] === "upvotes" ? "#60a5fa" : "#cbd5e1",
+                    fontSize: "0.75rem",
+                    fontWeight: userReactions[msg.id] === "upvotes" ? 700 : 400,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
                 >
                   👍 {msg.reactions?.upvotes || 0}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleReaction(msg.id, "fire")}
-                  style={{ background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 8, padding: "4px 8px", color: "#cbd5e1", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                  style={{
+                    background: userReactions[msg.id] === "fire" ? "rgba(239, 68, 68, 0.25)" : "rgba(255,255,255,0.06)",
+                    border: userReactions[msg.id] === "fire" ? "1px solid rgba(239, 68, 68, 0.5)" : "1px solid transparent",
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    color: userReactions[msg.id] === "fire" ? "#f87171" : "#cbd5e1",
+                    fontSize: "0.75rem",
+                    fontWeight: userReactions[msg.id] === "fire" ? 700 : 400,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
                 >
                   🔥 {msg.reactions?.fire || 0}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleReaction(msg.id, "insights")}
-                  style={{ background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 8, padding: "4px 8px", color: "#cbd5e1", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                  style={{
+                    background: userReactions[msg.id] === "insights" ? "rgba(168, 85, 247, 0.25)" : "rgba(255,255,255,0.06)",
+                    border: userReactions[msg.id] === "insights" ? "1px solid rgba(168, 85, 247, 0.5)" : "1px solid transparent",
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    color: userReactions[msg.id] === "insights" ? "#c084fc" : "#cbd5e1",
+                    fontSize: "0.75rem",
+                    fontWeight: userReactions[msg.id] === "insights" ? 700 : 400,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
                 >
                   💡 {msg.reactions?.insights || 0}
                 </button>
