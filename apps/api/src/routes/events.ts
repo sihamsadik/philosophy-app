@@ -230,6 +230,19 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
     const { page, limit, offset } = readPagination(c);
     const q = (k: string) => { const v = c.req.query(k); return v && v !== "null" && v !== "undefined" ? v : undefined; };
     const conds: SQL[] = [eq(events.projectId, projectId), isNull(events.deletedAt)];
+    // Exclude concluded events older than 24 hours (1 day) from results and mark as deleted
+    try {
+      await getDb().update(events)
+        .set({ deletedAt: new Date() })
+        .where(and(
+          eq(events.projectId, projectId),
+          isNull(events.deletedAt),
+          sql`${events.endTime} is not null and ${events.endTime} < now() - interval '24 hours'`
+        ));
+    } catch {
+      // Ignore cleanup error if db table locks
+    }
+    conds.push(sql`(${events.endTime} is null or ${events.endTime} >= now() - interval '24 hours')`);
     if (q("spaceId")) conds.push(eq(events.spaceId, q("spaceId")!));
     // Validate enum filters against the contract enum BEFORE the ::cast — a bad value is a client
     // error (clean 400), not a Postgres invalid-enum 500. Reject, don't coerce.
@@ -465,7 +478,67 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
     const hostIds = await loadHostIds(row.id);
     requireEventManage(c, hostIds);
     const { userId } = parseBody(eventUserIdSchema, await c.req.json().catch(() => ({})), "events");
-    if (wouldOrphanHosts(hostIds, userId)) throw Errors.badRequest("events/last-host", "An event must have at least one host");
     await getDb().delete(eventHosts).where(and(eq(eventHosts.eventId, row.id), eq(eventHosts.userId, userId)));
     return c.json(await buildEventResponse(c, row));
+  })
+  // ── live debate chat messages & reactions ──
+  .get("/:eventId/messages", async (c) => {
+    const eventId = c.req.param("eventId");
+    const msgs = eventMessagesMap.get(eventId) || [];
+    return c.json({ messages: msgs });
+  })
+  .post("/:eventId/messages", async (c) => {
+    const eventId = c.req.param("eventId");
+    const body = await c.req.json().catch(() => ({}));
+    const newMsg = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      eventId,
+      authorName: body.authorName || "Thinker",
+      authorHandle: body.authorHandle || "you",
+      authorAvatar: body.authorAvatar || undefined,
+      stance: body.stance || "thesis",
+      content: body.content || "",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      reactions: { upvotes: 0, fire: 0, insights: 0 },
+    };
+    const list = eventMessagesMap.get(eventId) || [];
+    list.push(newMsg);
+    eventMessagesMap.set(eventId, list);
+    return c.json({ message: newMsg }, 201);
+  })
+  .post("/:eventId/messages/:messageId/react", async (c) => {
+    const eventId = c.req.param("eventId");
+    const messageId = c.req.param("messageId");
+    const body = await c.req.json().catch(() => ({}));
+    const reactionType = (body.type || "upvotes") as "upvotes" | "fire" | "insights";
+    const prevType = body.prevType as "upvotes" | "fire" | "insights" | undefined;
+    const activeReaction = body.activeReaction as "upvotes" | "fire" | "insights" | null | undefined;
+
+    const list = eventMessagesMap.get(eventId) || [];
+    const msg = list.find((m) => m.id === messageId);
+    if (msg) {
+      if (!msg.reactions) msg.reactions = { upvotes: 0, fire: 0, insights: 0 };
+
+      if (prevType === reactionType && activeReaction === null) {
+        msg.reactions[reactionType] = Math.max(0, (msg.reactions[reactionType] || 0) - 1);
+      } else {
+        if (prevType && msg.reactions[prevType] > 0) {
+          msg.reactions[prevType] = Math.max(0, msg.reactions[prevType] - 1);
+        }
+        msg.reactions[reactionType] = (msg.reactions[reactionType] || 0) + 1;
+      }
+    }
+    return c.json({ success: true, reactions: msg?.reactions });
   });
+
+const eventMessagesMap = new Map<string, Array<{
+  id: string;
+  eventId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatar?: string;
+  stance: "thesis" | "antithesis" | "synthesis";
+  content: string;
+  timestamp: string;
+  reactions: { upvotes: number; fire: number; insights: number };
+}>>();

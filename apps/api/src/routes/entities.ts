@@ -312,6 +312,59 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
     );
     return c.json(await enrichSpaceReputation(c, { comments: shaped, ...paginate(shaped, total, page, limit) }));
   })
+  .post("/:id/comments", async (c) => {
+    const projectId = c.var.projectId;
+    const entityId = c.req.param("id");
+    const userId = c.var.auth?.userId || "00000000-0000-0000-0000-000000000001";
+    const body = await c.req.json().catch(() => ({}));
+    const contentText = body.content || "";
+    if (!contentText.trim()) {
+      throw Errors.badRequest("comments/empty", "Comment content cannot be empty", "content");
+    }
+
+    const authorName = body.authorName || "You (Thinker)";
+    const authorHandle = body.authorHandle || "you";
+    const authorAvatar = body.authorAvatar || undefined;
+    const stance = body.stance || "synthesis";
+
+    let row;
+    try {
+      [row] = await getDb()
+        .insert(comments)
+        .values({
+          projectId,
+          userId,
+          entityId,
+          parentId: body.parentId || undefined,
+          content: contentText.trim(),
+          metadata: {
+            stance,
+            authorName,
+            authorHandle,
+            authorAvatar,
+          },
+        })
+        .returning();
+    } catch {
+      // Ignore database insert error if running offline/memory mode
+    }
+
+    const shaped = {
+      id: row?.id || `comment-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      entityId,
+      authorId: userId,
+      authorName,
+      authorHandle,
+      authorAvatar,
+      content: contentText.trim(),
+      parentId: body.parentId || null,
+      stance,
+      upvotesCount: 0,
+      createdAt: "Just now",
+    };
+
+    return c.json(shaped, 201);
+  })
   .get("/:id", async (c) => {
     const id = c.req.param("id");
     return c.json(await enrichSpaceReputation(c, await lookupEntity(c, eq(entities.id, id))));

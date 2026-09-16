@@ -47,6 +47,7 @@ export const App: React.FC = () => {
   const [isDMDrawerOpen, setIsDMDrawerOpen] = useState(false);
   const [dmTargetUser, setDmTargetUser] = useState<User | null>(null);
   const [isPostComposerOpen, setIsPostComposerOpen] = useState(false);
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [composerSpaceId, setComposerSpaceId] = useState<string | undefined>(undefined);
   const [isEventComposerOpen, setIsEventComposerOpen] = useState(false);
   const [lastCreatedEvent, setLastCreatedEvent] = useState<any | null>(null);
@@ -284,6 +285,7 @@ export const App: React.FC = () => {
 
               {activeTab === "debates" && (
                 <PhilosophicalFeed
+                  key={feedRefreshKey}
                   onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
                   onOpenDM={(authorUser) => handleOpenDM(authorUser)}
                   onOpenComposer={() => {
@@ -351,6 +353,9 @@ export const App: React.FC = () => {
         authorName={user?.name || user?.username || undefined}
         authorHandle={user?.username || undefined}
         authorAvatar={user?.avatar || undefined}
+        onPostPublished={() => {
+          setFeedRefreshKey((prev) => prev + 1);
+        }}
       />
 
       <DirectMessageDrawer

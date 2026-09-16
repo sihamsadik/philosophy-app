@@ -3960,7 +3960,9 @@ html.modal-open {
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(99, 102, 241, 0.2);
   border-radius: 24px;
   width: calc(100% - 32px);
-  max-width: 520px;
+  max-width: 540px;
+  max-height: 88vh;
+  overflow-y: auto;
   padding: 24px;
   display: flex;
   flex-direction: column;
