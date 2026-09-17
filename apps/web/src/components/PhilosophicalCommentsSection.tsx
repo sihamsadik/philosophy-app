@@ -173,11 +173,25 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     const isUpvoted = upvotedCommentIds.includes(comment.id);
     const childReplies = comment.replies || [];
 
+    const isCurrentUser = !!(
+      user &&
+      ((comment.authorId && (comment.authorId === user.id || comment.authorId === "usr-current")) ||
+       (comment.authorHandle && user.username && comment.authorHandle.toLowerCase() === user.username.toLowerCase()) ||
+       (comment.authorName && user.name && comment.authorName.toLowerCase() === user.name.toLowerCase()))
+    );
+
     const isAuthor = !!(
-      (postAuthorId && comment.authorId === postAuthorId) ||
-      (postAuthorName && comment.authorName && comment.authorName.toLowerCase() === postAuthorName.toLowerCase()) ||
+      (postAuthorId && comment.authorId && comment.authorId === postAuthorId) ||
+      (postAuthorName && (
+        (comment.authorName && comment.authorName.toLowerCase() === postAuthorName.toLowerCase()) ||
+        (comment.authorHandle && comment.authorHandle.toLowerCase() === postAuthorName.toLowerCase())
+      )) ||
       (postAuthorHandle && comment.authorHandle && comment.authorHandle.toLowerCase() === postAuthorHandle.toLowerCase())
     );
+
+    const displayName = isCurrentUser
+      ? "You"
+      : comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Anonymous Thinker");
 
     return (
       <div
@@ -196,38 +210,66 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
             <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
           ) : (
             <div className="author-avatar-circle-sm" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "#ffffff" }}>
-              {(comment.authorName || comment.authorHandle || "T").charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
           )}
 
           {/* Body Column */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* YouTube Header: Name + 👑 Author + @handle + Time + Stance */}
+            {/* YouTube / LinkedIn Header */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
-              <span className="author-name-text" style={{ fontWeight: 700, fontSize: "0.86rem", color: "#f8fafc" }}>
-                {comment.authorName || comment.authorHandle || "Thinker"}
+              <span
+                className="author-name-text"
+                style={{
+                  fontWeight: 700,
+                  fontSize: "0.86rem",
+                  color: isAuthor ? "#38bdf8" : "#f8fafc",
+                  background: isAuthor ? "rgba(56, 189, 248, 0.12)" : "transparent",
+                  padding: isAuthor ? "1px 6px" : 0,
+                  borderRadius: isAuthor ? 6 : 0,
+                }}
+              >
+                {displayName}
               </span>
 
-              {isAuthor && (
+              {isAuthor ? (
                 <span
                   className="author-badge-chip"
                   style={{
-                    background: "rgba(59, 130, 246, 0.25)",
-                    color: "#60a5fa",
-                    border: "1px solid rgba(59, 130, 246, 0.5)",
-                    borderRadius: 10,
-                    padding: "1px 7px",
-                    fontSize: "0.7rem",
+                    background: "#38bdf8",
+                    color: "#0f172a",
+                    borderRadius: "12px",
+                    padding: "2px 8px",
+                    fontSize: "0.72rem",
                     fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "3px",
+                    boxShadow: "0 2px 6px rgba(56, 189, 248, 0.3)",
                   }}
                 >
                   👑 Author
                 </span>
-              )}
+              ) : isCurrentUser ? (
+                <span
+                  style={{
+                    background: "rgba(255, 255, 255, 0.12)",
+                    color: "#e2e8f0",
+                    borderRadius: "10px",
+                    padding: "1px 6px",
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  You
+                </span>
+              ) : null}
 
-              <span className="author-handle-text" style={{ fontSize: "0.78rem", color: "#94a3b8" }}>
-                @{comment.authorHandle || "thinker"}
-              </span>
+              {comment.authorHandle && (
+                <span className="author-handle-text" style={{ fontSize: "0.78rem", color: "#94a3b8" }}>
+                  @{comment.authorHandle}
+                </span>
+              )}
 
               <span className="comment-timestamp" style={{ fontSize: "0.75rem", color: "#64748b" }}>
                 • {comment.createdAt}

@@ -73,8 +73,26 @@ export class AgoraPhilosophyClient {
     });
 
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(errorBody.message || `HTTP ${response.status}`);
+      const errorBody = await response.json().catch(() => null);
+      const extractedMessage =
+        (typeof errorBody === "object" && errorBody !== null
+          ? errorBody.error || errorBody.message || errorBody.detail || errorBody.code
+          : null) || response.statusText;
+
+      const userFriendlyMsg =
+        extractedMessage && extractedMessage !== "OK" && extractedMessage !== "Bad Request" && extractedMessage !== "Conflict"
+          ? extractedMessage
+          : response.status === 409
+          ? "Username or email is already taken"
+          : response.status === 401
+          ? "Invalid email or password"
+          : response.status === 400
+          ? "Invalid input data. Please check your fields."
+          : response.status === 404
+          ? "Resource not found"
+          : `Request failed (HTTP ${response.status})`;
+
+      throw new Error(userFriendlyMsg);
     }
 
     return response.json();
@@ -692,6 +710,31 @@ export class AgoraPhilosophyClient {
   /**
    * Live Event Text Debate Chat Messages & Reactions (Persistent Storage & Backend Integration)
    */
+  async getEventLiveStatus(eventId: string): Promise<{ liveStatus: { startTime: string; endTime: string | null; status: string; attendeeCount: number } | null }> {
+    try {
+      const res = await this.request<any>(`/events/${eventId}/live-status`);
+      return { liveStatus: res?.liveStatus || null };
+    } catch {
+      return { liveStatus: null };
+    }
+  }
+
+  async updateEventLiveStatus(eventId: string, data: {
+    action: "start" | "restart" | "end" | "update";
+    startTime?: string;
+    endTime?: string;
+    attendeeCount?: number;
+  }): Promise<{ success: boolean; liveStatus?: any }> {
+    try {
+      return await this.request<any>(`/events/${eventId}/live-status`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    } catch {
+      return { success: true };
+    }
+  }
+
   async getEventMessages(eventId: string): Promise<{ messages: any[] }> {
     try {
       const res = await this.request<any>(`/events/${eventId}/messages`);
@@ -814,10 +857,11 @@ export class AgoraPhilosophyClient {
           keyThinkers: u.metadata?.keyThinkers || [],
         },
       } as User,
-      reputationScore: u.reputation || u.user?.reputation || (1000 - idx * 100),
+      reputationPoints: u.reputation || u.user?.reputation || (1000 - idx * 100),
       primarySchool: u.metadata?.primarySchools?.[0] || u.primarySchool || "General Philosophy",
-      argumentsPublished: u.argumentsPublished || 12,
-      debatesWon: u.debatesWon || 5,
+      argumentsCount: u.argumentsPublished || u.argumentsCount || 12,
+      symposiumsHosted: u.symposiumsHosted || 5,
+      trend: (u.trend || "same") as "up" | "down" | "same",
       badges: u.badges || ALL_PLATFORM_BADGES.slice(0, (idx % 3) + 1),
     }));
     return { entries: mapped };
@@ -1013,14 +1057,9 @@ export class AgoraPhilosophyClient {
     try {
       const res = await this.request<any>(`/entities/${entityId}/comments`);
       const list = res?.comments || res?.data || (Array.isArray(res) ? res : []);
-      if (Array.isArray(list) && list.length > 0) {
-        return { comments: list };
-      }
-      const postComments = DEMO_COMMENTS.filter((c) => c.entityId === entityId);
-      return { comments: postComments.length > 0 ? postComments : DEMO_COMMENTS };
+      return { comments: Array.isArray(list) ? list : [] };
     } catch {
-      const postComments = DEMO_COMMENTS.filter((c) => c.entityId === entityId);
-      return { comments: postComments.length > 0 ? postComments : DEMO_COMMENTS };
+      return { comments: [] };
     }
   }
 
