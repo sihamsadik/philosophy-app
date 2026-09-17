@@ -22,6 +22,28 @@ import { indexContentAsync } from "../lib/embeddings.js";
 
 type EventRow = typeof events.$inferSelect;
 
+interface EventMessage {
+  id: string;
+  eventId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatar?: string;
+  stance: "thesis" | "antithesis" | "synthesis";
+  content: string;
+  timestamp: string;
+  reactions: { upvotes: number; fire: number; insights: number };
+}
+
+interface LiveEventStatus {
+  startTime: string;
+  endTime: string | null;
+  status: "active" | "ended" | "restarted" | "scheduled";
+  attendeeCount: number;
+}
+
+const liveEventStatusMap = new Map<string, LiveEventStatus>();
+const eventMessagesMap = new Map<string, EventMessage[]>();
+
 // ── shared helpers ───────────────────────────────────────────────────────────
 export async function getEventOr404(c: any, id: string): Promise<EventRow> {
   const [row] = await getDb().select().from(events)
@@ -482,6 +504,44 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
     return c.json(await buildEventResponse(c, row));
   })
   // ── live debate chat messages & reactions ──
+  .get("/:eventId/live-status", async (c) => {
+    const eventId = c.req.param("eventId");
+    const statusData = liveEventStatusMap.get(eventId) || null;
+    return c.json({ liveStatus: statusData });
+  })
+  .post("/:eventId/live-status", async (c) => {
+    const eventId = c.req.param("eventId");
+    const body = await c.req.json().catch(() => ({}));
+    const action = body.action as "start" | "restart" | "end" | "update";
+    const startTime = body.startTime || new Date().toISOString();
+    const endTime = body.endTime || (action === "end" ? new Date().toISOString() : new Date(Date.now() + 2 * 3600 * 1000).toISOString());
+    const attendeeCount = typeof body.attendeeCount === "number" ? body.attendeeCount : (action === "end" ? 0 : 1);
+    const status: "active" | "ended" | "restarted" | "scheduled" = action === "end" ? "ended" : action === "restart" ? "restarted" : "active";
+
+    const updatedStatus: LiveEventStatus = {
+      startTime,
+      endTime,
+      status,
+      attendeeCount,
+    };
+    liveEventStatusMap.set(eventId, updatedStatus);
+
+    // Also update Drizzle database row if event exists
+    try {
+      const dbStatus: "active" | "cancelled" = action === "end" ? "cancelled" : "active";
+      await getDb()
+        .update(events)
+        .set({
+          startTime: new Date(startTime),
+          endTime: new Date(endTime),
+          status: dbStatus,
+        })
+        .where(eq(events.id, eventId));
+    } catch {}
+
+    logger.info({ eventId, action, status }, "live event status updated on backend");
+    return c.json({ success: true, liveStatus: updatedStatus });
+  })
   .get("/:eventId/messages", async (c) => {
     const eventId = c.req.param("eventId");
     const msgs = eventMessagesMap.get(eventId) || [];
@@ -531,14 +591,3 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
     return c.json({ success: true, reactions: msg?.reactions });
   });
 
-const eventMessagesMap = new Map<string, Array<{
-  id: string;
-  eventId: string;
-  authorName: string;
-  authorHandle: string;
-  authorAvatar?: string;
-  stance: "thesis" | "antithesis" | "synthesis";
-  content: string;
-  timestamp: string;
-  reactions: { upvotes: number; fire: number; insights: number };
-}>>();

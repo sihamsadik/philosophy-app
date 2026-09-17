@@ -3,7 +3,7 @@ import { calculateIntellectualCompatibility } from "./intellectual-matching.js";
 import type { User } from "@philosophy/contract";
 
 describe("calculateIntellectualCompatibility", () => {
-  const userA: User = {
+  const userA = {
     id: "user-1",
     name: "User A",
     username: "usera",
@@ -16,9 +16,9 @@ describe("calculateIntellectualCompatibility", () => {
       favoriteTexts: ["Ethics"],
       connectionIntents: ["discussion", "intellectual"],
     },
-  };
+  } as unknown as User;
 
-  const userB: User = {
+  const userB = {
     id: "user-2",
     name: "User B",
     username: "userb",
@@ -31,9 +31,9 @@ describe("calculateIntellectualCompatibility", () => {
       favoriteTexts: ["Ethics"],
       connectionIntents: ["discussion"],
     },
-  };
+  } as unknown as User;
 
-  const userC: User = {
+  const userC = {
     id: "user-3",
     name: "User C",
     username: "userc",
@@ -46,7 +46,7 @@ describe("calculateIntellectualCompatibility", () => {
       favoriteTexts: ["Phenomenology of Perception"],
       connectionIntents: ["friendship"],
     },
-  };
+  } as unknown as User;
 
   it("calculates dual-axis scores for overlapping core question with distinct schools (Productive Tension)", () => {
     const result = calculateIntellectualCompatibility(userA, userB);

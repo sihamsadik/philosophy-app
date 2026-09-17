@@ -34,7 +34,7 @@ describe("Discussion Summary Schema", () => {
     expect(parsed.success).toBe(true);
     if (parsed.success) {
       expect(parsed.data.mainPositions).toHaveLength(2);
-      expect(parsed.data.keyArguments[0].rebuttal).toBeDefined();
+      expect(parsed.data.keyArguments[0]?.rebuttal).toBeDefined();
     }
   });
 });

@@ -7,7 +7,7 @@ import { createPublicKey } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { importSPKI, jwtVerify } from "jose";
 import type { Variables } from "../http/context.js";
-import { Errors } from "../http/errors.js";
+import { ApiError, Errors } from "../http/errors.js";
 import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
 import { profiles, userSuspensions, projects } from "../db/schema/index.js";
@@ -65,12 +65,25 @@ async function profileByAuthUser(projectId: string, authUserId: string): Promise
 async function ensureProfile(projectId: string, authUserId: string, attrs: { email?: string; name?: string; username?: string }): Promise<ProfileRow> {
   const existing = await profileByAuthUser(projectId, authUserId);
   if (existing) return existing;
-  const username = attrs.username ?? await defaultUsername(projectId, attrs.email, authUserId);
-  const [row] = await getDb().insert(profiles).values({
-    projectId, authUserId, email: attrs.email, name: attrs.name, username,
-    authMethods: ["password"],
-  }).returning();
-  return row!;
+  const emailNorm = attrs.email ? attrs.email.trim().toLowerCase() : undefined;
+  const username = attrs.username ?? await defaultUsername(projectId, emailNorm, authUserId);
+  try {
+    const [row] = await getDb().insert(profiles).values({
+      projectId, authUserId, email: emailNorm, name: attrs.name, username,
+      authMethods: ["password"],
+    }).returning();
+    return row!;
+  } catch (err) {
+    const fallbackUsername = `user_${authUserId.replace(/-/g, "").slice(0, 8)}_${Math.random().toString(36).slice(2, 6)}`;
+    const [row] = await getDb().insert(profiles).values({
+      projectId, authUserId, email: emailNorm, name: attrs.name, username: fallbackUsername,
+      authMethods: ["password"],
+    }).onConflictDoNothing().returning();
+    if (row) return row;
+    const retry = await profileByAuthUser(projectId, authUserId);
+    if (retry) return retry;
+    throw err;
+  }
 }
 
 // Resolve the per-request auth bits (deployment operator + per-project role grants) for a profile.
@@ -94,46 +107,58 @@ async function sessionResponse(projectId: string, profile: ProfileRow) {
 
 export const authRoutes = new Hono<{ Variables: Variables }>()
   .post("/sign-up", async (c) => {
-    const projectId = c.var.projectId;
-    const body = parseBody(signUpSchema, await c.req.json().catch(() => ({})), "auth");
-    if (body.username) {
-      const [takenUsername] = await getDb().select({ id: profiles.id }).from(profiles)
-        .where(and(eq(profiles.projectId, projectId), eq(profiles.username, body.username))).limit(1);
-      if (takenUsername) {
-        throw Errors.conflict("auth/username-exists", "Username is already taken", "username");
+    try {
+      const projectId = c.var.projectId;
+      const body = parseBody(signUpSchema, await c.req.json().catch(() => ({})), "auth");
+      if (body.username) {
+        const [takenUsername] = await getDb().select({ id: profiles.id }).from(profiles)
+          .where(and(eq(profiles.projectId, projectId), eq(profiles.username, body.username))).limit(1);
+        if (takenUsername) {
+          throw Errors.conflict("auth/username-exists", "Username is already taken", "username");
+        }
       }
+      const provider = await getAuthProvider(projectId);
+      const linkBase = provider.usesEmailLinks ? requireEmailLinkBase(body.emailRedirectTo) : undefined;
+      const check = await webhooks.validate(projectId, "user.created", { email: body.email, name: body.name, username: body.username });
+      if (!check.valid) {
+        logger.info({ projectId }, "auth: sign-up rejected by validation webhook");
+        throw Errors.forbidden("auth/rejected", check.message ?? "Sign-up rejected by validation webhook");
+      }
+      const result = await provider.signUp(projectId, body.email, body.password, linkBase);
+      if (result.status === "confirmation_required") {
+        logger.info({ projectId }, "auth: sign-up pending email confirmation");
+        return c.json({ status: "confirmation_required", email: body.email }, 200);
+      }
+      const profile = await ensureProfile(projectId, result.authUserId, { email: body.email, name: body.name, username: body.username });
+      const session = await sessionResponse(projectId, profile);
+      logger.info({ projectId, userId: profile.id, autoConfirmed: true }, "auth: signed up");
+      webhooks.broadcast(projectId, "user.created.complete", session.user);
+      return c.json(session, 201);
+    } catch (err: any) {
+      if (err instanceof ApiError) throw err;
+      logger.error({ err }, "auth: unexpected error during sign-up");
+      throw Errors.badRequest("auth/sign-up-failed", err?.message || "Failed to create account");
     }
-    const provider = await getAuthProvider(projectId);
-    const linkBase = provider.usesEmailLinks ? requireEmailLinkBase(body.emailRedirectTo) : undefined;
-    const check = await webhooks.validate(projectId, "user.created", { email: body.email, name: body.name, username: body.username });
-    if (!check.valid) {
-      logger.info({ projectId }, "auth: sign-up rejected by validation webhook");
-      throw Errors.forbidden("auth/rejected", check.message ?? "Sign-up rejected by validation webhook");
-    }
-    const result = await provider.signUp(projectId, body.email, body.password, linkBase);
-    if (result.status === "confirmation_required") {
-      logger.info({ projectId }, "auth: sign-up pending email confirmation");
-      return c.json({ status: "confirmation_required", email: body.email }, 200);
-    }
-    const profile = await ensureProfile(projectId, result.authUserId, { email: body.email, name: body.name, username: body.username });
-    const session = await sessionResponse(projectId, profile);
-    logger.info({ projectId, userId: profile.id, autoConfirmed: true }, "auth: signed up");
-    webhooks.broadcast(projectId, "user.created.complete", session.user);
-    return c.json(session, 201);
   })
   .post("/sign-in", async (c) => {
-    const projectId = c.var.projectId;
-    const body = parseBody(signInSchema, await c.req.json().catch(() => ({})), "auth");
-    const provider = await getAuthProvider(projectId);
-    const cred = await provider.verifyCredentials(projectId, body.email, body.password);
-    if (!cred) {
-      logger.info({ projectId }, "auth: sign-in failed (invalid credentials)");
-      throw Errors.unauthorized("auth/invalid-credentials", "Invalid email or password");
+    try {
+      const projectId = c.var.projectId;
+      const body = parseBody(signInSchema, await c.req.json().catch(() => ({})), "auth");
+      const provider = await getAuthProvider(projectId);
+      const cred = await provider.verifyCredentials(projectId, body.email, body.password);
+      if (!cred) {
+        logger.info({ projectId, email: body.email }, "auth: sign-in failed (invalid credentials)");
+        throw Errors.unauthorized("auth/invalid-credentials", "Invalid email or password");
+      }
+      const profile = await ensureProfile(projectId, cred.authUserId, { email: body.email });
+      await getDb().update(profiles).set({ lastActive: new Date() }).where(eq(profiles.id, profile.id)).catch(() => {});
+      logger.info({ projectId, userId: profile.id, role: profile.role, operator: isOperator(profile) }, "auth: signed in");
+      return c.json(await sessionResponse(projectId, profile));
+    } catch (err: any) {
+      if (err instanceof ApiError) throw err;
+      logger.error({ err }, "auth: unexpected error during sign-in");
+      throw Errors.unauthorized("auth/sign-in-failed", "Invalid email or password");
     }
-    const profile = await ensureProfile(projectId, cred.authUserId, { email: body.email });
-    await getDb().update(profiles).set({ lastActive: new Date() }).where(eq(profiles.id, profile.id));
-    logger.info({ projectId, userId: profile.id, role: profile.role, operator: isOperator(profile) }, "auth: signed in");
-    return c.json(await sessionResponse(projectId, profile));
   })
   // Sign-out is idempotent and must NOT require a valid access token: a stale/expired access token
   // (the common case when signing out a long-idle tab) shouldn't block revoking the refresh token.
