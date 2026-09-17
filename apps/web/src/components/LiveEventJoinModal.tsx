@@ -72,21 +72,53 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
     }
   }, [event]);
 
+  // Real-time Live Sync Polling: Clock + Messages + Live Event Status (every 2 seconds)
   useEffect(() => {
-    if (!isOpen) return;
-    const timer = setInterval(() => {
+    if (!isOpen || !event) return;
+
+    const syncInterval = setInterval(() => {
       setNowTime(Date.now());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isOpen]);
+
+      // Poll latest live chat messages from backend
+      agoraClient.getEventMessages(event.id).then((res) => {
+        if (res.messages && res.messages.length > 0) {
+          setLiveMessages(res.messages);
+        }
+      });
+
+      // Poll latest live status (start/restart/end) from backend
+      agoraClient.getEventLiveStatus(event.id).then((res) => {
+        const ls = res.liveStatus;
+        if (ls) {
+          setCurrentEvent((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              startTime: ls.startTime || prev.startTime,
+              endTime: ls.endTime || prev.endTime,
+              attendeeCount: ls.attendeeCount !== undefined ? ls.attendeeCount : prev.attendeeCount,
+            };
+          });
+        }
+      });
+    }, 2000);
+
+    return () => clearInterval(syncInterval);
+  }, [isOpen, event]);
 
   if (!isOpen || !currentEvent) return null;
 
   const host = currentEvent.hostUser;
   const startTimeMs = new Date(currentEvent.startTime).getTime();
   const endTimeMs = currentEvent.endTime ? new Date(currentEvent.endTime).getTime() : startTimeMs + 2 * 3600 * 1000;
-  const isLiveNow = nowTime >= startTimeMs && nowTime <= endTimeMs;
+  
   const isPast = nowTime > endTimeMs;
+  const isLiveNow = nowTime >= startTimeMs && nowTime <= endTimeMs && currentEvent.attendeeCount !== 0;
+  const isEndedConcluded = isPast || (currentEvent.attendeeCount === 0 && nowTime >= startTimeMs);
+  const endedElapsedMs = isEndedConcluded ? Math.max(0, nowTime - (currentEvent.endTime ? new Date(currentEvent.endTime).getTime() : endTimeMs)) : 0;
+  const endedElapsedHours = Math.floor(endedElapsedMs / (3600 * 1000));
+  const endedElapsedMins = Math.floor((endedElapsedMs % (3600 * 1000)) / 60000);
+  const canBeRestarted = isEndedConcluded && endedElapsedMs <= 24 * 3600 * 1000;
 
   const isHost = !!(
     user &&
@@ -97,21 +129,55 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
       (host.name && host.name.includes("You")))
   );
 
-  const handleStartLiveNow = () => {
+  const handleStartLiveNow = async () => {
     if (!currentEvent) return;
     const nowIso = new Date().toISOString();
+    const endIso = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
     const updated: PhilosophyEvent = {
       ...currentEvent,
       startTime: nowIso,
-      endTime: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
+      endTime: endIso,
       attendeeCount: Math.max(1, currentEvent.attendeeCount || 1),
     };
     setCurrentEvent(updated);
     if (onUpdateEvent) onUpdateEvent(updated);
-    alert("🔴 Live Event Started! Your session is now live for all thinkers across the platform.");
+
+    // Sync to backend
+    await agoraClient.updateEventLiveStatus(currentEvent.id, {
+      action: "start",
+      startTime: nowIso,
+      endTime: endIso,
+      attendeeCount: updated.attendeeCount,
+    });
+
+    alert("🔴 Live Event Started! Session is now active for all members.");
   };
 
-  const handleEndLiveNow = () => {
+  const handleRestartLiveNow = async () => {
+    if (!currentEvent) return;
+    const nowIso = new Date().toISOString();
+    const endIso = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+    const updated: PhilosophyEvent = {
+      ...currentEvent,
+      startTime: nowIso,
+      endTime: endIso,
+      attendeeCount: Math.max(1, currentEvent.attendeeCount || 1),
+    };
+    setCurrentEvent(updated);
+    if (onUpdateEvent) onUpdateEvent(updated);
+
+    // Sync to backend
+    await agoraClient.updateEventLiveStatus(currentEvent.id, {
+      action: "restart",
+      startTime: nowIso,
+      endTime: endIso,
+      attendeeCount: updated.attendeeCount,
+    });
+
+    alert("🟢 Live Event Restarted! Live chat and video meeting links are unlocked for all members.");
+  };
+
+  const handleEndLiveNow = async () => {
     if (!currentEvent) return;
     const endedIso = new Date(Date.now() - 1000).toISOString();
     const updated: PhilosophyEvent = {
@@ -121,6 +187,15 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
     };
     setCurrentEvent(updated);
     if (onUpdateEvent) onUpdateEvent(updated);
+
+    // Sync to backend
+    await agoraClient.updateEventLiveStatus(currentEvent.id, {
+      action: "end",
+      startTime: currentEvent.startTime,
+      endTime: endedIso,
+      attendeeCount: 0,
+    });
+
     alert("🏁 Live Event Concluded.");
   };
 
@@ -357,6 +432,23 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
           </div>
         </div>
 
+        {/* Concluded Event Status Notice Banner */}
+        {isEndedConcluded && (
+          <div style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.4)", borderRadius: 14, padding: "12px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: "1.1rem" }}>⏳</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fbbf24" }}>
+                EVENT CONCLUDED ({endedElapsedHours > 0 ? `${endedElapsedHours}h ` : ""}${endedElapsedMins}m AGO)
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: "0.82rem", color: "#fef3c7", lineHeight: 1.45 }}>
+              {isHost
+                ? `As the host, you can restart this live session at any time until tomorrow. Click '🔄 Restart Live Event' to re-open text chat and video meeting links.`
+                : `This event ended ${endedElapsedHours > 0 ? `${endedElapsedHours} hours` : `${endedElapsedMins} minutes`} ago. If the host does not restart the live event, other members cannot send live chat or join the video call. The host can restart this session until tomorrow.`}
+            </p>
+          </div>
+        )}
+
         {/* Format Indicator Banner */}
         <div style={{ background: isVideoMeeting ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)", border: isVideoMeeting ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: "1.2rem" }}>{isVideoMeeting ? "📹" : "💬"}</span>
@@ -372,14 +464,32 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
           </div>
         </div>
 
-        {/* HOST EXCLUSIVE CONTROLS: Start & End Live Event */}
+        {/* HOST EXCLUSIVE CONTROLS: Start, Restart & End Live Event */}
         {isHost && (
           <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 16, padding: 14 }}>
             <span style={{ fontSize: "0.75rem", color: "#f59e0b", fontWeight: 700, display: "block", marginBottom: 8 }}>
               ⚡ HOST CONTROLS (YOU CREATED THIS EVENT)
             </span>
             <div style={{ display: "flex", gap: 10 }}>
-              {!isLiveNow && (
+              {isEndedConcluded ? (
+                <button
+                  type="button"
+                  onClick={handleRestartLiveNow}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "linear-gradient(135deg, #22c55e 0%, #15803d 100%)",
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: "0 4px 12px rgba(34, 197, 94, 0.4)",
+                  }}
+                >
+                  🔄 Restart Live Event (Available Until Tomorrow)
+                </button>
+              ) : !isLiveNow ? (
                 <button
                   type="button"
                   onClick={handleStartLiveNow}
@@ -395,11 +505,9 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
                     boxShadow: "0 4px 12px rgba(34, 197, 94, 0.4)",
                   }}
                 >
-                  {isPast ? "🔄 Restart Live Event" : "▶️ Start Live Event Now"}
+                  ▶️ Start Live Event Now
                 </button>
-              )}
-
-              {isLiveNow && (
+              ) : (
                 <button
                   type="button"
                   onClick={handleEndLiveNow}
@@ -427,7 +535,9 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
           <div style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#38bdf8" }}>💬 LIVE DEBATE CHAT STREAM</span>
-              <span style={{ fontSize: "0.75rem", color: "#4ade80", fontWeight: 600 }}>● Active Debate</span>
+              <span style={{ fontSize: "0.75rem", color: isEndedConcluded ? "#f87171" : "#4ade80", fontWeight: 600 }}>
+                {isEndedConcluded ? "🔒 Event Concluded" : "● Active Debate"}
+              </span>
             </div>
 
             {/* Chat Stream Messages Box */}
@@ -508,57 +618,78 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
               ))}
             </div>
 
-            {/* Comment Form */}
-            <form onSubmit={handleSendComment} style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedStance("thesis")}
-                  style={{ flex: 1, padding: "4px", borderRadius: 6, border: "1px solid rgba(74, 222, 128, 0.4)", background: selectedStance === "thesis" ? "rgba(74, 222, 128, 0.25)" : "transparent", color: "#4ade80", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
-                >
-                  🟢 Thesis
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedStance("antithesis")}
-                  style={{ flex: 1, padding: "4px", borderRadius: 6, border: "1px solid rgba(248, 113, 113, 0.4)", background: selectedStance === "antithesis" ? "rgba(248, 113, 113, 0.25)" : "transparent", color: "#f87171", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
-                >
-                  🔴 Antithesis
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedStance("synthesis")}
-                  style={{ flex: 1, padding: "4px", borderRadius: 6, border: "1px solid rgba(168, 85, 247, 0.4)", background: selectedStance === "synthesis" ? "rgba(168, 85, 247, 0.25)" : "transparent", color: "#c084fc", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
-                >
-                  ⚪ Synthesis
-                </button>
+            {/* Comment Form - Locked when concluded for non-hosts */}
+            {isEndedConcluded && !isHost ? (
+              <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 10, padding: "10px 14px", color: "#fca5a5", fontSize: "0.82rem", textAlign: "center" }}>
+                🔒 Live chat is locked because the event has concluded. Waiting for host to restart...
               </div>
+            ) : (
+              <form onSubmit={handleSendComment} style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStance("thesis")}
+                    style={{ flex: 1, padding: "4px", borderRadius: 6, border: "1px solid rgba(74, 222, 128, 0.4)", background: selectedStance === "thesis" ? "rgba(74, 222, 128, 0.25)" : "transparent", color: "#4ade80", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                  >
+                    🟢 Thesis
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStance("antithesis")}
+                    style={{ flex: 1, padding: "4px", borderRadius: 6, border: "1px solid rgba(248, 113, 113, 0.4)", background: selectedStance === "antithesis" ? "rgba(248, 113, 113, 0.25)" : "transparent", color: "#f87171", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                  >
+                    🔴 Antithesis
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStance("synthesis")}
+                    style={{ flex: 1, padding: "4px", borderRadius: 6, border: "1px solid rgba(168, 85, 247, 0.4)", background: selectedStance === "synthesis" ? "rgba(168, 85, 247, 0.25)" : "transparent", color: "#c084fc", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer" }}
+                  >
+                    ⚪ Synthesis
+                  </button>
+                </div>
 
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  type="text"
-                  placeholder="Type real-time argument or comment..."
-                  value={userComment}
-                  onChange={(e) => setUserComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendComment(e);
-                    }
-                  }}
-                  style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255, 255, 255, 0.15)", background: "rgba(255, 255, 255, 0.05)", color: "#ffffff", fontSize: "0.85rem", outline: "none" }}
-                />
-                <button type="submit" style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", color: "#ffffff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>
-                  Send 💬
-                </button>
-              </div>
-            </form>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="Type real-time argument or comment..."
+                    value={userComment}
+                    onChange={(e) => setUserComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendComment(e);
+                      }
+                    }}
+                    style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255, 255, 255, 0.15)", background: "rgba(255, 255, 255, 0.05)", color: "#ffffff", fontSize: "0.85rem", outline: "none" }}
+                  />
+                  <button type="submit" style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", color: "#ffffff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>
+                    Send 💬
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 
         {/* Join Actions & Close Button */}
         <div className="live-event-actions-block" style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-          {isVideoMeeting ? (
+          {isEndedConcluded && !isHost ? (
+            <div
+              style={{
+                padding: "12px",
+                borderRadius: 12,
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                color: "#94a3b8",
+                fontWeight: 700,
+                textAlign: "center",
+                cursor: "not-allowed",
+              }}
+            >
+              🔒 {isVideoMeeting ? "Video Link Unavailable (Event Concluded — Waiting for Host to Restart)" : "Session Concluded (Waiting for Host to Restart)"}
+            </div>
+          ) : isVideoMeeting ? (
             <a
               href={currentEvent.locationUrl}
               target="_blank"

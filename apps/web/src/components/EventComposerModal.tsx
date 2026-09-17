@@ -27,10 +27,12 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>(initialSpaceId || "");
   const [tagsInput, setTagsInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [spaces, setSpaces] = useState<PhilosophicalSpace[]>([]);
 
   useEffect(() => {
     if (isOpen) {
+      setErrorMsg(null);
       // Default datetime: set to current time for easy live testing!
       const now = new Date();
       now.setMinutes(now.getMinutes() - 2); // Set start time 2 mins ago so it becomes LIVE immediately!
@@ -59,6 +61,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
 
     try {
       setIsSubmitting(true);
+      setErrorMsg(null);
       const chosenSpace = spaces.find((s) => s.id === selectedSpaceId);
       const tags = tagsInput
         .split(",")
@@ -103,8 +106,9 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
       setDescription("");
       setTagsInput("");
       setLocationUrl("");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to create event:", err);
+      setErrorMsg(err.message || "Failed to create event");
     } finally {
       setIsSubmitting(false);
     }
@@ -169,6 +173,12 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
             ✕
           </button>
         </div>
+
+        {errorMsg && (
+          <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: 12, padding: "10px 14px", color: "#fca5a5", fontSize: "0.85rem", marginBottom: 16 }}>
+            ⚠️ {errorMsg}
+          </div>
+        )}
 
         {/* Organizer Preview Card */}
         <div style={{ background: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 16, padding: 14, marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>

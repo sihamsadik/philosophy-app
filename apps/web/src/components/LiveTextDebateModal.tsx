@@ -14,7 +14,7 @@ interface DebateMessage {
   id: string;
   authorName: string;
   authorHandle: string;
-  authorAvatar?: string;
+  authorAvatar?: string | null;
   stance: "thesis" | "antithesis" | "synthesis";
   content: string;
   timestamp: string;
