@@ -663,10 +663,17 @@ export class AgoraPhilosophyClient {
 
   async rsvpEvent(eventId: string, status: RSVPStatus): Promise<{ success: boolean; event: PhilosophyEvent }> {
     try {
-      return await this.request<{ success: boolean; event: PhilosophyEvent }>(`/events/${eventId}/rsvp`, {
+      const res = await this.request<{ success: boolean; event: PhilosophyEvent }>(`/events/${eventId}/rsvp`, {
         method: "POST",
         body: JSON.stringify({ status }),
       });
+      if (res?.event) {
+        if (res.event.rsvpCounts?.going !== undefined) {
+          res.event.registeredCount = res.event.rsvpCounts.going;
+          res.event.attendeeCount = res.event.rsvpCounts.going;
+        }
+      }
+      return res;
     } catch {
       const event = DEMO_EVENTS.find((e) => e.id === eventId);
       if (!event) throw new Error("Event not found");
@@ -683,6 +690,7 @@ export class AgoraPhilosophyClient {
       } else if (prevStatus === "going" && status !== "going") {
         event.attendeeCount = Math.max(0, event.attendeeCount - 1);
       }
+      event.registeredCount = event.attendeeCount;
 
       if (existingRsvp) {
         existingRsvp.status = status;
@@ -702,6 +710,10 @@ export class AgoraPhilosophyClient {
           createdAt: new Date().toISOString(),
         });
       }
+
+      try {
+        localStorage.setItem(`agora_rsvps_store_${eventId}`, JSON.stringify(DEMO_RSVPS.filter((r) => r.eventId === eventId)));
+      } catch {}
 
       return { success: true, event };
     }

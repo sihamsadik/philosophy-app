@@ -733,6 +733,8 @@ export function shapeEvent(
     hostIds: opts.hostIds,
     coverImageId: row.coverImageId ?? null,
     rsvpCounts: opts.rsvpCounts,
+    attendeeCount: opts.rsvpCounts?.going ?? 0,
+    registeredCount: opts.rsvpCounts?.going ?? 0,
     metadata: (row.metadata as Record<string, unknown>) ?? {},
     createdAt: iso(row.createdAt)!,
     updatedAt: iso(row.updatedAt)!,
