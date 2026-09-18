@@ -39,6 +39,8 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
   const [selectedStance, setSelectedStance] = useState<"thesis" | "antithesis" | "synthesis">("antithesis");
   const [liveMessages, setLiveMessages] = useState<DebateMessage[]>([]);
   const [userReactions, setUserReactions] = useState<Record<string, string>>({});
+  const [activeViewers, setActiveViewers] = useState<number>(event?.activeViewers || 1);
+  const [liveStatusState, setLiveStatusState] = useState<string>("active");
   const chatStreamRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,9 +74,17 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
     }
   }, [event]);
 
-  // Real-time Live Sync Polling: Clock + Messages + Live Event Status (every 2 seconds)
+  // Real-time Live Sync Polling: Clock + Messages + Live Event Status & Active Viewers (every 2 seconds)
   useEffect(() => {
     if (!isOpen || !event) return;
+
+    agoraClient.joinLiveEvent(event.id).then(() => {
+      agoraClient.getEventLiveStatus(event.id).then((res) => {
+        if (res.liveStatus?.activeViewers !== undefined) {
+          setActiveViewers(res.liveStatus.activeViewers);
+        }
+      });
+    });
 
     const syncInterval = setInterval(() => {
       setNowTime(Date.now());
@@ -86,24 +96,32 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
         }
       });
 
-      // Poll latest live status (start/restart/end) from backend
+      // Poll latest live status (start/restart/end) & active viewers from backend
       agoraClient.getEventLiveStatus(event.id).then((res) => {
         const ls = res.liveStatus;
         if (ls) {
+          if (ls.activeViewers !== undefined) {
+            setActiveViewers(ls.activeViewers);
+          }
+          if (ls.status) {
+            setLiveStatusState(ls.status);
+          }
           setCurrentEvent((prev) => {
             if (!prev) return prev;
             return {
               ...prev,
               startTime: ls.startTime || prev.startTime,
               endTime: ls.endTime || prev.endTime,
-              attendeeCount: ls.attendeeCount !== undefined ? ls.attendeeCount : prev.attendeeCount,
             };
           });
         }
       });
     }, 2000);
 
-    return () => clearInterval(syncInterval);
+    return () => {
+      clearInterval(syncInterval);
+      agoraClient.leaveLiveEvent(event.id);
+    };
   }, [isOpen, event]);
 
   if (!isOpen || !currentEvent) return null;
@@ -113,8 +131,8 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
   const endTimeMs = currentEvent.endTime ? new Date(currentEvent.endTime).getTime() : startTimeMs + 2 * 3600 * 1000;
   
   const isPast = nowTime > endTimeMs;
-  const isLiveNow = nowTime >= startTimeMs && nowTime <= endTimeMs && currentEvent.attendeeCount !== 0;
-  const isEndedConcluded = isPast || (currentEvent.attendeeCount === 0 && nowTime >= startTimeMs);
+  const isLiveNow = (nowTime >= startTimeMs && nowTime <= endTimeMs && liveStatusState !== "ended") || liveStatusState === "active" || liveStatusState === "restarted";
+  const isEndedConcluded = isPast || liveStatusState === "ended";
   const endedElapsedMs = isEndedConcluded ? Math.max(0, nowTime - (currentEvent.endTime ? new Date(currentEvent.endTime).getTime() : endTimeMs)) : 0;
   const endedElapsedHours = Math.floor(endedElapsedMs / (3600 * 1000));
   const endedElapsedMins = Math.floor((endedElapsedMs % (3600 * 1000)) / 60000);
@@ -200,25 +218,8 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
   };
 
   const handleLeaveAndClose = () => {
-    if (isLiveNow && currentEvent) {
-      const remainingCount = Math.max(0, (currentEvent.attendeeCount || 1) - 1);
-      if (remainingCount === 0 || isHost) {
-        const endedIso = new Date().toISOString();
-        const updated: PhilosophyEvent = {
-          ...currentEvent,
-          attendeeCount: 0,
-          endTime: endedIso,
-        };
-        setCurrentEvent(updated);
-        if (onUpdateEvent) onUpdateEvent(updated);
-      } else {
-        const updated: PhilosophyEvent = {
-          ...currentEvent,
-          attendeeCount: remainingCount,
-        };
-        setCurrentEvent(updated);
-        if (onUpdateEvent) onUpdateEvent(updated);
-      }
+    if (event) {
+      agoraClient.leaveLiveEvent(event.id);
     }
     onClose();
   };
@@ -338,7 +339,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
       >
         {/* Modal Header */}
         <div className="live-event-modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div className="live-badge-row" style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div className="live-badge-row" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <span
               className="live-pulse-badge"
               style={{
@@ -355,6 +356,47 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
             </span>
             <span className="event-type-chip badge-debate">
               {currentEvent.type.toUpperCase().replace("_", " ")}
+            </span>
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                padding: "4px 10px",
+                borderRadius: 12,
+                background:
+                  currentEvent.userRsvpStatus === "going"
+                    ? "rgba(16, 185, 129, 0.2)"
+                    : currentEvent.userRsvpStatus === "maybe"
+                    ? "rgba(245, 158, 11, 0.2)"
+                    : currentEvent.userRsvpStatus === "declined"
+                    ? "rgba(239, 68, 68, 0.2)"
+                    : "rgba(148, 163, 184, 0.2)",
+                color:
+                  currentEvent.userRsvpStatus === "going"
+                    ? "#10b981"
+                    : currentEvent.userRsvpStatus === "maybe"
+                    ? "#f59e0b"
+                    : currentEvent.userRsvpStatus === "declined"
+                    ? "#ef4444"
+                    : "#94a3b8",
+                border: `1px solid ${
+                  currentEvent.userRsvpStatus === "going"
+                    ? "rgba(16, 185, 129, 0.4)"
+                    : currentEvent.userRsvpStatus === "maybe"
+                    ? "rgba(245, 158, 11, 0.4)"
+                    : currentEvent.userRsvpStatus === "declined"
+                    ? "rgba(239, 68, 68, 0.4)"
+                    : "rgba(148, 163, 184, 0.3)"
+                }`,
+              }}
+            >
+              {currentEvent.userRsvpStatus === "going"
+                ? "🟢 Registered (Going)"
+                : currentEvent.userRsvpStatus === "maybe"
+                ? "🟡 Registered (Maybe)"
+                : currentEvent.userRsvpStatus === "declined"
+                ? "🔴 Declined (Not Registered)"
+                : "⚪ Not Registered"}
             </span>
           </div>
           <button type="button" className="close-drawer-btn" onClick={handleLeaveAndClose} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}>
@@ -420,14 +462,14 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
           <div className="meta-card-item" style={{ background: "rgba(255, 255, 255, 0.03)", borderRadius: 12, padding: 10, textAlign: "center" }}>
             <span className="meta-label" style={{ fontSize: "0.72rem", color: "#94a3b8", display: "block" }}>👁️ LIVE VIEWERS</span>
             <span className="meta-val" style={{ fontSize: "0.88rem", fontWeight: 700, color: "#4ade80" }}>
-              {isLiveNow ? `${currentEvent.attendeeCount} Active` : "Scheduled"}
+              {isLiveNow ? `${activeViewers} Active` : "Scheduled"}
             </span>
           </div>
 
           <div className="meta-card-item" style={{ background: "rgba(255, 255, 255, 0.03)", borderRadius: 12, padding: 10, textAlign: "center" }}>
-            <span className="meta-label" style={{ fontSize: "0.72rem", color: "#94a3b8", display: "block" }}>👥 CAPACITY</span>
+            <span className="meta-label" style={{ fontSize: "0.72rem", color: "#94a3b8", display: "block" }}>👥 REGISTERED / CAPACITY</span>
             <span className="meta-val" style={{ fontSize: "0.88rem", fontWeight: 700, color: "#f8fafc" }}>
-              {currentEvent.attendeeCount} / {currentEvent.maxCapacity || "∞"}
+              {currentEvent.registeredCount ?? currentEvent.attendeeCount} / {currentEvent.maxCapacity || "∞"} Registered
             </span>
           </div>
         </div>
@@ -696,12 +738,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
               rel="noreferrer"
               className="join-external-video-btn"
               onClick={() => {
-                if (onUpdateEvent && currentEvent) {
-                  const updated = { ...currentEvent, attendeeCount: (currentEvent.attendeeCount || 0) + 1 };
-                  setCurrentEvent(updated);
-                  onUpdateEvent(updated);
-                }
-                setTimeout(() => onClose(), 500);
+                setTimeout(() => onClose(), 300);
               }}
               style={{ padding: "12px", borderRadius: 12, background: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)", color: "#ffffff", fontWeight: 700, textDecoration: "none", textAlign: "center", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.4)", display: "block" }}
             >
@@ -712,11 +749,6 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
               type="button"
               className="expand-full-text-btn"
               onClick={() => {
-                if (onUpdateEvent && currentEvent) {
-                  const updated = { ...currentEvent, attendeeCount: (currentEvent.attendeeCount || 0) + 1 };
-                  setCurrentEvent(updated);
-                  onUpdateEvent(updated);
-                }
                 onClose();
                 if (onOpenTextDebate) onOpenTextDebate(host, currentEvent);
               }}

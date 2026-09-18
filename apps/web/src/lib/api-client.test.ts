@@ -87,4 +87,24 @@ describe("AgoraPhilosophyClient", () => {
 
     fetchSpy.mockRestore();
   });
+
+  it("tracks live event active viewers presence in fallback mode", async () => {
+    const client = new AgoraPhilosophyClient();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
+
+    const eventId = "event-2";
+    await client.joinLiveEvent(eventId);
+    let statusRes = await client.getEventLiveStatus(eventId);
+    expect(statusRes.liveStatus?.activeViewers).toBe(1);
+
+    await client.joinLiveEvent(eventId);
+    statusRes = await client.getEventLiveStatus(eventId);
+    expect(statusRes.liveStatus?.activeViewers).toBe(2);
+
+    await client.leaveLiveEvent(eventId);
+    statusRes = await client.getEventLiveStatus(eventId);
+    expect(statusRes.liveStatus?.activeViewers).toBe(1);
+
+    fetchSpy.mockRestore();
+  });
 });

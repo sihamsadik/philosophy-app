@@ -277,13 +277,68 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                   </span>
                 </div>
 
-                {/* Event Title & Space Context */}
-                <h3 className="event-title">{event.title}</h3>
-                {event.spaceName && (
-                  <span className="space-context-tag">
-                    🏛️ {event.spaceName}
+                {/* Registration Status Badge & Event Title */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                  {event.spaceName ? (
+                    <span className="space-context-tag">
+                      🏛️ {event.spaceName}
+                    </span>
+                  ) : <span />}
+
+                  <span
+                    className={`registration-status-chip ${
+                      event.userRsvpStatus === "going"
+                        ? "reg-going"
+                        : event.userRsvpStatus === "maybe"
+                        ? "reg-maybe"
+                        : event.userRsvpStatus === "declined"
+                        ? "reg-declined"
+                        : "reg-none"
+                    }`}
+                    style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      padding: "3px 9px",
+                      borderRadius: 12,
+                      letterSpacing: "0.02em",
+                      background:
+                        event.userRsvpStatus === "going"
+                          ? "rgba(16, 185, 129, 0.15)"
+                          : event.userRsvpStatus === "maybe"
+                          ? "rgba(245, 158, 11, 0.15)"
+                          : event.userRsvpStatus === "declined"
+                          ? "rgba(239, 68, 68, 0.15)"
+                          : "rgba(148, 163, 184, 0.15)",
+                      color:
+                        event.userRsvpStatus === "going"
+                          ? "#10b981"
+                          : event.userRsvpStatus === "maybe"
+                          ? "#f59e0b"
+                          : event.userRsvpStatus === "declined"
+                          ? "#ef4444"
+                          : "#94a3b8",
+                      border: `1px solid ${
+                        event.userRsvpStatus === "going"
+                          ? "rgba(16, 185, 129, 0.4)"
+                          : event.userRsvpStatus === "maybe"
+                          ? "rgba(245, 158, 11, 0.4)"
+                          : event.userRsvpStatus === "declined"
+                          ? "rgba(239, 68, 68, 0.4)"
+                          : "rgba(148, 163, 184, 0.3)"
+                      }`,
+                    }}
+                  >
+                    {event.userRsvpStatus === "going"
+                      ? "🟢 Registered (Going)"
+                      : event.userRsvpStatus === "maybe"
+                      ? "🟡 Registered (Maybe)"
+                      : event.userRsvpStatus === "declined"
+                      ? "🔴 Not Registered (Declined)"
+                      : "⚪ Not Registered"}
                   </span>
-                )}
+                </div>
+
+                <h3 className="event-title">{event.title}</h3>
 
                 <p className="event-description">{event.description}</p>
 
@@ -320,7 +375,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                   <div className="meta-item">
                     <span className="meta-icon">👥</span>
                     <span>
-                      {event.attendeeCount} / {event.maxCapacity || "∞"} Registered
+                      {event.registeredCount ?? event.attendeeCount} / {event.maxCapacity || "∞"} Registered
                     </span>
                   </div>
 
@@ -334,6 +389,11 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                       🔗 {countdown.status === "live" ? "🔴 Join Live Event" : "ℹ️ View Live Meeting Info"}
                     </button>
                   </div>
+                </div>
+
+                {/* Open Participation Notice */}
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontStyle: "italic", marginTop: 4, marginBottom: 8 }}>
+                  💡 Registration manages roster notifications. Anyone can join live events regardless of RSVP status.
                 </div>
 
                 {/* Event Tags */}
@@ -353,18 +413,21 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                     <button
                       className={`rsvp-btn going ${event.userRsvpStatus === "going" ? "active" : ""}`}
                       onClick={() => handleRsvp(event.id, "going")}
+                      title="Register as Going (Counts in Roster)"
                     >
                       🟢 Going
                     </button>
                     <button
                       className={`rsvp-btn maybe ${event.userRsvpStatus === "maybe" ? "active" : ""}`}
                       onClick={() => handleRsvp(event.id, "maybe")}
+                      title="Register as Maybe (Tentative Roster)"
                     >
                       🟡 Maybe
                     </button>
                     <button
                       className={`rsvp-btn declined ${event.userRsvpStatus === "declined" ? "active" : ""}`}
                       onClick={() => handleRsvp(event.id, "declined")}
+                      title="Mark as Declined (Not Registered)"
                     >
                       🔴 Declined
                     </button>
@@ -374,7 +437,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                     className="view-roster-btn"
                     onClick={() => handleOpenRoster(event)}
                   >
-                    👥 Roster ({event.attendeeCount})
+                    👥 Roster ({event.registeredCount ?? event.attendeeCount})
                   </button>
                 </div>
               </div>

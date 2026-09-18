@@ -176,12 +176,37 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
   const thinkerId = thinker?.id || (event ? `evt-${event.id}` : "usr-sartre-001");
 
   useEffect(() => {
-    if (event?.attendeeCount !== undefined) {
-      setActiveViewers(event.attendeeCount);
-    } else {
-      setActiveViewers(1);
+    if (!isOpen) return;
+
+    if (event) {
+      agoraClient.joinLiveEvent(event.id).then(() => {
+        agoraClient.getEventLiveStatus(event.id).then((res) => {
+          if (res.liveStatus?.activeViewers !== undefined) {
+            setActiveViewers(res.liveStatus.activeViewers);
+          }
+        });
+      });
+    } else if (thinker) {
+      setActiveViewers((prev) => Math.max(1, prev));
     }
-  }, [event]);
+
+    const presenceInterval = setInterval(() => {
+      if (event) {
+        agoraClient.getEventLiveStatus(event.id).then((res) => {
+          if (res.liveStatus?.activeViewers !== undefined) {
+            setActiveViewers(res.liveStatus.activeViewers);
+          }
+        });
+      }
+    }, 2000);
+
+    return () => {
+      clearInterval(presenceInterval);
+      if (event) {
+        agoraClient.leaveLiveEvent(event.id);
+      }
+    };
+  }, [isOpen, event, thinker]);
 
   // Live Timer
   useEffect(() => {

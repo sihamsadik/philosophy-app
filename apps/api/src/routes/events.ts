@@ -39,9 +39,11 @@ interface LiveEventStatus {
   endTime: string | null;
   status: "active" | "ended" | "restarted" | "scheduled";
   attendeeCount: number;
+  activeViewers: number;
 }
 
 const liveEventStatusMap = new Map<string, LiveEventStatus>();
+const activeViewersPresenceMap = new Map<string, Map<string, number>>();
 const eventMessagesMap = new Map<string, EventMessage[]>();
 
 // ── shared helpers ───────────────────────────────────────────────────────────
@@ -512,34 +514,54 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
   .post("/:eventId/live-status", async (c) => {
     const eventId = c.req.param("eventId");
     const body = await c.req.json().catch(() => ({}));
-    const action = body.action as "start" | "restart" | "end" | "update";
-    const startTime = body.startTime || new Date().toISOString();
-    const endTime = body.endTime || (action === "end" ? new Date().toISOString() : new Date(Date.now() + 2 * 3600 * 1000).toISOString());
-    const attendeeCount = typeof body.attendeeCount === "number" ? body.attendeeCount : (action === "end" ? 0 : 1);
-    const status: "active" | "ended" | "restarted" | "scheduled" = action === "end" ? "ended" : action === "restart" ? "restarted" : "active";
+    const action = body.action as "start" | "restart" | "end" | "update" | "join" | "leave" | "heartbeat";
+    const existing = liveEventStatusMap.get(eventId);
+
+    const startTime = body.startTime || existing?.startTime || new Date().toISOString();
+    const endTime = body.endTime || existing?.endTime || (action === "end" ? new Date().toISOString() : new Date(Date.now() + 2 * 3600 * 1000).toISOString());
+    const attendeeCount = typeof body.attendeeCount === "number" ? body.attendeeCount : (existing?.attendeeCount ?? (action === "end" ? 0 : 1));
+
+    let activeViewers = existing?.activeViewers ?? 0;
+    if (typeof body.activeViewers === "number") {
+      activeViewers = body.activeViewers;
+    } else if (action === "join") {
+      activeViewers = Math.max(1, activeViewers + 1);
+    } else if (action === "leave") {
+      activeViewers = Math.max(0, activeViewers - 1);
+    } else if (action === "start" || action === "restart") {
+      activeViewers = Math.max(1, activeViewers);
+    } else if (action === "end") {
+      activeViewers = 0;
+    }
+
+    const status: "active" | "ended" | "restarted" | "scheduled" =
+      action === "end" ? "ended" : action === "restart" ? "restarted" : (existing?.status ?? "active");
 
     const updatedStatus: LiveEventStatus = {
       startTime,
       endTime,
       status,
       attendeeCount,
+      activeViewers,
     };
     liveEventStatusMap.set(eventId, updatedStatus);
 
     // Also update Drizzle database row if event exists
-    try {
-      const dbStatus: "active" | "cancelled" = action === "end" ? "cancelled" : "active";
-      await getDb()
-        .update(events)
-        .set({
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          status: dbStatus,
-        })
-        .where(eq(events.id, eventId));
-    } catch {}
+    if (action === "start" || action === "restart" || action === "end") {
+      try {
+        const dbStatus: "active" | "cancelled" = action === "end" ? "cancelled" : "active";
+        await getDb()
+          .update(events)
+          .set({
+            startTime: new Date(startTime),
+            endTime: new Date(endTime),
+            status: dbStatus,
+          })
+          .where(eq(events.id, eventId));
+      } catch {}
+    }
 
-    logger.info({ eventId, action, status }, "live event status updated on backend");
+    logger.info({ eventId, action, status, activeViewers }, "live event status updated on backend");
     return c.json({ success: true, liveStatus: updatedStatus });
   })
   .get("/:eventId/messages", async (c) => {

@@ -5,6 +5,7 @@ describe("AgoraPhilosophyClient Integration & Data Flow Tests", () => {
   let client: AgoraPhilosophyClient;
 
   beforeEach(() => {
+    try { localStorage.clear(); } catch {}
     client = new AgoraPhilosophyClient({
       baseUrl: "http://localhost:5001/v7",
       projectId: "00000000-0000-0000-0000-000000000000",
