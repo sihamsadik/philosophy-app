@@ -25,6 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = agoraClient.getAuthToken();
     if (!token || token === "mock-auth-token") {
       setUser(null);
+      agoraClient.setCurrentUserId("");
       setIsLoading(false);
       return;
     }
@@ -32,8 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const currentUser = await agoraClient.getMe();
       setUser(currentUser);
+      if (currentUser?.id) agoraClient.setCurrentUserId(currentUser.id);
     } catch {
       agoraClient.setAuthToken("");
+      agoraClient.setCurrentUserId("");
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -50,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await agoraClient.signIn({ email, password });
       setUser(res.user);
+      if (res.user?.id) agoraClient.setCurrentUserId(res.user.id);
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
       throw err;
@@ -64,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await agoraClient.signUp(data);
       setUser(res.user);
+      if (res.user?.id) agoraClient.setCurrentUserId(res.user.id);
     } catch (err: any) {
       setError(err.message || "Failed to create account");
       throw err;
@@ -78,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await agoraClient.signOut();
     } finally {
       setUser(null);
+      agoraClient.setCurrentUserId("");
       setIsLoading(false);
     }
   };
@@ -85,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setDemoUser = (demoUser: User, token?: string) => {
     if (token) agoraClient.setAuthToken(token);
     setUser(demoUser);
+    if (demoUser?.id) agoraClient.setCurrentUserId(demoUser.id);
   };
 
   return (

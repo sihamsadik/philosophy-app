@@ -59,15 +59,46 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
   }, [activeTypeTab]);
 
   const handleRsvp = async (eventId: string, status: RSVPStatus) => {
+    // 1. Optimistic UI update for immediate smooth feedback
+    setEvents((prev) =>
+      prev.map((e) => {
+        if (e.id !== eventId) return e;
+        const prevStatus = e.userRsvpStatus;
+        let countDiff = 0;
+        if (prevStatus !== "going" && status === "going") {
+          countDiff = 1;
+        } else if (prevStatus === "going" && status !== "going") {
+          countDiff = -1;
+        }
+        const newCount = Math.max(0, (e.registeredCount ?? e.attendeeCount ?? 0) + countDiff);
+        return {
+          ...e,
+          userRsvpStatus: status,
+          registeredCount: newCount,
+          attendeeCount: newCount,
+        };
+      })
+    );
+
     try {
       const res = await agoraClient.rsvpEvent(eventId, status);
-      if (res.event) {
+      if (res?.event) {
         setEvents((prev) =>
-          prev.map((e) => (e.id === eventId ? res.event : e))
+          prev.map((e) =>
+            e.id === eventId
+              ? {
+                  ...res.event,
+                  userRsvpStatus: status,
+                  registeredCount: res.event.registeredCount ?? res.event.attendeeCount ?? e.registeredCount,
+                  attendeeCount: res.event.attendeeCount ?? res.event.registeredCount ?? e.attendeeCount,
+                }
+              : e
+          )
         );
       }
     } catch (err) {
       console.error("RSVP failed:", err);
+      loadEvents();
     }
   };
 
