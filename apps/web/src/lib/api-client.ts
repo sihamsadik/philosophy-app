@@ -26,6 +26,7 @@ export class AgoraPhilosophyClient {
   private baseUrl: string;
   private projectId: string;
   private authToken: string;
+  private currentUserId: string = "";
 
   constructor(options?: ApiClientOptions) {
     this.baseUrl = options?.baseUrl || "/api";
@@ -35,8 +36,28 @@ export class AgoraPhilosophyClient {
     let storedToken = "";
     if (typeof window !== "undefined") {
       storedToken = localStorage.getItem("philosophy_auth_token") || "";
+      this.currentUserId = localStorage.getItem("philosophy_current_user_id") || "";
     }
     this.authToken = options?.authToken || storedToken || "";
+  }
+
+  setCurrentUserId(id: string) {
+    this.currentUserId = id;
+    if (typeof window !== "undefined") {
+      if (id) {
+        localStorage.setItem("philosophy_current_user_id", id);
+      } else {
+        localStorage.removeItem("philosophy_current_user_id");
+      }
+    }
+  }
+
+  getCurrentUserId(): string {
+    if (this.currentUserId) return this.currentUserId;
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("philosophy_current_user_id") || "guest";
+    }
+    return "guest";
   }
 
   setAuthToken(token: string) {
@@ -46,6 +67,8 @@ export class AgoraPhilosophyClient {
         localStorage.setItem("philosophy_auth_token", token);
       } else {
         localStorage.removeItem("philosophy_auth_token");
+        localStorage.removeItem("philosophy_current_user_id");
+        this.currentUserId = "";
       }
     }
   }
@@ -508,34 +531,57 @@ export class AgoraPhilosophyClient {
     const queryString = query.toString() ? `?${query.toString()}` : "";
     const res = await this.request<any>(`/events${queryString}`);
     const list = res?.events || res?.data || (Array.isArray(res) ? res : []);
-    const mapped = (Array.isArray(list) ? list : []).map((e: any) => ({
-      id: e.id,
-      title: e.title,
-      type: e.metadata?.eventType || e.type || "symposium",
-      description: e.description || "",
-      startTime: e.startTime || e.start_time,
-      endTime: e.endTime || e.end_time,
-      locationUrl: e.url || "https://agora.philosophy/symposium/live",
-      hostUser: e.user || e.hostUser || {
-        id: e.userId || "usr-creator",
-        name: e.metadata?.hostName || "You (Event Organizer)",
-        username: e.metadata?.hostHandle || "you",
-        avatar: e.metadata?.hostAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-        philosophyProfile: {
-          primarySchools: ["Philosophy"],
-          keyThinkers: ["Socrates"],
+    const userId = this.getCurrentUserId();
+    const mapped = (Array.isArray(list) ? list : []).map((e: any) => {
+      let storedRsvp: RSVPStatus | undefined;
+      try {
+        const localVal =
+          localStorage.getItem(`agora_user_rsvp_${userId}_${e.id}`) ||
+          localStorage.getItem(`agora_user_rsvp_${e.id}`);
+        if (localVal === "going" || localVal === "maybe" || localVal === "declined") {
+          storedRsvp = localVal as RSVPStatus;
+        }
+      } catch {}
+
+      const userRsvpStatus: RSVPStatus | undefined =
+        storedRsvp ||
+        (e.userRsvpStatus === "going" || e.userRsvpStatus === "maybe" || e.userRsvpStatus === "declined"
+          ? e.userRsvpStatus
+          : e.metadata?.userRsvpStatus === "going" || e.metadata?.userRsvpStatus === "maybe" || e.metadata?.userRsvpStatus === "declined"
+          ? e.metadata.userRsvpStatus
+          : undefined);
+
+      const count = e.rsvpCounts?.going ?? e.registeredCount ?? e.metadata?.attendeeCount ?? e.attendeeCount ?? 0;
+
+      return {
+        id: e.id,
+        title: e.title,
+        type: e.metadata?.eventType || e.type || "symposium",
+        description: e.description || "",
+        startTime: e.startTime || e.start_time,
+        endTime: e.endTime || e.end_time,
+        locationUrl: e.url || "https://agora.philosophy/symposium/live",
+        hostUser: e.user || e.hostUser || {
+          id: e.userId || "usr-creator",
+          name: e.metadata?.hostName || "You (Event Organizer)",
+          username: e.metadata?.hostHandle || "you",
+          avatar: e.metadata?.hostAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+          philosophyProfile: {
+            primarySchools: ["Philosophy"],
+            keyThinkers: ["Socrates"],
+          },
         },
-      },
-      spaceId: e.spaceId,
-      spaceName: e.metadata?.spaceName || "Philosophy Circle",
-      maxCapacity: e.capacity || e.maxCapacity || 50,
-      attendeeCount: e.rsvpCounts?.going ?? e.metadata?.attendeeCount ?? e.attendeeCount ?? 1,
-      registeredCount: e.rsvpCounts?.going ?? e.metadata?.attendeeCount ?? e.attendeeCount ?? 1,
-      activeViewers: e.activeViewers ?? e.metadata?.activeViewers ?? 0,
-      userRsvpStatus: e.metadata?.userRsvpStatus || "not_going",
-      tags: e.metadata?.tags || ["Ethics", "Dialogue"],
-      createdAt: e.createdAt || new Date().toISOString(),
-    }));
+        spaceId: e.spaceId,
+        spaceName: e.metadata?.spaceName || "Philosophy Circle",
+        maxCapacity: e.capacity || e.maxCapacity || 50,
+        attendeeCount: count,
+        registeredCount: count,
+        activeViewers: e.activeViewers ?? e.metadata?.activeViewers ?? 0,
+        userRsvpStatus,
+        tags: e.metadata?.tags || ["Ethics", "Dialogue"],
+        createdAt: e.createdAt || new Date().toISOString(),
+      };
+    });
 
     // Filter out concluded events older than 1 day (24 hours)
     const ONE_DAY_MS = 24 * 3600 * 1000;
@@ -662,58 +708,88 @@ export class AgoraPhilosophyClient {
   }
 
   async rsvpEvent(eventId: string, status: RSVPStatus): Promise<{ success: boolean; event: PhilosophyEvent }> {
+    const userId = this.getCurrentUserId();
     try {
-      const res = await this.request<{ success: boolean; event: PhilosophyEvent }>(`/events/${eventId}/rsvp`, {
+      localStorage.setItem(`agora_user_rsvp_${userId}_${eventId}`, status);
+      localStorage.setItem(`agora_user_rsvp_${eventId}`, status);
+    } catch {}
+
+    try {
+      const res = await this.request<any>(`/events/${eventId}/rsvp`, {
         method: "POST",
         body: JSON.stringify({ status }),
       });
+
+      let updatedEvent: PhilosophyEvent;
+
       if (res?.event) {
-        if (res.event.rsvpCounts?.going !== undefined) {
-          res.event.registeredCount = res.event.rsvpCounts.going;
-          res.event.attendeeCount = res.event.rsvpCounts.going;
-        }
+        updatedEvent = { ...res.event };
+      } else if (res?.id) {
+        const count = res.rsvpCounts?.going ?? res.registeredCount ?? res.attendeeCount ?? 0;
+        updatedEvent = {
+          id: res.id,
+          title: res.title || "Symposium Event",
+          type: res.metadata?.eventType || res.type || "symposium",
+          description: res.description || "",
+          startTime: res.startTime || res.start_time,
+          endTime: res.endTime || res.end_time,
+          locationUrl: res.url || "https://agora.philosophy/symposium/live",
+          hostUser: res.user || res.hostUser || {
+            id: res.userId || "usr-creator",
+            name: res.metadata?.hostName || "Host",
+            username: res.metadata?.hostHandle || "organizer",
+            avatar: res.metadata?.hostAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+          },
+          spaceId: res.spaceId,
+          spaceName: res.metadata?.spaceName || "Philosophy Circle",
+          maxCapacity: res.capacity || res.maxCapacity || 30,
+          attendeeCount: count,
+          registeredCount: count,
+          activeViewers: res.activeViewers ?? 0,
+          userRsvpStatus: status,
+          tags: res.metadata?.tags || ["Ethics", "Dialogue"],
+          createdAt: res.createdAt || new Date().toISOString(),
+        };
+      } else {
+        throw new Error("Invalid response format");
       }
-      return res;
+
+      updatedEvent.userRsvpStatus = status;
+      if (res?.rsvpCounts?.going !== undefined) {
+        updatedEvent.registeredCount = res.rsvpCounts.going;
+        updatedEvent.attendeeCount = res.rsvpCounts.going;
+      } else if (res?.event?.rsvpCounts?.going !== undefined) {
+        updatedEvent.registeredCount = res.event.rsvpCounts.going;
+        updatedEvent.attendeeCount = res.event.rsvpCounts.going;
+      }
+
+      return { success: true, event: updatedEvent };
     } catch {
       const event = DEMO_EVENTS.find((e) => e.id === eventId);
       if (!event) throw new Error("Event not found");
 
-      const existingRsvp = DEMO_RSVPS.find(
-        (r) => r.eventId === eventId && r.user.id === "00000000-0000-0000-0000-000000000001"
-      );
+      let store: Array<{ userId: string; status: RSVPStatus }> = [];
+      try {
+        const raw = localStorage.getItem(`agora_rsvps_store_${eventId}`);
+        if (raw) store = JSON.parse(raw);
+      } catch {}
 
-      const prevStatus = event.userRsvpStatus;
-      event.userRsvpStatus = status;
-
-      if (prevStatus !== "going" && status === "going") {
-        event.attendeeCount += 1;
-      } else if (prevStatus === "going" && status !== "going") {
-        event.attendeeCount = Math.max(0, event.attendeeCount - 1);
-      }
-      event.registeredCount = event.attendeeCount;
-
-      if (existingRsvp) {
-        existingRsvp.status = status;
-        existingRsvp.updatedAt = "Just now";
+      const idx = store.findIndex((r) => r.userId === userId);
+      const existing = idx >= 0 ? store[idx] : undefined;
+      if (existing) {
+        existing.status = status;
       } else {
-        DEMO_RSVPS.push({
-          id: `rsvp-${Date.now()}`,
-          eventId,
-          user: {
-            id: "00000000-0000-0000-0000-000000000001",
-            name: "Immanuel Kant",
-            username: "kantian_critique",
-            avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-          } as User,
-          status,
-          updatedAt: "Just now",
-          createdAt: new Date().toISOString(),
-        });
+        store.push({ userId, status });
       }
 
       try {
-        localStorage.setItem(`agora_rsvps_store_${eventId}`, JSON.stringify(DEMO_RSVPS.filter((r) => r.eventId === eventId)));
+        localStorage.setItem(`agora_rsvps_store_${eventId}`, JSON.stringify(store));
       } catch {}
+
+      const goingCount = store.filter((r) => r.status === "going").length;
+      event.registeredCount = goingCount;
+      event.attendeeCount = goingCount;
+      event.userRsvpStatus = status;
 
       return { success: true, event };
     }
