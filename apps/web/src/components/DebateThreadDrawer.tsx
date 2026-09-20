@@ -183,8 +183,8 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
     );
 
     const displayName = isCurrentUser
-      ? "You"
-      : comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Anonymous Thinker");
+      ? (comment.authorName || user?.name || user?.username || "You")
+      : comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Thinker");
 
     return (
       <div
@@ -222,7 +222,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                   borderRadius: isAuthor ? 6 : 0,
                 }}
               >
-                {displayName}
+                {displayName} {isCurrentUser && displayName !== "You" ? <span style={{ color: "#38bdf8", fontWeight: 600, fontSize: "0.78rem" }}>(You)</span> : null}
               </span>
 
               {isAuthor ? (

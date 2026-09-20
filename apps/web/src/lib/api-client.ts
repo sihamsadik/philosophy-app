@@ -543,15 +543,29 @@ export class AgoraPhilosophyClient {
         }
       } catch {}
 
+      const hostId = e.userId || e.user?.id || e.hostUser?.id;
+      const isHostOfEvent = !!(
+        userId && (
+          (hostId && (hostId === userId || hostId === "usr-current")) ||
+          (e.metadata?.hostHandle && userId && e.metadata.hostHandle.toLowerCase() === userId.toLowerCase()) ||
+          (e.hostUser?.username && userId && e.hostUser.username.toLowerCase() === userId.toLowerCase())
+        )
+      );
+
+      const defaultStatus: RSVPStatus | undefined = isHostOfEvent ? "going" : undefined;
+
       const userRsvpStatus: RSVPStatus | undefined =
         storedRsvp ||
         (e.userRsvpStatus === "going" || e.userRsvpStatus === "maybe" || e.userRsvpStatus === "declined"
           ? e.userRsvpStatus
           : e.metadata?.userRsvpStatus === "going" || e.metadata?.userRsvpStatus === "maybe" || e.metadata?.userRsvpStatus === "declined"
           ? e.metadata.userRsvpStatus
-          : undefined);
+          : defaultStatus);
 
-      const count = e.rsvpCounts?.going ?? e.registeredCount ?? e.metadata?.attendeeCount ?? e.attendeeCount ?? 0;
+      let count = e.rsvpCounts?.going ?? e.registeredCount ?? e.metadata?.attendeeCount ?? e.attendeeCount ?? 0;
+      if (isHostOfEvent && count === 0) {
+        count = 1;
+      }
 
       return {
         id: e.id,
@@ -670,6 +684,17 @@ export class AgoraPhilosophyClient {
         tags: e.metadata?.tags || data.tags || ["Ethics", "Dialogue"],
         createdAt: e.createdAt || new Date().toISOString(),
       };
+
+      const userId = this.getCurrentUserId();
+      try {
+        localStorage.setItem(`agora_user_rsvp_${userId}_${createdEvent.id}`, "going");
+        localStorage.setItem(`agora_user_rsvp_${createdEvent.id}`, "going");
+      } catch {}
+
+      // Automatically register host RSVP on the backend
+      try {
+        await this.rsvpEvent(createdEvent.id, "going");
+      } catch {}
 
       // Unshift to client memory array as well
       DEMO_EVENTS.unshift(createdEvent);
@@ -1121,7 +1146,7 @@ export class AgoraPhilosophyClient {
         title: p.title || "Untitled Debate",
         content: p.content || "",
         authorId: p.userId || "usr-001",
-        authorName: meta.authorName || p.user?.name || "Anonymous Thinker",
+        authorName: meta.authorName || p.user?.name || p.user?.username || "Thinker",
         authorHandle: meta.authorHandle || p.user?.username || "thinker",
         authorAvatar: p.user?.avatar || meta.authorAvatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
         postType: meta.postType || "argument",

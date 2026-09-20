@@ -190,8 +190,8 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     );
 
     const displayName = isCurrentUser
-      ? "You"
-      : comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Anonymous Thinker");
+      ? (comment.authorName || user?.name || user?.username || "You")
+      : comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Thinker");
 
     return (
       <div
@@ -229,7 +229,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                   borderRadius: isAuthor ? 6 : 0,
                 }}
               >
-                {displayName}
+                {displayName} {isCurrentUser && displayName !== "You" ? <span style={{ color: "#38bdf8", fontWeight: 600, fontSize: "0.78rem" }}>(You)</span> : null}
               </span>
 
               {isAuthor ? (
@@ -505,7 +505,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                   thesisComments.map((comment) => (
                     <div key={comment.id} className="split-comment-card thesis-card">
                       <div className="comment-header-row">
-                        <span className="author-name-text">{comment.authorName}</span>
+                        <span className="author-name-text">{comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Thinker")}</span>
                         <span className="comment-timestamp">{comment.createdAt}</span>
                       </div>
                       <p className="comment-content-body">{comment.content}</p>
@@ -537,7 +537,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                   antithesisComments.map((comment) => (
                     <div key={comment.id} className="split-comment-card antithesis-card">
                       <div className="comment-header-row">
-                        <span className="author-name-text">{comment.authorName}</span>
+                        <span className="author-name-text">{comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Thinker")}</span>
                         <span className="comment-timestamp">{comment.createdAt}</span>
                       </div>
                       <p className="comment-content-body">{comment.content}</p>
@@ -570,7 +570,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                 synthesisComments.map((comment) => (
                   <div key={comment.id} className="split-comment-card synthesis-card">
                     <div className="comment-header-row">
-                      <span className="author-name-text">{comment.authorName}</span>
+                      <span className="author-name-text">{comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Thinker")}</span>
                       <span className="comment-timestamp">{comment.createdAt}</span>
                     </div>
                     <p className="comment-content-body">{comment.content}</p>
