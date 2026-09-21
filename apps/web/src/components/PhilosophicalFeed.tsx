@@ -239,6 +239,9 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                 {isCommentsExpanded && (
                   <PhilosophicalCommentsSection
                     entityId={post.id}
+                    postAuthorId={post.authorId}
+                    postAuthorName={post.authorName}
+                    postAuthorHandle={post.authorHandle}
                     onOpenDebateSummary={onOpenDebateSummary}
                   />
                 )}

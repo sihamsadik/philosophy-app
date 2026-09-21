@@ -181,12 +181,17 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     );
 
     const isAuthor = !!(
-      (postAuthorId && comment.authorId && comment.authorId === postAuthorId) ||
+      (postAuthorId && comment.authorId && (comment.authorId === postAuthorId || (postAuthorId === "usr-current" && comment.authorId === "usr-current"))) ||
       (postAuthorName && (
         (comment.authorName && comment.authorName.toLowerCase() === postAuthorName.toLowerCase()) ||
         (comment.authorHandle && comment.authorHandle.toLowerCase() === postAuthorName.toLowerCase())
       )) ||
-      (postAuthorHandle && comment.authorHandle && comment.authorHandle.toLowerCase() === postAuthorHandle.toLowerCase())
+      (postAuthorHandle && comment.authorHandle && comment.authorHandle.toLowerCase() === postAuthorHandle.toLowerCase()) ||
+      (isCurrentUser && user && (
+        (postAuthorId && (user.id === postAuthorId || postAuthorId === "usr-current")) ||
+        (postAuthorName && user.name && user.name.toLowerCase() === postAuthorName.toLowerCase()) ||
+        (postAuthorHandle && user.username && user.username.toLowerCase() === postAuthorHandle.toLowerCase())
+      ))
     );
 
     const displayName = isCurrentUser
@@ -236,19 +241,21 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                 <span
                   className="author-badge-chip"
                   style={{
-                    background: "#38bdf8",
-                    color: "#0f172a",
+                    background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                    color: "#ffffff",
                     borderRadius: "12px",
-                    padding: "2px 8px",
+                    padding: "2px 9px",
                     fontSize: "0.72rem",
-                    fontWeight: 700,
+                    fontWeight: 800,
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "3px",
-                    boxShadow: "0 2px 6px rgba(56, 189, 248, 0.3)",
+                    gap: "4px",
+                    boxShadow: "0 2px 8px rgba(2, 132, 199, 0.4)",
+                    border: "1px solid rgba(56, 189, 248, 0.5)",
+                    letterSpacing: "0.03em",
                   }}
                 >
-                  👑 Author
+                  👑 Original Author
                 </span>
               ) : isCurrentUser ? (
                 <span

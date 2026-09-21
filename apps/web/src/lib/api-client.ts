@@ -1233,20 +1233,66 @@ export class AgoraPhilosophyClient {
    * Philosophical Comments & Nested Debate Threads
    */
   async getComments(entityId: string): Promise<{ comments: PhilosophicalComment[] }> {
+    let rawList: any[] = [];
+
     try {
       const res = await this.request<any>(`/entities/${entityId}/comments`);
-      const list = res?.comments || res?.data || (Array.isArray(res) ? res : []);
-      if (Array.isArray(list) && list.length > 0) {
-        return { comments: list };
-      }
+      rawList = res?.comments || res?.data || (Array.isArray(res) ? res : []);
     } catch {}
 
-    try {
-      const stored = localStorage.getItem(`agora_comments_${entityId}`);
-      if (stored) return { comments: JSON.parse(stored) };
-    } catch {}
+    if (!Array.isArray(rawList) || rawList.length === 0) {
+      try {
+        const stored = localStorage.getItem(`agora_comments_${entityId}`);
+        if (stored) rawList = JSON.parse(stored);
+      } catch {}
+    }
 
-    return { comments: DEMO_COMMENTS.filter((c) => c.entityId === entityId) };
+    if (!Array.isArray(rawList) || rawList.length === 0) {
+      rawList = DEMO_COMMENTS.filter((c) => c.entityId === entityId);
+    }
+
+    const mapped = (Array.isArray(rawList) ? rawList : []).map((c: any) => {
+      const meta = c.metadata || {};
+      const userObj = c.user || c.authorUser || c.author || {};
+
+      const authorName =
+        c.authorName ||
+        meta.authorName ||
+        c.author_name ||
+        userObj.name ||
+        userObj.username ||
+        (c.authorHandle || meta.authorHandle || userObj.username ? `@${c.authorHandle || meta.authorHandle || userObj.username}` : "Philosopher");
+
+      const authorHandle =
+        c.authorHandle ||
+        meta.authorHandle ||
+        c.author_handle ||
+        userObj.username ||
+        "thinker";
+
+      const authorAvatar =
+        c.authorAvatar ||
+        meta.authorAvatar ||
+        c.author_avatar ||
+        userObj.avatar ||
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+
+      return {
+        id: c.id || `comment-${Date.now()}`,
+        entityId: c.entityId || entityId,
+        authorId: c.userId || c.authorId || userObj.id || "usr-001",
+        authorName,
+        authorHandle,
+        authorAvatar,
+        content: c.content || "",
+        parentId: c.parentId || c.parent_id || null,
+        stance: c.stance || meta.stance || "synthesis",
+        upvotesCount: c.upvotesCount ?? c.upvotes ?? c.reactionCounts?.insightful ?? 0,
+        createdAt: c.createdAt ? (typeof c.createdAt === "string" && c.createdAt.includes("ago") ? c.createdAt : new Date(c.createdAt).toLocaleDateString()) : "Recently",
+      };
+    });
+
+    return { comments: mapped };
   }
 
   async createComment(
@@ -1256,15 +1302,31 @@ export class AgoraPhilosophyClient {
     stance?: "thesis" | "antithesis" | "synthesis",
     authorData?: { authorName?: string; authorHandle?: string; authorAvatar?: string }
   ): Promise<PhilosophicalComment> {
-    const authorName = authorData?.authorName || "You (Thinker)";
+    const authorName = authorData?.authorName || "You";
     const authorHandle = authorData?.authorHandle || "you";
     const authorAvatar = authorData?.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
 
     try {
-      return await this.request<PhilosophicalComment>(`/entities/${entityId}/comments`, {
+      const res = await this.request<any>(`/entities/${entityId}/comments`, {
         method: "POST",
         body: JSON.stringify({ content, parentId, stance, authorName, authorHandle, authorAvatar }),
       });
+      const c = res?.comment || res;
+      const meta = c?.metadata || {};
+      const userObj = c?.user || c?.authorUser || {};
+      return {
+        id: c?.id || `comment-${Date.now()}`,
+        entityId: c?.entityId || entityId,
+        authorId: c?.userId || c?.authorId || "usr-current",
+        authorName: c?.authorName || meta.authorName || c?.author_name || userObj.name || authorName,
+        authorHandle: c?.authorHandle || meta.authorHandle || c?.author_handle || userObj.username || authorHandle,
+        authorAvatar: c?.authorAvatar || meta.authorAvatar || c?.author_avatar || userObj.avatar || authorAvatar,
+        content: c?.content || content,
+        parentId: c?.parentId || parentId || null,
+        stance: c?.stance || stance || "synthesis",
+        upvotesCount: c?.upvotesCount ?? 0,
+        createdAt: "Just now",
+      };
     } catch {
       const newComment: PhilosophicalComment = {
         id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,

@@ -42,6 +42,8 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
   const [upvotedCommentIds, setUpvotedCommentIds] = useState<string[]>([]);
   const [collapsedIds, setCollapsedIds] = useState<string[]>([]);
 
+  const [activePostAuthor, setActivePostAuthor] = useState<{ id?: string; name?: string; handle?: string }>({});
+
   useEffect(() => {
     if (isOpen && postId) {
       setIsLoading(true);
@@ -50,8 +52,24 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
         .then((res) => setComments(res.comments))
         .catch((err) => console.error("Failed to load drawer comments:", err))
         .finally(() => setIsLoading(false));
+
+      if (!postAuthorId && !postAuthorName) {
+        agoraClient
+          .getPosts()
+          .then((res) => {
+            const match = res.posts.find((p) => p.id === postId);
+            if (match) {
+              setActivePostAuthor({
+                id: match.authorId,
+                name: match.authorName,
+                handle: match.authorHandle,
+              });
+            }
+          })
+          .catch((err) => console.error("Failed to load post for author check:", err));
+      }
     }
-  }, [isOpen, postId]);
+  }, [isOpen, postId, postAuthorId, postAuthorName]);
 
   if (!isOpen || !postId) return null;
 
@@ -173,13 +191,22 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
        (comment.authorName && user.name && comment.authorName.toLowerCase() === user.name.toLowerCase()))
     );
 
+    const effPostAuthorId = postAuthorId || activePostAuthor.id;
+    const effPostAuthorName = postAuthorName || activePostAuthor.name;
+    const effPostAuthorHandle = postAuthorHandle || activePostAuthor.handle;
+
     const isAuthor = !!(
-      (postAuthorId && comment.authorId && comment.authorId === postAuthorId) ||
-      (postAuthorName && (
-        (comment.authorName && comment.authorName.toLowerCase() === postAuthorName.toLowerCase()) ||
-        (comment.authorHandle && comment.authorHandle.toLowerCase() === postAuthorName.toLowerCase())
+      (effPostAuthorId && comment.authorId && (comment.authorId === effPostAuthorId || (effPostAuthorId === "usr-current" && comment.authorId === "usr-current"))) ||
+      (effPostAuthorName && (
+        (comment.authorName && comment.authorName.toLowerCase() === effPostAuthorName.toLowerCase()) ||
+        (comment.authorHandle && comment.authorHandle.toLowerCase() === effPostAuthorName.toLowerCase())
       )) ||
-      (postAuthorHandle && comment.authorHandle && comment.authorHandle.toLowerCase() === postAuthorHandle.toLowerCase())
+      (effPostAuthorHandle && comment.authorHandle && comment.authorHandle.toLowerCase() === effPostAuthorHandle.toLowerCase()) ||
+      (isCurrentUser && user && (
+        (effPostAuthorId && (user.id === effPostAuthorId || effPostAuthorId === "usr-current")) ||
+        (effPostAuthorName && user.name && user.name.toLowerCase() === effPostAuthorName.toLowerCase()) ||
+        (effPostAuthorHandle && user.username && user.username.toLowerCase() === effPostAuthorHandle.toLowerCase())
+      ))
     );
 
     const displayName = isCurrentUser
@@ -229,19 +256,21 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                 <span
                   className="author-badge-chip"
                   style={{
-                    background: "#38bdf8",
-                    color: "#0f172a",
+                    background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                    color: "#ffffff",
                     borderRadius: "12px",
-                    padding: "2px 8px",
+                    padding: "2px 9px",
                     fontSize: "0.72rem",
-                    fontWeight: 700,
+                    fontWeight: 800,
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "3px",
-                    boxShadow: "0 2px 6px rgba(56, 189, 248, 0.3)",
+                    gap: "4px",
+                    boxShadow: "0 2px 8px rgba(2, 132, 199, 0.4)",
+                    border: "1px solid rgba(56, 189, 248, 0.5)",
+                    letterSpacing: "0.03em",
                   }}
                 >
-                  👑 Author
+                  👑 Original Author
                 </span>
               ) : isCurrentUser ? (
                 <span

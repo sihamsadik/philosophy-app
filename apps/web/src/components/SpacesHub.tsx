@@ -472,6 +472,9 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                         {isCommentsExpanded && (
                           <PhilosophicalCommentsSection
                             entityId={post.id}
+                            postAuthorId={post.authorId}
+                            postAuthorName={post.authorName}
+                            postAuthorHandle={post.authorHandle}
                             onOpenDebateSummary={onOpenDebateSummary}
                           />
                         )}
