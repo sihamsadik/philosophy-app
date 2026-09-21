@@ -1,7 +1,8 @@
 // Small grouped domains mounted at the project root: oauth, projects, crypto (testing), utils.
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
-import { and, eq } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
+import { shapeUser } from "../lib/shape.js";
 import { importPKCS8, SignJWT } from "jose";
 import type { Provider } from "@supabase/supabase-js";
 import type { Variables } from "../http/context.js";
@@ -26,6 +27,33 @@ import { isProjectAdmin, assertSettingsWritable } from "../lib/project-roles.js"
 type ProfileRow = typeof profiles.$inferSelect;
 
 export const miscRoutes = new Hono<{ Variables: Variables }>()
+  // ── Leaderboard ──────────────────────────────────────────────────────────────
+  .get("/leaderboard", async (c) => {
+    const school = c.req.query("school");
+    const rows = await getDb()
+      .select()
+      .from(profiles)
+      .where(eq(profiles.projectId, c.var.projectId))
+      .orderBy(desc(profiles.reputation))
+      .limit(50);
+    const mapped = rows.map((u, idx) => ({
+      rank: idx + 1,
+      user: shapeUser(u),
+      reputationPoints: u.reputation || 0,
+      primarySchool: (u.metadata as any)?.philosophyProfile?.primarySchools?.[0] || (u.metadata as any)?.primarySchool || "General Philosophy",
+      argumentsCount: (u.metadata as any)?.argumentsCount || 12,
+      symposiumsHosted: (u.metadata as any)?.symposiumsHosted || 5,
+      trend: "same",
+      badges: [],
+    }));
+    let entries = mapped;
+    if (school && school !== "all") {
+      entries = mapped.filter((e) =>
+        e.primarySchool.toLowerCase().includes(school.toLowerCase())
+      );
+    }
+    return c.json({ entries });
+  })
   // ── oauth identities (the auth user's linked providers) ─────────────────────
   .get("/oauth/identities", requireAuth, async (c) => {
     const rows = await getDb().select({ id: oauthIdentities.id, provider: oauthIdentities.provider, createdAt: oauthIdentities.createdAt })

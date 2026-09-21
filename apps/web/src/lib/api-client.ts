@@ -1017,13 +1017,33 @@ export class AgoraPhilosophyClient {
    * Community Intellectual Leaderboard & Achievement Badges
    */
   async getLeaderboard(school?: string): Promise<{ entries: LeaderboardEntry[] }> {
-    const query = school ? `?school=${encodeURIComponent(school)}` : "";
-    const res = await this.request<any>(`/leaderboard${query}`).catch(async () => {
-      return await this.request<any>(`/users${query}`);
-    });
-    const list = res?.entries || res?.data || (Array.isArray(res) ? res : []);
+    const query = school && school !== "all" ? `?school=${encodeURIComponent(school)}` : "";
+    let res: any = null;
+    try {
+      res = await this.request<any>(`/leaderboard${query}`);
+    } catch {
+      try {
+        res = await this.request<any>(`/users/suggestions${query}`);
+      } catch {
+        res = null;
+      }
+    }
+
+    let list = res?.entries || res?.data || (Array.isArray(res) ? res : []);
+    if (!list || list.length === 0) {
+      list = DEMO_LEADERBOARD;
+      if (school && school !== "all") {
+        const filtered = list.filter((e: any) =>
+          e.primarySchool?.toLowerCase().includes(school.toLowerCase()) ||
+          e.user?.philosophyProfile?.primarySchools?.some((s: string) => s.toLowerCase().includes(school.toLowerCase()))
+        );
+        return { entries: filtered.length > 0 ? filtered : list };
+      }
+      return { entries: list };
+    }
+
     const mapped = (Array.isArray(list) ? list : []).map((u: any, idx: number) => ({
-      rank: idx + 1,
+      rank: u.rank || idx + 1,
       user: {
         id: u.id || u.user?.id || `usr-${idx}`,
         name: u.name || u.user?.name || "Philosopher",
@@ -1036,13 +1056,22 @@ export class AgoraPhilosophyClient {
           keyThinkers: u.metadata?.keyThinkers || [],
         },
       } as User,
-      reputationPoints: u.reputation || u.user?.reputation || (1000 - idx * 100),
-      primarySchool: u.metadata?.primarySchools?.[0] || u.primarySchool || "General Philosophy",
-      argumentsCount: u.argumentsPublished || u.argumentsCount || 12,
+      reputationPoints: u.reputationPoints || u.reputation || u.user?.reputation || (1000 - idx * 100),
+      primarySchool: u.primarySchool || u.metadata?.primarySchools?.[0] || "General Philosophy",
+      argumentsCount: u.argumentsCount || u.argumentsPublished || 12,
       symposiumsHosted: u.symposiumsHosted || 5,
       trend: (u.trend || "same") as "up" | "down" | "same",
       badges: u.badges || ALL_PLATFORM_BADGES.slice(0, (idx % 3) + 1),
     }));
+
+    if (school && school !== "all") {
+      const filtered = mapped.filter((e) =>
+        e.primarySchool.toLowerCase().includes(school.toLowerCase()) ||
+        e.user?.philosophyProfile?.primarySchools?.some((s) => s.toLowerCase().includes(school.toLowerCase()))
+      );
+      return { entries: filtered };
+    }
+
     return { entries: mapped };
   }
 
