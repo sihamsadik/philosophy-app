@@ -45,6 +45,23 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
 
   useEffect(() => {
     fetchPosts();
+
+    const handleCommentAdded = (e: Event) => {
+      const customEvent = e as CustomEvent<{ entityId: string }>;
+      const targetId = customEvent.detail?.entityId;
+      if (targetId) {
+        setPosts((prev) =>
+          (Array.isArray(prev) ? prev : []).map((p) =>
+            p.id === targetId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p
+          )
+        );
+      }
+    };
+
+    window.addEventListener("agora_comment_added", handleCommentAdded);
+    return () => {
+      window.removeEventListener("agora_comment_added", handleCommentAdded);
+    };
   }, []);
 
   const handleUpvote = (postId: string) => {

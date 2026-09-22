@@ -36,15 +36,17 @@ type Actor = {
 
 type MilestoneUser = { id: string; name: string | null; username: string | null; avatar: string | null };
 
-/** Load the acting user's public profile fields (the "initiator" block). Null if missing. */
-async function loadActor(projectId: string, userId: string): Promise<Actor | null> {
+/** Load the acting user's public profile fields (the "initiator" block). Fallback if missing. */
+async function loadActor(projectId: string, userId: string): Promise<Actor> {
   const [p] = await getDb()
     .select({ id: profiles.id, name: profiles.name, username: profiles.username, avatar: profiles.avatar })
     .from(profiles)
     .where(and(eq(profiles.projectId, projectId), eq(profiles.id, userId)))
     .limit(1);
-  if (!p) return null;
-  return { initiatorId: p.id, initiatorName: p.name, initiatorUsername: p.username, initiatorAvatar: p.avatar };
+  if (!p) {
+    return { initiatorId: userId, initiatorName: "A philosopher", initiatorUsername: "thinker", initiatorAvatar: null };
+  }
+  return { initiatorId: p.id, initiatorName: p.name || "A philosopher", initiatorUsername: p.username || "thinker", initiatorAvatar: p.avatar };
 }
 
 /** Low-level insert. Skips self-notify and falsy/duplicate recipients. */
@@ -56,7 +58,7 @@ async function insert(
   action: string,
   metadata: Record<string, unknown>
 ): Promise<void> {
-  if (!recipientId || recipientId === actorId) return;
+  if (!recipientId) return;
   const [row] = await getDb().insert(appNotifications).values({ projectId, userId: recipientId, type, action, metadata }).returning();
   if (row) {
     const shaped = shapeNotification(row);

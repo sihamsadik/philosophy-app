@@ -66,10 +66,28 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
               });
             }
           })
-          .catch((err) => console.error("Failed to load post for author check:", err));
+          .catch(() => {});
       }
     }
   }, [isOpen, postId, postAuthorId, postAuthorName]);
+
+  useEffect(() => {
+    if (!postId) return;
+    const handleCommentAdded = (e: Event) => {
+      const customEvent = e as CustomEvent<{ entityId: string }>;
+      if (customEvent.detail?.entityId === postId) {
+        agoraClient
+          .getComments(postId)
+          .then((res) => setComments(res.comments))
+          .catch(() => {});
+      }
+    };
+
+    window.addEventListener("agora_comment_added", handleCommentAdded);
+    return () => {
+      window.removeEventListener("agora_comment_added", handleCommentAdded);
+    };
+  }, [postId]);
 
   if (!isOpen || !postId) return null;
 

@@ -13,7 +13,7 @@ import { generateDiscussionSummary } from "../lib/discussion-summarizer.js";
 import { env } from "../lib/env.js";
 import { collectFileRows, removeMediaAsync } from "../lib/storage-cleanup.js";
 import * as webhooks from "../lib/webhooks.js";
-import { notifyOnEntityMentions, notifyOnReaction } from "../lib/notifications.js";
+import { notifyOnEntityMentions, notifyOnReaction, notifyOnComment } from "../lib/notifications.js";
 import { sanitizeMentions } from "../lib/mentions.js";
 import { parseBracketQuery, buildFeedConditions, buildFeedOrder } from "../lib/entity-filters.js";
 import { entities, comments, reactions, collections, collectionEntities, spaces, spaceMembers, readReceipts } from "../db/schema/index.js";
@@ -345,6 +345,10 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
           },
         })
         .returning();
+      if (row) {
+        indexContentAsync(projectId, "comment", row.id, row.content);
+        await notifyOnComment(projectId, row);
+      }
     } catch {
       // Ignore database insert error if running offline/memory mode
     }

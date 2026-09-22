@@ -55,16 +55,33 @@ export const App: React.FC = () => {
 
   // Notification Drawer & Connection Request Modal
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
-  const [unreadNotifCount, setUnreadNotifCount] = useState(2);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [connectTargetUser, setConnectTargetUser] = useState<User | null>(null);
 
-  React.useEffect(() => {
-    // Initial fetch of unread count
-    agoraClient
-      .getNotifications()
-      .then((res) => setUnreadNotifCount(res.unreadCount))
-      .catch((err) => console.error("Failed to load notification badge:", err));
+  const refreshNotifCount = React.useCallback(async () => {
+    try {
+      const res = await agoraClient.getNotifications();
+      setUnreadNotifCount(res.unreadCount);
+    } catch {
+      setUnreadNotifCount(0);
+    }
   }, []);
+
+  React.useEffect(() => {
+    refreshNotifCount();
+    const handleUpdate = () => refreshNotifCount();
+    window.addEventListener("agora_notification_updated", handleUpdate);
+    window.addEventListener("agora_comment_added", handleUpdate);
+
+    // Poll every 15s to update unread badge when background activity occurs
+    const interval = setInterval(refreshNotifCount, 15000);
+
+    return () => {
+      window.removeEventListener("agora_notification_updated", handleUpdate);
+      window.removeEventListener("agora_comment_added", handleUpdate);
+      clearInterval(interval);
+    };
+  }, [refreshNotifCount, user?.id, isAuthenticated]);
 
   const [liveDebateEvent, setLiveDebateEvent] = useState<any | null>(null);
 
@@ -364,6 +381,7 @@ export const App: React.FC = () => {
         isOpen={isDMDrawerOpen}
         onClose={() => setIsDMDrawerOpen(false)}
         targetUser={dmTargetUser}
+        onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
       />
 
       <DebateSummaryDrawer

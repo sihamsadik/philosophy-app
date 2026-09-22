@@ -54,6 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await agoraClient.signIn({ email, password });
       setUser(res.user);
       if (res.user?.id) agoraClient.setCurrentUserId(res.user.id);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
       throw err;
@@ -69,6 +72,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await agoraClient.signUp(data);
       setUser(res.user);
       if (res.user?.id) agoraClient.setCurrentUserId(res.user.id);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
     } catch (err: any) {
       setError(err.message || "Failed to create account");
       throw err;
@@ -84,6 +90,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       agoraClient.setCurrentUserId("");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
       setIsLoading(false);
     }
   };
@@ -92,6 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token) agoraClient.setAuthToken(token);
     setUser(demoUser);
     if (demoUser?.id) agoraClient.setCurrentUserId(demoUser.id);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+    }
   };
 
   return (

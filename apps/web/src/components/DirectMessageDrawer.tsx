@@ -8,6 +8,7 @@ export interface DirectMessageDrawerProps {
   onClose: () => void;
   targetUser?: User | null;
   activeConversationId?: string | null;
+  onOpenThreadDrawer?: (postId: string) => void;
 }
 
 export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
@@ -15,6 +16,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
   onClose,
   targetUser,
   activeConversationId,
+  onOpenThreadDrawer,
 }) => {
   const [conversations, setConversations] = useState<DirectConversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<DirectConversation | null>(null);
@@ -71,6 +73,27 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
     fetchMessages();
   }, [selectedConv]);
 
+  // Real-time listener for incoming messages / bot notifications
+  useEffect(() => {
+    const handleUpdate = () => {
+      agoraClient.getConversations().then(({ conversations: list }) => {
+        setConversations(list);
+      });
+      if (selectedConv) {
+        agoraClient.getMessages(selectedConv.id).then(({ messages: msgs }) => {
+          setMessages(msgs);
+        });
+      }
+    };
+
+    window.addEventListener("agora_notification_updated", handleUpdate);
+    window.addEventListener("agora_message_sent", handleUpdate);
+    return () => {
+      window.removeEventListener("agora_notification_updated", handleUpdate);
+      window.removeEventListener("agora_message_sent", handleUpdate);
+    };
+  }, [selectedConv]);
+
   if (!isOpen) return null;
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -97,6 +120,8 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
     }
   };
 
+  const isBotConv = selectedConv?.id === "conv-bot-reply" || selectedConv?.participant.id === "bot-reply-system";
+
   return (
     <div className="drawer-overlay" onClick={onClose}>
       <div className="dm-drawer-pane" onClick={(e) => e.stopPropagation()}>
@@ -105,7 +130,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
           <div className="header-title-block">
             <h3>💬 Direct Messages</h3>
             <span className="drawer-subtitle">
-              Engage in one-on-one philosophical dialogue & debate
+              Engage in one-on-one philosophical dialogue & bot notifications
             </span>
           </div>
           <button className="close-drawer-btn" onClick={onClose}>
@@ -125,12 +150,13 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
               <div className="conversations-list">
                 {conversations.map((conv) => {
                   const isActive = selectedConv?.id === conv.id;
+                  const isBot = conv.id === "conv-bot-reply" || conv.participant.id === "bot-reply-system";
                   const p = conv.participant;
                   return (
                     <button
                       key={conv.id}
                       type="button"
-                      className={`conv-item-btn ${isActive ? "active" : ""}`}
+                      className={`conv-item-btn ${isActive ? "active" : ""} ${isBot ? "bot-conv-item" : ""}`}
                       onClick={() => setSelectedConv(conv)}
                     >
                       {p.avatar ? (
@@ -142,7 +168,10 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                       )}
                       <div className="conv-details">
                         <div className="conv-top-row">
-                          <span className="conv-name">{p.name || p.username}</span>
+                          <span className="conv-name">
+                            {p.name || p.username}
+                            {isBot && <span className="bot-chip">🤖 BOT</span>}
+                          </span>
                           <span className="conv-time">{conv.lastMessageTime}</span>
                         </div>
                         <p className="conv-preview">{conv.lastMessage || "No messages yet"}</p>
@@ -176,6 +205,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                   <div>
                     <span className="partner-name">
                       {selectedConv.participant.name || selectedConv.participant.username}
+                      {isBotConv && <span className="bot-chip" style={{ marginLeft: 8 }}>🤖 OFFICIAL BOT</span>}
                     </span>
                     <span className="partner-handle">
                       @{selectedConv.participant.username || "philosopher"}
@@ -192,16 +222,46 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                   ) : (
                     messages.map((msg) => {
                       const isMe = msg.senderId === "00000000-0000-0000-0000-000000000001";
+                      const entityId = msg.metadata?.entityId;
+
                       return (
                         <div
                           key={msg.id}
                           className={`message-bubble-wrapper ${isMe ? "me" : "them"}`}
                         >
-                          <div className="message-bubble">
+                          <div className={`message-bubble ${isBotConv ? "bot-message-bubble" : ""}`}>
                             <span className="message-sender">
                               {isMe ? "You" : msg.senderName || selectedConv.participant.name}
                             </span>
-                            <p className="message-text">{msg.content}</p>
+                            <p className="message-text" style={{ whiteSpace: "pre-wrap" }}>
+                              {msg.content}
+                            </p>
+
+                            {entityId && (
+                              <button
+                                type="button"
+                                className="action-btn-sm primary"
+                                style={{
+                                  marginTop: 10,
+                                  background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: 8,
+                                  padding: "6px 12px",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                }}
+                                onClick={() => {
+                                  onClose();
+                                  onOpenThreadDrawer?.(entityId);
+                                }}
+                              >
+                                📜 Jump to Debate Thread
+                              </button>
+                            )}
                             <span className="message-time">{msg.createdAt}</span>
                           </div>
                         </div>
@@ -215,7 +275,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                   <input
                     type="text"
                     className="input-text"
-                    placeholder={`Message ${selectedConv.participant.name}...`}
+                    placeholder={isBotConv ? "The Reply Bot receives automated thread alerts..." : `Message ${selectedConv.participant.name}...`}
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                   />

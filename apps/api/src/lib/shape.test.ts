@@ -146,6 +146,8 @@ describe("shapeUser", () => {
       coreQuestions: ["Does free will exist?"],
       favoriteTexts: ["Thus Spoke Zarathustra"],
       worldviewSummary: "Perspectivism",
+      favoriteQuote: null,
+      quoteAuthor: null,
       connectionIntents: ["discussion"],
     });
   });

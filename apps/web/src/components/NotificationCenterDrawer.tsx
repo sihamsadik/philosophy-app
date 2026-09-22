@@ -27,15 +27,21 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
     setIsLoading(true);
     try {
       const [notifRes, reqRes] = await Promise.all([
-        agoraClient.getNotifications(),
-        agoraClient.getConnectionRequests(),
+        agoraClient.getNotifications().catch(() => ({ notifications: [], unreadCount: 0 })),
+        agoraClient.getConnectionRequests().catch(() => ({ requests: [] })),
       ]);
-      setNotifications(notifRes.notifications);
-      setUnreadCount(notifRes.unreadCount);
-      onUnreadCountChange?.(notifRes.unreadCount);
-      setConnectionRequests(reqRes.requests);
+      const safeNotifs = Array.isArray(notifRes?.notifications) ? notifRes.notifications : [];
+      const safeUnread = typeof notifRes?.unreadCount === "number" ? notifRes.unreadCount : 0;
+      const safeReqs = Array.isArray(reqRes?.requests) ? reqRes.requests : [];
+
+      setNotifications(safeNotifs);
+      setUnreadCount(safeUnread);
+      onUnreadCountChange?.(safeUnread);
+      setConnectionRequests(safeReqs);
     } catch (err) {
       console.error("Failed to load notifications:", err);
+      setNotifications([]);
+      setConnectionRequests([]);
     } finally {
       setIsLoading(false);
     }
@@ -47,12 +53,34 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleNotifUpdate = () => {
+      loadNotificationsData();
+    };
+    window.addEventListener("agora_comment_added", handleNotifUpdate);
+    window.addEventListener("agora_notification_updated", handleNotifUpdate);
+    return () => {
+      window.removeEventListener("agora_comment_added", handleNotifUpdate);
+      window.removeEventListener("agora_notification_updated", handleNotifUpdate);
+    };
+  }, []);
+
   if (!isOpen) return null;
+
+  const handleMarkSingleRead = async (notificationId: string) => {
+    try {
+      await agoraClient.markSingleNotificationRead(notificationId);
+      setNotifications((prev) => (Array.isArray(prev) ? prev : []).map((n) => (n.id === notificationId ? { ...n, read: true } : n)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Failed to mark notification read:", err);
+    }
+  };
 
   const handleMarkAllRead = async () => {
     try {
       await agoraClient.markNotificationsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setNotifications((prev) => (Array.isArray(prev) ? prev : []).map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err) {
       console.error("Failed to mark notifications read:", err);
@@ -63,10 +91,10 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
     try {
       await agoraClient.acceptConnectionRequest(requestId);
       setConnectionRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status: "accepted" } : r))
+        (Array.isArray(prev) ? prev : []).map((r) => (r.id === requestId ? { ...r, status: "accepted" } : r))
       );
       setNotifications((prev) =>
-        prev.map((n) => (n.requestId === requestId ? { ...n, read: true } : n))
+        (Array.isArray(prev) ? prev : []).map((n) => (n.requestId === requestId ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
@@ -78,10 +106,10 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
     try {
       await agoraClient.declineConnectionRequest(requestId);
       setConnectionRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status: "declined" } : r))
+        (Array.isArray(prev) ? prev : []).map((r) => (r.id === requestId ? { ...r, status: "declined" } : r))
       );
       setNotifications((prev) =>
-        prev.map((n) => (n.requestId === requestId ? { ...n, read: true } : n))
+        (Array.isArray(prev) ? prev : []).map((n) => (n.requestId === requestId ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
@@ -89,7 +117,10 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
     }
   };
 
-  const pendingRequests = connectionRequests.filter((r) => r.status === "pending");
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+  const activeNotifications = safeNotifications.filter((n) => !n.read);
+  const safeRequests = Array.isArray(connectionRequests) ? connectionRequests : [];
+  const pendingRequests = safeRequests.filter((r) => r?.status === "pending");
 
   return (
     <div className="drawer-overlay" onClick={onClose}>
@@ -188,17 +219,30 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
           ) : (
             /* ALL ACTIVITY NOTIFICATIONS TAB */
             <div className="notifications-list">
-              {notifications.length === 0 ? (
-                <div className="empty-state">No activity notifications yet.</div>
+              {activeNotifications.length === 0 ? (
+                <div className="empty-state">No unread activity notifications.</div>
               ) : (
-                notifications.map((notif) => (
+                activeNotifications.map((notif) => (
                   <div
                     key={notif.id}
                     className={`notification-item-card ${notif.read ? "read" : "unread"}`}
                   >
                     <div className="notif-top-bar">
                       <h4 className="notif-title">{notif.title}</h4>
-                      <span className="notif-time">{notif.createdAt}</span>
+                      <div className="notif-top-right">
+                        <span className="notif-time">{notif.createdAt}</span>
+                        <button
+                          type="button"
+                          className="dismiss-notif-btn"
+                          title="Mark as read & dismiss"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkSingleRead(notif.id);
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
 
                     <p className="notif-message">{notif.message}</p>
@@ -206,7 +250,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                     {/* Inline Actions based on type */}
                     {notif.type === "connection_request" && notif.requestId && (
                       <div className="notif-inline-actions">
-                        {connectionRequests.find((r) => r.id === notif.requestId)?.status === "accepted" ? (
+                        {safeRequests.find((r) => r.id === notif.requestId)?.status === "accepted" ? (
                           <span className="status-accepted-chip">✓ Connection Accepted</span>
                         ) : connectionRequests.find((r) => r.id === notif.requestId)?.status === "declined" ? (
                           <span className="status-declined-chip">✕ Request Declined</span>
@@ -237,6 +281,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                         className="action-btn-sm"
                         style={{ marginTop: 8 }}
                         onClick={() => {
+                          handleMarkSingleRead(notif.id);
                           onClose();
                           onOpenDM(notif.sender!);
                         }}
@@ -253,6 +298,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                           className="action-btn-sm"
                           style={{ marginTop: 8 }}
                           onClick={() => {
+                            handleMarkSingleRead(notif.id);
                             onClose();
                             onOpenThreadDrawer(notif.entityId!);
                           }}

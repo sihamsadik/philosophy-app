@@ -457,18 +457,44 @@ export class AgoraPhilosophyClient {
   }
 
   async getConnectionRequests(): Promise<{ requests: ConnectionRequest[] }> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      return { requests: DEMO_CONNECTION_REQUESTS };
+    }
     try {
-      return await this.request<{ requests: ConnectionRequest[] }>("/connections/requests");
+      const res = await this.request<any>("/connections/pending/received");
+      const rawList = res?.requests || res?.data || (Array.isArray(res) ? res : []);
+      const mapped = rawList.map((r: any) => ({
+        id: r.id || `req-${Date.now()}`,
+        sender: r.user || r.sender || ({
+          id: r.userId || "usr-001",
+          name: "Philosopher Peer",
+          username: "thinker",
+          avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+        } as User),
+        recipientId: r.recipientId || "usr-current",
+        message: r.message,
+        status: r.status || "pending",
+        createdAt: r.createdAt ? (typeof r.createdAt === "string" && r.createdAt.includes("ago") ? r.createdAt : new Date(r.createdAt).toLocaleDateString()) : "Recently",
+      }));
+      return { requests: mapped };
     } catch {
       return { requests: DEMO_CONNECTION_REQUESTS };
     }
   }
 
   async acceptConnectionRequest(requestId: string): Promise<{ success: boolean }> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
+      if (req) req.status = "accepted";
+      const notif = DEMO_NOTIFICATIONS.find((n) => n.requestId === requestId);
+      if (notif) notif.read = true;
+      return { success: true };
+    }
     try {
-      return await this.request<{ success: boolean }>(`/connections/requests/${requestId}/accept`, {
-        method: "POST",
+      await this.request<{ success: boolean }>(`/connections/${requestId}/accept`, {
+        method: "PATCH",
       });
+      return { success: true };
     } catch {
       const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
       if (req) req.status = "accepted";
@@ -479,10 +505,18 @@ export class AgoraPhilosophyClient {
   }
 
   async declineConnectionRequest(requestId: string): Promise<{ success: boolean }> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
+      if (req) req.status = "declined";
+      const notif = DEMO_NOTIFICATIONS.find((n) => n.requestId === requestId);
+      if (notif) notif.read = true;
+      return { success: true };
+    }
     try {
-      return await this.request<{ success: boolean }>(`/connections/requests/${requestId}/decline`, {
-        method: "POST",
+      await this.request<{ success: boolean }>(`/connections/${requestId}/decline`, {
+        method: "PATCH",
       });
+      return { success: true };
     } catch {
       const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
       if (req) req.status = "declined";
@@ -493,8 +527,69 @@ export class AgoraPhilosophyClient {
   }
 
   async getNotifications(): Promise<{ notifications: PhilosophyNotification[]; unreadCount: number }> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      const curUserId = this.getCurrentUserId();
+      // If user is guest/unauthenticated, return 0 unread notifications to avoid phantom badge count
+      if (!curUserId || curUserId === "guest") {
+        return { notifications: [], unreadCount: 0 };
+      }
+      const filtered = DEMO_NOTIFICATIONS.filter(
+        (n) => !n.recipientId || n.recipientId === curUserId
+      );
+      const unreadCount = filtered.filter((n) => !n.read).length;
+      return { notifications: filtered, unreadCount };
+    }
     try {
-      return await this.request<{ notifications: PhilosophyNotification[]; unreadCount: number }>("/notifications");
+      const res = await this.request<any>("/notifications");
+      const rawList = res?.notifications || res?.data || (Array.isArray(res) ? res : []);
+      const mapped: PhilosophyNotification[] = rawList.map((n: any) => {
+        const meta = n.metadata || {};
+        const actorName = meta.initiatorName || meta.initiatorUsername || meta.authorName || "A philosopher";
+        const actorHandle = meta.initiatorUsername || meta.authorHandle || "thinker";
+        const postTitle = meta.entityTitle || meta.postTitle || "a debate topic";
+
+        let type: PhilosophyNotification["type"] = "comment_reply";
+        if (n.type === "connection-request" || n.type === "connection_request" || n.type === "connection-accepted") type = "connection_request";
+        else if (n.type === "direct-message" || n.type === "direct_message") type = "direct_message";
+        else if (n.type?.includes("upvote") || n.type?.includes("reaction")) type = "post_upvote";
+        else type = "comment_reply";
+
+        let title = n.title;
+        if (!title) {
+          if (type === "comment_reply") title = `${actorName} (@${actorHandle}) replied to your comment!`;
+          else if (type === "post_upvote") title = `${actorName} upvoted your post/comment!`;
+          else if (type === "connection_request") title = `${actorName} sent you a connection request`;
+          else title = "New Notification";
+        }
+
+        let message = n.message || n.content;
+        if (!message) {
+          if (meta.replyContent) message = `"${meta.replyContent}" on "${postTitle}"`;
+          else if (meta.commentContent) message = `"${meta.commentContent}" on "${postTitle}"`;
+          else message = `Activity on "${postTitle}"`;
+        }
+
+        return {
+          id: n.id || `notif-${Date.now()}`,
+          type,
+          title,
+          message,
+          read: n.isRead ?? n.read ?? false,
+          createdAt: n.createdAt ? (typeof n.createdAt === "string" && n.createdAt.includes("ago") ? n.createdAt : new Date(n.createdAt).toLocaleDateString()) : "Recently",
+          sender: n.sender || (meta.initiatorId ? {
+            id: meta.initiatorId,
+            name: meta.initiatorName || meta.initiatorUsername || "Philosopher",
+            username: meta.initiatorUsername || "thinker",
+            avatar: meta.initiatorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+          } : undefined),
+          requestId: n.requestId || meta.requestId || meta.connectionId,
+          conversationId: n.conversationId || meta.conversationId,
+          entityId: n.entityId || meta.entityId || meta.targetId,
+        };
+      });
+
+      const unreadCount = mapped.filter((n) => !n.read).length;
+      return { notifications: mapped, unreadCount };
     } catch {
       const unreadCount = DEMO_NOTIFICATIONS.filter((n) => !n.read).length;
       return { notifications: DEMO_NOTIFICATIONS, unreadCount };
@@ -502,14 +597,62 @@ export class AgoraPhilosophyClient {
   }
 
   async markNotificationsRead(): Promise<{ success: boolean }> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      DEMO_NOTIFICATIONS.forEach((n) => {
+        n.read = true;
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
+      return { success: true };
+    }
     try {
-      return await this.request<{ success: boolean }>("/notifications/mark-read", {
+      await this.request<{ success: boolean }>("/notifications/mark-all-as-read", {
         method: "POST",
       });
+      DEMO_NOTIFICATIONS.forEach((n) => {
+        n.read = true;
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
+      return { success: true };
     } catch {
       DEMO_NOTIFICATIONS.forEach((n) => {
         n.read = true;
       });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
+      return { success: true };
+    }
+  }
+
+  async markSingleNotificationRead(notificationId: string): Promise<{ success: boolean }> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      const d = DEMO_NOTIFICATIONS.find((n) => n.id === notificationId);
+      if (d) d.read = true;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
+      return { success: true };
+    }
+    try {
+      await this.request<{ success: boolean }>(`/notifications/${notificationId}/mark-as-read`, {
+        method: "PATCH",
+      });
+      const d = DEMO_NOTIFICATIONS.find((n) => n.id === notificationId);
+      if (d) d.read = true;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
+      return { success: true };
+    } catch {
+      const d = DEMO_NOTIFICATIONS.find((n) => n.id === notificationId);
+      if (d) d.read = true;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+      }
       return { success: true };
     }
   }
@@ -1127,7 +1270,27 @@ export class AgoraPhilosophyClient {
 
   async getMessages(conversationId: string): Promise<{ messages: ChatMessage[] }> {
     try {
-      return await this.request<{ messages: ChatMessage[] }>(`/chat/conversations/${conversationId}/messages`);
+      const res = await this.request<any>(`/chat/conversations/${conversationId}/messages`);
+      const rawList = res?.messages || res?.data || (Array.isArray(res) ? res : []);
+      const mapped = rawList.map((m: any) => ({
+        id: m.id || `msg-${Date.now()}`,
+        conversationId: m.conversationId || conversationId,
+        senderId: m.senderId || m.userId || "usr-current",
+        senderName: m.senderName || m.user?.name || m.user?.username || "Philosopher",
+        senderAvatar: m.senderAvatar || m.user?.avatar,
+        content: m.content || "",
+        createdAt: m.createdAt ? (typeof m.createdAt === "string" && m.createdAt.includes("ago") ? m.createdAt : new Date(m.createdAt).toLocaleDateString()) : "Recently",
+        metadata: m.metadata,
+      }));
+
+      const localMsgs = DEMO_MESSAGES[conversationId] || [];
+      const combined = [...mapped];
+      for (const d of localMsgs) {
+        if (!combined.some((item) => item.id === d.id)) {
+          combined.push(d);
+        }
+      }
+      return { messages: combined };
     } catch {
       return { messages: DEMO_MESSAGES[conversationId] || [] };
     }
@@ -1335,6 +1498,13 @@ export class AgoraPhilosophyClient {
     const authorHandle = authorData?.authorHandle || "you";
     const authorAvatar = authorData?.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
 
+    const post = DEMO_POSTS.find((p) => p.id === entityId);
+    if (post) {
+      post.commentsCount = (post.commentsCount || 0) + 1;
+    }
+
+    let createdComment: PhilosophicalComment;
+
     try {
       const res = await this.request<any>(`/entities/${entityId}/comments`, {
         method: "POST",
@@ -1343,7 +1513,8 @@ export class AgoraPhilosophyClient {
       const c = res?.comment || res;
       const meta = c?.metadata || {};
       const userObj = c?.user || c?.authorUser || {};
-      return {
+
+      createdComment = {
         id: c?.id || `comment-${Date.now()}`,
         entityId: c?.entityId || entityId,
         authorId: c?.userId || c?.authorId || "usr-current",
@@ -1357,7 +1528,7 @@ export class AgoraPhilosophyClient {
         createdAt: "Just now",
       };
     } catch {
-      const newComment: PhilosophicalComment = {
+      createdComment = {
         id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         entityId,
         authorId: "usr-current",
@@ -1370,15 +1541,47 @@ export class AgoraPhilosophyClient {
         upvotesCount: 0,
         createdAt: "Just now",
       };
-      DEMO_COMMENTS.push(newComment);
-
-      const post = DEMO_POSTS.find((p) => p.id === entityId);
-      if (post) {
-        post.commentsCount += 1;
-      }
-
-      return newComment;
+      DEMO_COMMENTS.push(createdComment);
     }
+
+    try {
+      const storedKey = `agora_comments_${entityId}`;
+      const existing = JSON.parse(localStorage.getItem(storedKey) || "[]");
+      if (Array.isArray(existing) && !existing.some((item: any) => item.id === createdComment.id)) {
+        localStorage.setItem(storedKey, JSON.stringify([...existing, createdComment]));
+      }
+    } catch {}
+
+    // If replying to a parent comment, push notification in demo mode
+    if (parentId) {
+      const parentComment = DEMO_COMMENTS.find((c) => c.id === parentId);
+      if (!this.authToken || this.authToken === "mock-auth-token") {
+        DEMO_NOTIFICATIONS.unshift({
+          id: `notif-reply-${Date.now()}`,
+          type: "comment_reply",
+          title: `${authorName} (@${authorHandle}) replied to your comment!`,
+          message: `"${content.length > 70 ? content.slice(0, 70) + "..." : content}" on debate thread`,
+          read: false,
+          createdAt: "Just now",
+          entityId,
+          sender: {
+            id: this.currentUserId || "usr-actor",
+            name: authorName,
+            username: authorHandle,
+            avatar: authorAvatar,
+          } as User,
+        });
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("agora_comment_added", {
+        detail: { entityId, comment: createdComment }
+      }));
+      window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+    }
+
+    return createdComment;
   }
 
   async upvoteComment(commentId: string): Promise<{ success: boolean; upvotesCount: number }> {
@@ -1393,6 +1596,19 @@ export class AgoraPhilosophyClient {
         return { success: true, upvotesCount: comment.upvotesCount };
       }
       return { success: true, upvotesCount: 1 };
+    }
+  }
+
+  pushReplyBotNotification(
+    _authorName: string,
+    _authorHandle: string,
+    _commentContent: string,
+    _entityId: string
+  ): void {
+    // Deprecated legacy bot notification injector.
+    // Real notifications are persisted on the backend and pushed to target recipients.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("agora_notification_updated"));
     }
   }
 }
@@ -1420,6 +1636,12 @@ export interface ChatMessage {
   senderAvatar?: string;
   content: string;
   createdAt: string;
+  metadata?: {
+    entityId?: string;
+    postTitle?: string;
+    authorHandle?: string;
+    authorName?: string;
+  };
 }
 
 export interface ConnectionRequest {
@@ -1438,6 +1660,7 @@ export interface PhilosophyNotification {
   message: string;
   read: boolean;
   createdAt: string;
+  recipientId?: string;
   sender?: User;
   requestId?: string;
   conversationId?: string;
@@ -1543,7 +1766,32 @@ export interface PhilosophicalPost {
   createdAt: string;
 }
 
+export const REPLY_BOT_USER: User = {
+  id: "bot-reply-system",
+  name: "🤖 Agora Reply Bot",
+  username: "reply_bot",
+  avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80",
+  bio: "Official Telegram-style Reply Bot. Delivers instant comment replies & thread notifications into your DMs!",
+  reputation: 9999,
+  role: "admin",
+  projectId: "p1",
+  foreignId: null,
+  avatarFileId: null,
+  bannerFileId: null,
+  birthdate: null,
+  location: null,
+  metadata: {},
+  createdAt: "2026-01-01T00:00:00.000Z",
+};
+
 export const DEMO_CONVERSATIONS: DirectConversation[] = [
+  {
+    id: "conv-bot-reply",
+    participant: REPLY_BOT_USER,
+    lastMessage: "💬 G.W.F. Hegel (@hegel) replied to your comment: 'A brilliant synthesis!'",
+    lastMessageTime: "5m ago",
+    unreadCount: 1,
+  },
   {
     id: "conv-1",
     participant: {
@@ -1574,6 +1822,27 @@ export const DEMO_CONVERSATIONS: DirectConversation[] = [
 
 
 const DEMO_MESSAGES: Record<string, ChatMessage[]> = {
+  "conv-bot-reply": [
+    {
+      id: "bot-msg-1",
+      conversationId: "conv-bot-reply",
+      senderId: "bot-reply-system",
+      senderName: "🤖 Agora Reply Bot",
+      senderAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80",
+      content: "🤖 Welcome! Whenever someone replies to your comment or mentions you in a debate thread, you will receive an instant message right here in your DMs.",
+      createdAt: "1 hour ago",
+    },
+    {
+      id: "bot-msg-2",
+      conversationId: "conv-bot-reply",
+      senderId: "bot-reply-system",
+      senderName: "🤖 Agora Reply Bot",
+      senderAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80",
+      content: "💬 G.W.F. Hegel (@hegel) replied to your comment:\n\"A brilliant thesis! We must examine the dialectical synthesis.\"",
+      createdAt: "5m ago",
+      metadata: { entityId: "00000000-0000-0000-0000-000000000001" },
+    },
+  ],
   "conv-1": [
     {
       id: "msg-1",

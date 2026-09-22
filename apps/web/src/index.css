@@ -2256,6 +2256,29 @@ html.modal-open {
   margin-bottom: 6px;
 }
 
+.notif-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dismiss-notif-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.dismiss-notif-btn:hover {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+}
+
 .notif-title {
   font-family: var(--font-heading);
   font-size: 0.95rem;
@@ -4479,4 +4502,33 @@ html.modal-open {
 .secondary-cancel-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+}
+
+/* Reply Bot DM Styling */
+.bot-chip {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.bot-conv-item {
+  border-left: 3px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.bot-conv-item:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.bot-message-bubble {
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.12);
 }

@@ -54,6 +54,20 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     }
   }, [entityId]);
 
+  useEffect(() => {
+    const handleCommentAdded = (e: Event) => {
+      const customEvent = e as CustomEvent<{ entityId: string }>;
+      if (customEvent.detail?.entityId === entityId) {
+        fetchComments();
+      }
+    };
+
+    window.addEventListener("agora_comment_added", handleCommentAdded);
+    return () => {
+      window.removeEventListener("agora_comment_added", handleCommentAdded);
+    };
+  }, [entityId]);
+
   const handleCreateTopComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!topCommentText.trim()) return;
