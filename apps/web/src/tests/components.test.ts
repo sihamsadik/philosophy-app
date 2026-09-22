@@ -17,10 +17,14 @@ import { BottomNavDock } from "../components/BottomNavDock.js";
 import { LiveTextDebateModal } from "../components/LiveTextDebateModal.js";
 import { LiveEventJoinModal } from "../components/LiveEventJoinModal.js";
 
+import { PhilosophyProfileEditor } from "../components/PhilosophyProfileEditor.js";
+
 describe("React Components Export & Module Signature Verification", () => {
   it("should export all main application view components cleanly", () => {
     expect(App).toBeDefined();
     expect(typeof App).toBe("function");
+    expect(PhilosophyProfileEditor).toBeDefined();
+    expect(typeof PhilosophyProfileEditor).toBe("function");
     expect(AuthModal).toBeDefined();
     expect(UserSettingsModal).toBeDefined();
     expect(DirectMessageDrawer).toBeDefined();

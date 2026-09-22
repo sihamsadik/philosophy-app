@@ -34,17 +34,21 @@ const INTENTS: { id: ConnectionIntent; label: string; icon: string }[] = [
 export interface PhilosophyProfileEditorProps {
   userId: string;
   initialProfile?: PhilosophyProfile | null;
+  user?: User | null;
   onSaveSuccess?: (updatedProfile: PhilosophyProfile) => void;
 }
 
 export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = ({
   userId,
   initialProfile,
+  user,
   onSaveSuccess,
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+
   const [worldviewSummary, setWorldviewSummary] = useState(initialProfile?.worldviewSummary || "");
-  const [primarySchools, setPrimarySchools] = useState<string[]>(initialProfile?.primarySchools || []);
-  const [keyThinkers, setKeyThinkers] = useState<string[]>(initialProfile?.keyThinkers || []);
+  const [primarySchools, setPrimarySchools] = useState<string[]>(initialProfile?.primarySchools || ["Existentialism"]);
+  const [keyThinkers, setKeyThinkers] = useState<string[]>(initialProfile?.keyThinkers || ["Friedrich Nietzsche"]);
   const [coreQuestions, setCoreQuestions] = useState<string[]>(initialProfile?.coreQuestions || []);
   const [favoriteTexts, setFavoriteTexts] = useState<string[]>(initialProfile?.favoriteTexts || []);
   const [connectionIntents, setConnectionIntents] = useState<ConnectionIntent[]>(
@@ -58,6 +62,21 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  // Sync state if initialProfile or user updates
+  React.useEffect(() => {
+    const prof = user?.philosophyProfile || initialProfile;
+    if (prof) {
+      if (prof.worldviewSummary !== undefined && prof.worldviewSummary !== null) {
+        setWorldviewSummary(prof.worldviewSummary);
+      }
+      if (prof.primarySchools?.length) setPrimarySchools(prof.primarySchools);
+      if (prof.keyThinkers?.length) setKeyThinkers(prof.keyThinkers);
+      if (prof.coreQuestions?.length) setCoreQuestions(prof.coreQuestions);
+      if (prof.favoriteTexts?.length) setFavoriteTexts(prof.favoriteTexts);
+      if (prof.connectionIntents?.length) setConnectionIntents(prof.connectionIntents);
+    }
+  }, [initialProfile, user]);
 
   const toggleArrayItem = <T,>(list: T[], item: T): T[] => {
     return list.includes(item) ? list.filter((i) => i !== item) : [...list, item];
@@ -90,6 +109,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
       await agoraClient.updatePhilosophyProfile(userId, payload);
       setSaveStatus("Worldview profile saved successfully!");
       if (onSaveSuccess) onSaveSuccess(payload);
+      setIsEditing(false); // Return to View mode after successful save
     } catch (err: any) {
       setSaveStatus(`Failed to save profile: ${err.message || "Unknown error"}`);
     } finally {
@@ -97,13 +117,188 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // VIEW MODE (Read-only Professional Profile)
+  // ---------------------------------------------------------------------------
+  if (!isEditing) {
+    const displayName = user?.name || user?.username || "Philosophical Thinker";
+    const handleTag = user?.username ? `@${user.username}` : "@thinker";
+    const userBio = user?.bio || "Exploring foundational questions of existence, mind, and agency.";
+    const userAvatar = user?.avatar;
+    const reputation = user?.reputation ?? 150;
+
+    return (
+      <div className="philosophy-profile-view-container">
+        {/* Profile Cover / Header Card */}
+        <div className="profile-hero-card">
+          <div className="profile-hero-banner" />
+          <div className="profile-hero-content">
+            <div className="profile-hero-left">
+              <div className="profile-avatar-large">
+                {userAvatar ? (
+                  <img src={userAvatar} alt={displayName} className="avatar-img-full" />
+                ) : (
+                  <div className="avatar-placeholder-large">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="profile-user-details">
+                <div className="profile-name-row">
+                  <h1 className="profile-display-name">{displayName}</h1>
+                  <span className="profile-reputation-badge" title="Philosophy Reputation Score">
+                    ⚡ {reputation} Rep
+                  </span>
+                </div>
+                <p className="profile-handle-text">{handleTag}</p>
+                <p className="profile-bio-text">{userBio}</p>
+              </div>
+            </div>
+
+            <div className="profile-hero-actions">
+              <button
+                type="button"
+                className="edit-profile-action-btn"
+                onClick={() => setIsEditing(true)}
+              >
+                ✏️ Edit Profile
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Worldview Summary Section */}
+        <div className="profile-section-card">
+          <div className="section-card-header">
+            <h3>🧠 Personal Worldview & Stance</h3>
+          </div>
+          <div className="worldview-quote-box">
+            {worldviewSummary ? (
+              <p className="quote-text">"{worldviewSummary}"</p>
+            ) : (
+              <p className="empty-section-hint">
+                No worldview summary added yet. Click <strong>Edit Profile</strong> to share your philosophical perspective!
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Primary Schools & Thinkers Grid */}
+        <div className="profile-two-col-grid">
+          {/* Schools of Thought */}
+          <div className="profile-section-card">
+            <div className="section-card-header">
+              <h3>🏛️ Primary Schools of Thought</h3>
+            </div>
+            <div className="profile-chip-group">
+              {primarySchools.length > 0 ? (
+                primarySchools.map((school) => (
+                  <span key={school} className="profile-school-chip">
+                    ✓ {school}
+                  </span>
+                ))
+              ) : (
+                <p className="empty-section-hint">No schools selected yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Key Thinkers */}
+          <div className="profile-section-card">
+            <div className="section-card-header">
+              <h3>📜 Influential Thinkers</h3>
+            </div>
+            <div className="profile-chip-group">
+              {keyThinkers.length > 0 ? (
+                keyThinkers.map((thinker) => (
+                  <span key={thinker} className="profile-thinker-chip">
+                    ★ {thinker}
+                  </span>
+                ))
+              ) : (
+                <p className="empty-section-hint">No thinkers added yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Core Questions Section */}
+        <div className="profile-section-card">
+          <div className="section-card-header">
+            <h3>❓ Core Philosophical Inquiries</h3>
+          </div>
+          {coreQuestions.length > 0 ? (
+            <div className="questions-card-list">
+              {coreQuestions.map((q, idx) => (
+                <div key={idx} className="question-display-item">
+                  <span className="question-icon font-mono">?</span>
+                  <span className="question-text">"{q}"</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-section-hint">No core questions listed yet.</p>
+          )}
+        </div>
+
+        {/* Favorite Texts & Works */}
+        <div className="profile-section-card">
+          <div className="section-card-header">
+            <h3>📖 Favorite Philosophical Texts</h3>
+          </div>
+          {favoriteTexts.length > 0 ? (
+            <div className="profile-chip-group">
+              {favoriteTexts.map((text, idx) => (
+                <span key={idx} className="profile-text-chip">
+                  📖 {text}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-section-hint">No favorite texts listed yet.</p>
+          )}
+        </div>
+
+        {/* Connection Intents */}
+        <div className="profile-section-card">
+          <div className="section-card-header">
+            <h3>🤝 Connection Intents</h3>
+          </div>
+          <div className="intents-view-grid">
+            {INTENTS.map((intent) => {
+              const isActive = connectionIntents.includes(intent.id);
+              return (
+                <div key={intent.id} className={`intent-view-badge ${isActive ? "active" : "inactive"}`}>
+                  <span className="intent-icon">{intent.icon}</span>
+                  <span className="intent-label">{intent.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // EDIT MODE (Form)
+  // ---------------------------------------------------------------------------
   return (
     <div className="philosophy-editor-card">
-      <div className="editor-header">
-        <h2>🧠 Philosophical Identity & Worldview Profile</h2>
-        <p className="editor-subtitle">
-          Express your foundational schools of thought, favorite thinkers, and core inquiries.
-        </p>
+      <div className="editor-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2>✏️ Edit Philosophical Identity & Worldview</h2>
+          <p className="editor-subtitle">
+            Update your foundational schools of thought, favorite thinkers, and core inquiries.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="back-to-profile-btn"
+          onClick={() => setIsEditing(false)}
+        >
+          ← Back to Profile
+        </button>
       </div>
 
       <form onSubmit={handleSave} className="editor-form">
@@ -311,9 +506,16 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
         </div>
 
         {/* Submit Actions */}
-        <div className="form-actions">
+        <div className="form-actions" style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <button type="submit" className="save-submit-btn" disabled={isSaving}>
             {isSaving ? "Saving Worldview..." : "Save Philosophical Profile"}
+          </button>
+          <button
+            type="button"
+            className="secondary-cancel-btn"
+            onClick={() => setIsEditing(false)}
+          >
+            Cancel
           </button>
           {saveStatus && <p className="status-feedback">{saveStatus}</p>}
         </div>

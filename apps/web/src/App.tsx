@@ -300,6 +300,8 @@ export const App: React.FC = () => {
                 <PhilosophyProfileEditor
                   userId={user?.id || "00000000-0000-0000-0000-000000000001"}
                   initialProfile={user?.philosophyProfile}
+                  user={user}
+                  onSaveSuccess={() => refreshUser()}
                 />
               )}
 
@@ -333,7 +335,7 @@ export const App: React.FC = () => {
         isOpen={isAuthModalOpen}
         initialMode={authModalMode}
         onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={() => setActiveTab("profile")}
+        onSuccess={() => setActiveTab("debates")}
       />
 
       <UserSettingsModal
