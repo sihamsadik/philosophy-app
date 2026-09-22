@@ -41,7 +41,20 @@ function parsePhilosophyProfile(meta: Record<string, unknown> | null | undefined
   const raw = meta.philosophyProfile ?? meta.philosophy;
   if (!raw || typeof raw !== "object") return null;
   const result = philosophyProfileSchema.safeParse(raw);
-  return result.success ? result.data : null;
+  if (result.success) return result.data;
+
+  // Resilient fallback parser if strict schema validation fails (ensures questions/quotes are never lost)
+  const r = raw as Record<string, any>;
+  return {
+    primarySchools: Array.isArray(r.primarySchools) ? r.primarySchools.map(String) : [],
+    keyThinkers: Array.isArray(r.keyThinkers) ? r.keyThinkers.map(String) : [],
+    coreQuestions: Array.isArray(r.coreQuestions) ? r.coreQuestions.map(String) : [],
+    favoriteTexts: Array.isArray(r.favoriteTexts) ? r.favoriteTexts.map(String) : [],
+    worldviewSummary: typeof r.worldviewSummary === "string" ? r.worldviewSummary : null,
+    favoriteQuote: typeof r.favoriteQuote === "string" ? r.favoriteQuote : null,
+    quoteAuthor: typeof r.quoteAuthor === "string" ? r.quoteAuthor : null,
+    connectionIntents: Array.isArray(r.connectionIntents) ? r.connectionIntents.filter(Boolean) : ["discussion", "intellectual"],
+  };
 }
 
 function parsePhilosophicalTaxonomy(meta: Record<string, unknown> | null | undefined): PhilosophicalTaxonomy | null {

@@ -112,14 +112,43 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     setIsSaving(true);
     setSaveStatus(null);
 
+    // Auto-flush any pending typed inputs before saving
+    let finalQuestions = [...coreQuestions];
+    if (newQuestion.trim() && !finalQuestions.includes(newQuestion.trim())) {
+      finalQuestions.push(newQuestion.trim());
+      setCoreQuestions(finalQuestions);
+      setNewQuestion("");
+    }
+
+    let finalSchools = [...primarySchools];
+    if (newSchool.trim() && !finalSchools.includes(newSchool.trim())) {
+      finalSchools.push(newSchool.trim());
+      setPrimarySchools(finalSchools);
+      setNewSchool("");
+    }
+
+    let finalThinkers = [...keyThinkers];
+    if (newThinker.trim() && !finalThinkers.includes(newThinker.trim())) {
+      finalThinkers.push(newThinker.trim());
+      setKeyThinkers(finalThinkers);
+      setNewThinker("");
+    }
+
+    let finalTexts = [...favoriteTexts];
+    if (newText.trim() && !finalTexts.includes(newText.trim())) {
+      finalTexts.push(newText.trim());
+      setFavoriteTexts(finalTexts);
+      setNewText("");
+    }
+
     const updatedPhilosophyProfile: PhilosophyProfile = {
       worldviewSummary,
-      favoriteQuote,
-      quoteAuthor,
-      primarySchools,
-      keyThinkers,
-      coreQuestions,
-      favoriteTexts,
+      favoriteQuote: favoriteQuote.trim() || null,
+      quoteAuthor: quoteAuthor.trim() || null,
+      primarySchools: finalSchools,
+      keyThinkers: finalThinkers,
+      coreQuestions: finalQuestions,
+      favoriteTexts: finalTexts,
       connectionIntents,
     };
 

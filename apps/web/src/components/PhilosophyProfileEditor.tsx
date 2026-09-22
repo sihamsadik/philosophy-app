@@ -47,6 +47,8 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
   const [isEditing, setIsEditing] = useState(false);
 
   const [worldviewSummary, setWorldviewSummary] = useState(initialProfile?.worldviewSummary || "");
+  const [favoriteQuote, setFavoriteQuote] = useState(initialProfile?.favoriteQuote || "");
+  const [quoteAuthor, setQuoteAuthor] = useState(initialProfile?.quoteAuthor || "");
   const [primarySchools, setPrimarySchools] = useState<string[]>(initialProfile?.primarySchools || ["Existentialism"]);
   const [keyThinkers, setKeyThinkers] = useState<string[]>(initialProfile?.keyThinkers || ["Friedrich Nietzsche"]);
   const [coreQuestions, setCoreQuestions] = useState<string[]>(initialProfile?.coreQuestions || []);
@@ -69,6 +71,12 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
     if (prof) {
       if (prof.worldviewSummary !== undefined && prof.worldviewSummary !== null) {
         setWorldviewSummary(prof.worldviewSummary);
+      }
+      if (prof.favoriteQuote !== undefined && prof.favoriteQuote !== null) {
+        setFavoriteQuote(prof.favoriteQuote);
+      }
+      if (prof.quoteAuthor !== undefined && prof.quoteAuthor !== null) {
+        setQuoteAuthor(prof.quoteAuthor);
       }
       if (prof.primarySchools?.length) setPrimarySchools(prof.primarySchools);
       if (prof.keyThinkers?.length) setKeyThinkers(prof.keyThinkers);
@@ -96,12 +104,43 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
     setIsSaving(true);
     setSaveStatus(null);
 
+    // Auto-flush any typed pending inputs before saving
+    let finalQuestions = [...coreQuestions];
+    if (newQuestion.trim() && !finalQuestions.includes(newQuestion.trim())) {
+      finalQuestions.push(newQuestion.trim());
+      setCoreQuestions(finalQuestions);
+      setNewQuestion("");
+    }
+
+    let finalSchools = [...primarySchools];
+    if (newSchool.trim() && !finalSchools.includes(newSchool.trim())) {
+      finalSchools.push(newSchool.trim());
+      setPrimarySchools(finalSchools);
+      setNewSchool("");
+    }
+
+    let finalThinkers = [...keyThinkers];
+    if (newThinker.trim() && !finalThinkers.includes(newThinker.trim())) {
+      finalThinkers.push(newThinker.trim());
+      setKeyThinkers(finalThinkers);
+      setNewThinker("");
+    }
+
+    let finalTexts = [...favoriteTexts];
+    if (newText.trim() && !finalTexts.includes(newText.trim())) {
+      finalTexts.push(newText.trim());
+      setFavoriteTexts(finalTexts);
+      setNewText("");
+    }
+
     const payload: PhilosophyProfile = {
       worldviewSummary,
-      primarySchools,
-      keyThinkers,
-      coreQuestions,
-      favoriteTexts,
+      favoriteQuote: favoriteQuote.trim() || null,
+      quoteAuthor: quoteAuthor.trim() || null,
+      primarySchools: finalSchools,
+      keyThinkers: finalThinkers,
+      coreQuestions: finalQuestions,
+      favoriteTexts: finalTexts,
       connectionIntents,
     };
 
@@ -166,6 +205,23 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
             </div>
           </div>
         </div>
+
+        {/* Favorite Quote Section */}
+        {favoriteQuote && (
+          <div className="profile-section-card">
+            <div className="section-card-header">
+              <h3>💬 Favorite Philosophical Quote</h3>
+            </div>
+            <div className="worldview-quote-box" style={{ borderLeftColor: "#a855f7" }}>
+              <p className="quote-text">"{favoriteQuote}"</p>
+              {quoteAuthor && (
+                <p style={{ marginTop: 8, color: "#a5b4fc", fontWeight: 600, fontSize: "0.92rem", fontStyle: "normal" }}>
+                  — {quoteAuthor}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Worldview Summary Section */}
         <div className="profile-section-card">
@@ -311,6 +367,26 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
             value={worldviewSummary}
             onChange={(e) => setWorldviewSummary(e.target.value)}
             placeholder="Describe how you see the world, agency, meaning, and morality..."
+          />
+        </div>
+
+        {/* Favorite Quote & Author */}
+        <div className="form-section">
+          <label className="section-label">Favorite Philosophical Quote & Author</label>
+          <textarea
+            className="input-textarea"
+            rows={2}
+            value={favoriteQuote}
+            onChange={(e) => setFavoriteQuote(e.target.value)}
+            placeholder="e.g. Man is condemned to be free..."
+          />
+          <input
+            type="text"
+            className="input-text"
+            style={{ marginTop: 10 }}
+            placeholder="Quote Author (e.g. Jean-Paul Sartre)"
+            value={quoteAuthor}
+            onChange={(e) => setQuoteAuthor(e.target.value)}
           />
         </div>
 
