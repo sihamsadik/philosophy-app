@@ -175,7 +175,7 @@ export interface AuthUser extends User {
   lastActive: string;
   updatedAt: string;
   suspensions: { reason: string | null; startDate: string; endDate: string | null }[];
-  authMethods: string[];
+  authMethods?: string[];
   // Agora extension: true when this identity is a deployment operator (env allowlist). Grants the
   // admin app a project-wide god-view (all spaces/content/reports) instead of space-scoped authority.
   isOperator: boolean;

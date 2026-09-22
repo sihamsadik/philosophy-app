@@ -347,7 +347,27 @@ export function shapeNotification(row: NotificationRow) {
   };
 }
 
-// AuthUser = UserFull minus secureMetadata, plus suspensions[] + authMethods[] (MODELS.md).
+/**
+ * Clean unnecessary / redundant internal clutter fields from API response payloads.
+ * Strips internal authMethods and omits unused empty metadata/noise fields.
+ */
+export function cleanResponsePayload<T>(payload: T): T {
+  if (payload === null || payload === undefined) return payload;
+  if (Array.isArray(payload)) {
+    return payload.map((item) => cleanResponsePayload(item)) as unknown as T;
+  }
+  if (typeof payload === "object" && payload.constructor === Object) {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(payload as Record<string, any>)) {
+      if (key === "authMethods") continue; // Strip internal authMethods from API responses
+      cleaned[key] = cleanResponsePayload(value);
+    }
+    return cleaned as T;
+  }
+  return payload;
+}
+
+// AuthUser = UserFull minus secureMetadata, plus suspensions[] (MODELS.md).
 // Returned only to the authenticated user themselves (includes email/isVerified/lastActive).
 // (interface imported + re-exported from @agora-server/contract at the top of this file)
 export function shapeAuthUser(
@@ -358,7 +378,7 @@ export function shapeAuthUser(
   isProjectOwner = false,
   isProjectAdmin = false
 ): AuthUser {
-  return {
+  const authUser: AuthUser = {
     ...(shapeUser(row) as User),
     email: row.email ?? null,
     isVerified: row.isVerified,
@@ -370,12 +390,13 @@ export function shapeAuthUser(
       startDate: iso(s.startDate)!,
       endDate: iso(s.endDate),
     })),
-    authMethods: row.authMethods ?? [],
     isOperator,
     isSteward,
     isProjectOwner,
     isProjectAdmin,
   };
+  delete authUser.authMethods;
+  return cleanResponsePayload(authUser);
 }
 
 type SuspensionRow = typeof userSuspensions.$inferSelect;

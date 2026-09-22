@@ -51,11 +51,12 @@ describe("shapeAuthUser", () => {
     lastActive: D, updatedAt: D, authMethods: ["password"],
   };
 
-  it("re-exposes the private fields shapeUser strips, plus suspensions/authMethods", () => {
+  it("re-exposes the private fields shapeUser strips, plus suspensions, omitting internal authMethods", () => {
     const u = shapeAuthUser(row, [{ reason: "rule", startDate: D, endDate: null }]);
     expect(u).toMatchObject({
-      id: "u1", email: "jett@example.com", isVerified: true, isActive: true, authMethods: ["password"],
+      id: "u1", email: "jett@example.com", isVerified: true, isActive: true,
     });
+    expect(u).not.toHaveProperty("authMethods");
     expect(u.lastActive).toBe(iso);
     expect(u.updatedAt).toBe(iso);
     expect(u.suspensions).toEqual([{ reason: "rule", startDate: iso, endDate: null }]);
