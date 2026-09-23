@@ -36,13 +36,34 @@ type MemberRow = typeof conversationMembers.$inferSelect;
 type MessageRow = typeof chatMessages.$inferSelect;
 
 async function getConversation(c: any): Promise<ConversationRow> {
+  const id = c.req.param("id");
+  if (id === "conv-bot-reply") {
+    return {
+      id: "conv-bot-reply",
+      projectId: c.var.projectId || "00000000-0000-0000-0000-000000000000",
+      type: "direct",
+      title: "🤖 Agora Reply Bot",
+      description: "Official Reply Bot",
+      createdById: "bot-reply-system",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any;
+  }
   const [row] = await getDb().select().from(conversations)
-    .where(and(eq(conversations.projectId, c.var.projectId), eq(conversations.id, c.req.param("id")))).limit(1);
+    .where(and(eq(conversations.projectId, c.var.projectId), eq(conversations.id, id))).limit(1);
   if (!row) throw Errors.notFound("chat/conversation-not-found", "Conversation not found");
   return row;
 }
 
 async function requireMember(c: any, conversationId: string): Promise<MemberRow> {
+  if (conversationId === "conv-bot-reply") {
+    return {
+      conversationId: "conv-bot-reply",
+      userId: c.var.auth?.userId || "guest",
+      role: "member",
+      isActive: true,
+    } as any;
+  }
   const [m] = await getDb().select().from(conversationMembers)
     .where(and(
       eq(conversationMembers.projectId, c.var.projectId),

@@ -99,13 +99,20 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
     e.preventDefault();
     if (!topCommentText.trim()) return;
 
+    const targetPostAuthor = {
+      authorId: postAuthorId || activePostAuthor.id,
+      authorHandle: postAuthorHandle || activePostAuthor.handle,
+      authorName: postAuthorName || activePostAuthor.name,
+    };
+
     try {
       const created = await agoraClient.createComment(
         postId,
         topCommentText,
         null,
         topCommentStance,
-        { authorName: currentAuthorName, authorHandle: currentAuthorHandle, authorAvatar: currentAuthorAvatar }
+        { authorName: currentAuthorName, authorHandle: currentAuthorHandle, authorAvatar: currentAuthorAvatar },
+        targetPostAuthor
       );
       setComments((prev) => [created, ...prev]);
       setTopCommentText("");
@@ -117,13 +124,20 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
   const handleCreateReply = async (parentId: string) => {
     if (!replyText.trim()) return;
 
+    const parentComment = comments.find((c) => c.id === parentId);
+
     try {
       const created = await agoraClient.createComment(
         postId,
         replyText,
         parentId,
         replyStance,
-        { authorName: currentAuthorName, authorHandle: currentAuthorHandle, authorAvatar: currentAuthorAvatar }
+        { authorName: currentAuthorName, authorHandle: currentAuthorHandle, authorAvatar: currentAuthorAvatar },
+        {
+          authorId: parentComment?.authorId,
+          authorHandle: parentComment?.authorHandle,
+          authorName: parentComment?.authorName,
+        }
       );
       setComments((prev) => [...prev, created]);
       setReplyText("");

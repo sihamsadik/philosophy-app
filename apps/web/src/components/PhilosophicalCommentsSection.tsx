@@ -77,11 +77,22 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     const authorAvatar = user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
 
     try {
-      const created = await agoraClient.createComment(entityId, topCommentText, null, topCommentStance, {
-        authorName,
-        authorHandle,
-        authorAvatar,
-      });
+      const created = await agoraClient.createComment(
+        entityId,
+        topCommentText,
+        null,
+        topCommentStance,
+        {
+          authorName,
+          authorHandle,
+          authorAvatar,
+        },
+        {
+          authorId: postAuthorId,
+          authorHandle: postAuthorHandle,
+          authorName: postAuthorName,
+        }
+      );
       setComments((prev) => [created, ...prev]);
       setTopCommentText("");
     } catch (err) {
@@ -96,6 +107,8 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     const authorHandle = user?.username || "you";
     const authorAvatar = user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
 
+    const parentComment = comments.find((c) => c.id === parentId);
+
     try {
       const created = await agoraClient.createComment(
         entityId,
@@ -106,6 +119,11 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
           authorName,
           authorHandle,
           authorAvatar,
+        },
+        {
+          authorId: parentComment?.authorId,
+          authorHandle: parentComment?.authorHandle,
+          authorName: parentComment?.authorName,
         }
       );
       setComments((prev) => [...prev, created]);
