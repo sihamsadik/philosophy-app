@@ -982,13 +982,35 @@ html.modal-open {
   color: var(--text-muted);
 }
 
+.conv-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
 .conv-preview {
   font-size: 0.78rem;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 2px;
+  flex: 1;
+  margin: 0;
+}
+
+.conv-unread-badge {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 12px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+  margin-left: 8px;
+  line-height: 1.2;
 }
 
 /* Chat Main Pane */
@@ -1045,7 +1067,31 @@ html.modal-open {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+}
+
+/* Telegram Date Divider */
+.chat-date-divider {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 14px 0 6px 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.chat-date-divider span {
+  background: rgba(15, 23, 42, 0.85);
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.02em;
 }
 
 .message-bubble-wrapper {
@@ -1054,48 +1100,72 @@ html.modal-open {
 }
 
 .message-bubble-wrapper.me {
-  justify-content: flex-end;
+  justify-content: flex-end !important;
 }
 
 .message-bubble-wrapper.them {
-  justify-content: flex-start;
+  justify-content: flex-start !important;
 }
 
 .message-bubble {
-  max-width: 70%;
+  max-width: 72%;
   padding: 10px 14px;
   border-radius: 14px;
   font-size: 0.9rem;
   line-height: 1.45;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  position: relative;
 }
 
-.message-bubble-wrapper.me .message-bubble {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: white;
-  border-bottom-right-radius: 2px;
+/* Owner Message: Vibrant Telegram Blue Bubble with White Text */
+.message-bubble-wrapper.me .message-bubble,
+.message-bubble.me-bubble {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border-bottom-right-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
-.message-bubble-wrapper.them .message-bubble {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
-  border-bottom-left-radius: 2px;
+.message-bubble-wrapper.me .message-text {
+  color: #ffffff !important;
 }
 
-.message-sender {
-  display: block;
-  font-size: 0.72rem;
-  opacity: 0.8;
-  margin-bottom: 4px;
-
+/* Recipient Message: Pure White Bubble with BLACK text */
+.message-bubble-wrapper.them .message-bubble,
+.message-bubble.them-bubble {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-bottom-left-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
-.message-time {
-  display: block;
-  font-size: 0.68rem;
-  opacity: 0.65;
+.message-bubble-wrapper.them .message-text {
+  color: #0f172a !important;
+  font-weight: 500;
+}
+
+.message-content-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
   margin-top: 4px;
-  text-align: right;
+  font-size: 0.68rem;
+}
+
+.message-bubble-wrapper.me .message-time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.message-bubble-wrapper.me .message-ticks {
+  color: #bfdbfe;
+  font-weight: bold;
+  font-size: 0.72rem;
+}
+
+.message-bubble-wrapper.them .message-time {
+  color: #64748b;
 }
 
 .chat-input-bar {
@@ -4528,7 +4598,12 @@ html.modal-open {
 }
 
 .bot-message-bubble {
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
+  border: 1.5px solid #3b82f6 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.12);
+}
+
+.bot-message-bubble .message-text {
+  color: #0f172a !important;
 }

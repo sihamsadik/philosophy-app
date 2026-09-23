@@ -56,6 +56,7 @@ export const App: React.FC = () => {
   // Notification Drawer & Connection Request Modal
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [unreadDmCount, setUnreadDmCount] = useState(0);
   const [connectTargetUser, setConnectTargetUser] = useState<User | null>(null);
 
   const refreshNotifCount = React.useCallback(async () => {
@@ -67,21 +68,45 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  const refreshDmUnreadCount = React.useCallback(async () => {
+    try {
+      const res = await agoraClient.getConversations();
+      const totalUnread = res.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+      setUnreadDmCount(totalUnread);
+    } catch {
+      setUnreadDmCount(0);
+    }
+  }, []);
+
   React.useEffect(() => {
     refreshNotifCount();
-    const handleUpdate = () => refreshNotifCount();
+    refreshDmUnreadCount();
+
+    const handleUpdate = () => {
+      refreshNotifCount();
+      refreshDmUnreadCount();
+    };
+
     window.addEventListener("agora_notification_updated", handleUpdate);
     window.addEventListener("agora_comment_added", handleUpdate);
+    window.addEventListener("agora_message_sent", handleUpdate);
+    window.addEventListener("agora_dm_unread_updated", handleUpdate);
 
-    // Poll every 15s to update unread badge when background activity occurs
-    const interval = setInterval(refreshNotifCount, 15000);
+    // Poll every 15s to update unread badges when background activity occurs
+    const interval = setInterval(() => {
+      refreshNotifCount();
+      refreshDmUnreadCount();
+    }, 15000);
 
     return () => {
       window.removeEventListener("agora_notification_updated", handleUpdate);
       window.removeEventListener("agora_comment_added", handleUpdate);
+      window.removeEventListener("agora_message_sent", handleUpdate);
+      window.removeEventListener("agora_dm_unread_updated", handleUpdate);
       clearInterval(interval);
     };
-  }, [refreshNotifCount, user?.id, isAuthenticated]);
+  }, [refreshNotifCount, refreshDmUnreadCount, user?.id, isAuthenticated]);
+
 
   const [liveDebateEvent, setLiveDebateEvent] = useState<any | null>(null);
 
@@ -153,11 +178,12 @@ export const App: React.FC = () => {
 
           <button
             type="button"
-            className="top-action-circle-btn"
+            className="top-action-circle-btn notif-btn"
             onClick={() => handleOpenDM(null)}
             title="Direct Messages"
           >
             💬
+            {unreadDmCount > 0 && <span className="top-notif-badge">{unreadDmCount}</span>}
           </button>
 
           {isAuthenticated && user ? (
