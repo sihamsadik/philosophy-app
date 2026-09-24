@@ -118,8 +118,8 @@ const sum = (counts: Record<string, number> | null | undefined) =>
 // ─── public fan-out helpers ─────────────────────────────────────────────────
 
 /**
- * On comment creation: notify the entity author and (for a reply) the parent-comment author,
- * deduped, plus any mentioned users. Pass the freshly-inserted comment row.
+ * On comment creation: notify the entity author for top-level comments, or the direct parent
+ * author for replies, plus any mentioned users. Pass the freshly-inserted comment row.
  */
 export async function notifyOnComment(
   projectId: string,
@@ -163,16 +163,6 @@ export async function notifyOnComment(
           ...actor,
         });
         notified.add(parent.userId);
-      }
-      // … AND the entity author (deduped — skipped if they're the actor or already notified above).
-      if (entity.userId && !notified.has(entity.userId)) {
-        await insert(projectId, entity.userId, actorId, "entity-comment", "open-comment", {
-          ...entityMeta,
-          commentId: comment.id,
-          commentContent: comment.content,
-          ...actor,
-        });
-        notified.add(entity.userId);
       }
     } else {
       // Top-level comment → notify the entity author.

@@ -82,16 +82,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
         topCommentText,
         null,
         topCommentStance,
-        {
-          authorName,
-          authorHandle,
-          authorAvatar,
-        },
-        {
-          authorId: postAuthorId,
-          authorHandle: postAuthorHandle,
-          authorName: postAuthorName,
-        }
+        { authorName, authorHandle, authorAvatar }
       );
       setComments((prev) => [created, ...prev]);
       setTopCommentText("");
@@ -107,24 +98,13 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     const authorHandle = user?.username || "you";
     const authorAvatar = user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
 
-    const parentComment = comments.find((c) => c.id === parentId);
-
     try {
       const created = await agoraClient.createComment(
         entityId,
         replyText,
         parentId,
         replyStance || defaultStance || "synthesis",
-        {
-          authorName,
-          authorHandle,
-          authorAvatar,
-        },
-        {
-          authorId: parentComment?.authorId,
-          authorHandle: parentComment?.authorHandle,
-          authorName: parentComment?.authorName,
-        }
+        { authorName, authorHandle, authorAvatar }
       );
       setComments((prev) => [...prev, created]);
       setReplyText("");

@@ -34,6 +34,7 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("debates");
   const [activeDrawerEntityId, setActiveDrawerEntityId] = useState<string | null>(null);
   const [activeThreadPostId, setActiveThreadPostId] = useState<string | null>(null);
+  const [activeThreadTargetCommentId, setActiveThreadTargetCommentId] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"signin" | "signup">("signin");
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
@@ -418,8 +419,12 @@ export const App: React.FC = () => {
 
       <DebateThreadDrawer
         isOpen={!!activeThreadPostId}
-        onClose={() => setActiveThreadPostId(null)}
+        onClose={() => {
+          setActiveThreadPostId(null);
+          setActiveThreadTargetCommentId(null);
+        }}
         postId={activeThreadPostId}
+        targetCommentId={activeThreadTargetCommentId}
         onOpenDebateSummary={(postId) => setActiveDrawerEntityId(postId)}
       />
 
@@ -428,7 +433,10 @@ export const App: React.FC = () => {
         onClose={() => setIsNotifDrawerOpen(false)}
         onUnreadCountChange={(count) => setUnreadNotifCount(count)}
         onOpenDM={(targetUser) => handleOpenDM(targetUser)}
-        onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
+        onOpenThreadDrawer={(postId, commentId, replyId) => {
+          setActiveThreadPostId(postId);
+          setActiveThreadTargetCommentId(replyId || commentId || null);
+        }}
       />
 
       <ConnectionRequestModal

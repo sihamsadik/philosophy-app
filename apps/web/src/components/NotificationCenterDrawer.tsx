@@ -7,7 +7,7 @@ export interface NotificationCenterDrawerProps {
   onClose: () => void;
   onUnreadCountChange?: (count: number) => void;
   onOpenDM?: (targetUser: User) => void;
-  onOpenThreadDrawer?: (postId: string) => void;
+  onOpenThreadDrawer?: (postId: string, commentId?: string, replyId?: string) => void;
 }
 
 export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> = ({
@@ -300,7 +300,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                           onClick={() => {
                             handleMarkSingleRead(notif.id);
                             onClose();
-                            onOpenThreadDrawer(notif.entityId!);
+                            onOpenThreadDrawer(notif.entityId!, notif.commentId, notif.replyId);
                           }}
                         >
                           📜 View Debate Thread

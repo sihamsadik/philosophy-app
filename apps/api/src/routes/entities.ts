@@ -8,7 +8,7 @@ import { Errors } from "../http/errors.js";
 import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
 import { logger } from "../lib/logger.js";
-import { indexEntityAsync } from "../lib/embeddings.js";
+import { indexContentAsync, indexEntityAsync } from "../lib/embeddings.js";
 import { generateDiscussionSummary } from "../lib/discussion-summarizer.js";
 import { env } from "../lib/env.js";
 import { collectFileRows, removeMediaAsync } from "../lib/storage-cleanup.js";
@@ -345,12 +345,12 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
           },
         })
         .returning();
-      if (row) {
-        indexContentAsync(projectId, "comment", row.id, row.content);
-        await notifyOnComment(projectId, row);
-      }
     } catch {
       // Ignore database insert error if running offline/memory mode
+    }
+    if (row) {
+      await notifyOnComment(projectId, row);
+      indexContentAsync(projectId, "comment", row.id, row.content);
     }
 
     const shaped = {

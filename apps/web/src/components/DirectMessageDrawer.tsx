@@ -171,7 +171,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
     fetchMessages();
   }, [selectedConv]);
 
-  // Real-time listener for incoming messages / bot notifications
+  // Refresh open conversations when realtime activity arrives.
   useEffect(() => {
     const handleUpdate = () => {
       agoraClient.getConversations().then(({ conversations: list }) => {
@@ -221,7 +221,6 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
     }
   };
 
-  const isBotConv = selectedConv?.id === "conv-bot-reply" || selectedConv?.participant?.id === "bot-reply-system";
   const selectedPartner = selectedConv?.participant || ({
     id: "usr-peer",
     name: "Philosopher Peer",
@@ -256,7 +255,6 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
               <div className="conversations-list">
                 {conversations.map((conv) => {
                   const isActive = selectedConv?.id === conv.id;
-                  const isBot = conv.id === "conv-bot-reply" || conv.participant?.id === "bot-reply-system";
                   const p = conv.participant || ({
                     id: "usr-peer",
                     name: "Philosopher Peer",
@@ -268,7 +266,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                     <button
                       key={conv.id}
                       type="button"
-                      className={`conv-item-btn ${isActive ? "active" : ""} ${isBot ? "bot-conv-item" : ""}`}
+                      className={`conv-item-btn ${isActive ? "active" : ""}`}
                       onClick={() => handleSelectConv(conv)}
                     >
                       {p.avatar ? (
@@ -282,7 +280,6 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                         <div className="conv-top-row">
                           <span className="conv-name">
                             {p.name || p.username}
-                            {isBot && <span className="bot-chip">🤖 BOT</span>}
                           </span>
                           <span className="conv-time">{conv.lastMessageTime}</span>
                         </div>
@@ -322,7 +319,6 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                   <div>
                     <span className="partner-name">
                       {selectedPartner.name || selectedPartner.username}
-                      {isBotConv && <span className="bot-chip" style={{ marginLeft: 8 }}>🤖 OFFICIAL BOT</span>}
                     </span>
                     <span className="partner-handle">
                       @{selectedPartner.username || "philosopher"}
@@ -365,7 +361,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                             <div className={`message-bubble-wrapper ${isMe ? "me" : "them"}`}>
                               <div
                                 className={`message-bubble ${
-                                  isMe ? "me-bubble" : `them-bubble ${isBotConv ? "bot-message-bubble" : ""}`
+                                  isMe ? "me-bubble" : "them-bubble"
                                 }`}
                               >
                                 <p className="message-text" style={{ whiteSpace: "pre-wrap" }}>
@@ -404,11 +400,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                   <input
                     type="text"
                     className="input-text"
-                    placeholder={
-                      isBotConv
-                        ? "The Reply Bot receives automated thread alerts..."
-                        : `Message ${selectedPartner.name || selectedPartner.username || "Philosopher"}...`
-                    }
+                    placeholder={`Message ${selectedPartner.name || selectedPartner.username || "Philosopher"}...`}
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                   />

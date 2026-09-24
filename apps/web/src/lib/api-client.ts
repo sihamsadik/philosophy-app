@@ -576,6 +576,8 @@ export class AgoraPhilosophyClient {
           requestId: n.requestId || meta.requestId || meta.connectionId,
           conversationId: n.conversationId || meta.conversationId,
           entityId: n.entityId || meta.entityId || meta.targetId,
+          commentId: n.commentId || meta.commentId,
+          replyId: n.replyId || meta.replyId,
         };
       });
 
@@ -1241,78 +1243,29 @@ export class AgoraPhilosophyClient {
         };
       });
 
-      // Ensure the Official Reply Bot is pinned to the top of the list
-      const botIndex = mapped.findIndex((c) => c.id === "conv-bot-reply" || c.participant?.id === "bot-reply-system");
-      if (botIndex > 0) {
-        const [botConv] = mapped.splice(botIndex, 1);
-        mapped.unshift(botConv!);
-      } else if (botIndex === -1) {
-        const botConv = DEMO_CONVERSATIONS.find((c) => c.id === "conv-bot-reply") || {
-          id: "conv-bot-reply",
-          participant: REPLY_BOT_USER,
-          lastMessage: "🤖 Agora Reply Bot delivers instant comment replies into your DMs",
-          lastMessageTime: "Just now",
-          unreadCount: 0,
-        };
-        mapped.unshift(botConv);
-      }
-
       const currentUserId = this.getCurrentUserId();
-      const botMessagesRes = await this.getMessages("conv-bot-reply").catch(() => ({ messages: [] }));
-      const botMsgs = botMessagesRes.messages || [];
-      const latestBotMsg = botMsgs.length > 0 ? botMsgs[botMsgs.length - 1] : null;
 
       const updated = mapped.map((c) => {
         let unread = c.unreadCount || 0;
-        let lastMsg = c.lastMessage;
-        let lastTime = c.lastMessageTime;
         if (typeof window !== "undefined") {
-          if (c.id === "conv-bot-reply") {
-            const userUnread = localStorage.getItem(`agora_unread_conv-bot-reply_${currentUserId}`);
-            const globalUnread = localStorage.getItem("agora_unread_conv-bot-reply");
-            unread = userUnread !== null ? (parseInt(userUnread, 10) || 0) : (globalUnread !== null ? (parseInt(globalUnread, 10) || 0) : 0);
-            if (latestBotMsg) {
-              const snippet = latestBotMsg.content.split("\n")[0] || latestBotMsg.content;
-              lastMsg = snippet;
-              lastTime = "Just now";
-            }
-          } else {
-            const userOverride = localStorage.getItem(`agora_unread_${c.id}_${currentUserId}`);
-            const override = userOverride !== null ? userOverride : localStorage.getItem(`agora_unread_${c.id}`);
-            if (override !== null) unread = parseInt(override, 10) || 0;
-          }
+          const userOverride = localStorage.getItem(`agora_unread_${c.id}_${currentUserId}`);
+          const override = userOverride !== null ? userOverride : localStorage.getItem(`agora_unread_${c.id}`);
+          if (override !== null) unread = parseInt(override, 10) || 0;
         }
-        return { ...c, lastMessage: lastMsg, lastMessageTime: lastTime, unreadCount: unread };
+        return { ...c, unreadCount: unread };
       });
 
       return { conversations: updated };
     } catch {
       const currentUserId = this.getCurrentUserId();
-      const botMessagesRes = await this.getMessages("conv-bot-reply").catch(() => ({ messages: [] }));
-      const botMsgs = botMessagesRes.messages || [];
-      const latestBotMsg = botMsgs.length > 0 ? botMsgs[botMsgs.length - 1] : null;
-
       const updatedDemo = DEMO_CONVERSATIONS.map((c) => {
         let unread = c.unreadCount || 0;
-        let lastMsg = c.lastMessage;
-        let lastTime = c.lastMessageTime;
         if (typeof window !== "undefined") {
-          if (c.id === "conv-bot-reply") {
-            const userUnread = localStorage.getItem(`agora_unread_conv-bot-reply_${currentUserId}`);
-            const globalUnread = localStorage.getItem("agora_unread_conv-bot-reply");
-            unread = userUnread !== null ? (parseInt(userUnread, 10) || 0) : (globalUnread !== null ? (parseInt(globalUnread, 10) || 0) : 0);
-            if (latestBotMsg) {
-              const snippet = latestBotMsg.content.split("\n")[0] || latestBotMsg.content;
-              lastMsg = snippet;
-              lastTime = "Just now";
-            }
-          } else {
-            const userOverride = localStorage.getItem(`agora_unread_${c.id}_${currentUserId}`);
-            const override = userOverride !== null ? userOverride : localStorage.getItem(`agora_unread_${c.id}`);
-            if (override !== null) unread = parseInt(override, 10) || 0;
-          }
+          const userOverride = localStorage.getItem(`agora_unread_${c.id}_${currentUserId}`);
+          const override = userOverride !== null ? userOverride : localStorage.getItem(`agora_unread_${c.id}`);
+          if (override !== null) unread = parseInt(override, 10) || 0;
         }
-        return { ...c, lastMessage: lastMsg, lastMessageTime: lastTime, unreadCount: unread };
+        return { ...c, unreadCount: unread };
       });
       return { conversations: updatedDemo };
     }
@@ -1412,70 +1365,6 @@ export class AgoraPhilosophyClient {
         return tA - tB;
       });
     };
-
-    if (conversationId === "conv-bot-reply") {
-      const demoList = DEMO_MESSAGES["conv-bot-reply"] || [];
-      const userDemoKey1 = `conv-bot-reply_${currentUserId}`;
-      const userDemoList1 = DEMO_MESSAGES[userDemoKey1] || [];
-      
-      let savedLocal: ChatMessage[] = [];
-      if (typeof window !== "undefined") {
-        try {
-          const userStored1 = localStorage.getItem(`agora_messages_conv-bot-reply_${currentUserId}`);
-          const list1: ChatMessage[] = userStored1 ? JSON.parse(userStored1) : [];
-          const globalStored = localStorage.getItem(`agora_messages_conv-bot-reply`);
-          const listG: ChatMessage[] = globalStored ? JSON.parse(globalStored) : [];
-          
-          const map = new Map<string, ChatMessage>();
-          for (const item of [...list1, ...listG]) {
-            map.set(item.id, item);
-          }
-          savedLocal = Array.from(map.values());
-        } catch {}
-      }
-
-      let combined = [...demoList, ...userDemoList1];
-      for (const item of savedLocal) {
-        if (!combined.some((existing) => existing.id === item.id)) {
-          combined.push(item);
-        }
-      }
-
-      const filtered = combined.filter((m) => {
-        // 1. If metadata senderId or senderHandle matches currentUserId, exclude it (user sent this reply)
-        if (m.metadata?.senderId && m.metadata.senderId === currentUserId) {
-          return false;
-        }
-        if (m.metadata?.senderHandle && m.metadata.senderHandle === currentUserId) {
-          return false;
-        }
-        // 2. Check text content for replier handle of current user
-        if (currentUserId && currentUserId !== "guest" && currentUserId !== "usr-current") {
-          const lowerContent = m.content.toLowerCase();
-          const lowerUser = currentUserId.toLowerCase();
-          if (lowerContent.includes(`💬 ${lowerUser} (@`) || lowerContent.includes(`(@${lowerUser}) replied`)) {
-            return false;
-          }
-        }
-        // 3. Check recipient matching
-        if (m.metadata?.recipientId || m.metadata?.recipientHandle) {
-          const recId = m.metadata.recipientId;
-          const recHandle = m.metadata.recipientHandle;
-          if (
-            recId === currentUserId ||
-            recHandle === currentUserId ||
-            currentUserId === "guest" ||
-            currentUserId === "usr-current"
-          ) {
-            return true;
-          }
-          return false;
-        }
-        return true;
-      });
-
-      return { messages: sortChronological(filtered) };
-    }
 
     try {
       const res = await this.request<any>(`/chat/conversations/${conversationId}/messages`);
@@ -1663,11 +1552,13 @@ export class AgoraPhilosophyClient {
   /**
    * Philosophical Comments & Nested Debate Threads
    */
-  async getComments(entityId: string): Promise<{ comments: PhilosophicalComment[] }> {
+  async getComments(entityId: string, includeReplies = false): Promise<{ comments: PhilosophicalComment[] }> {
     let rawList: any[] = [];
 
     try {
-      const res = await this.request<any>(`/entities/${entityId}/comments`);
+      const res = includeReplies
+        ? await this.request<any>(`/comments/thread?entityId=${encodeURIComponent(entityId)}`)
+        : await this.request<any>(`/entities/${entityId}/comments`);
       rawList = res?.comments || res?.data || (Array.isArray(res) ? res : []);
     } catch {}
 
@@ -1680,6 +1571,14 @@ export class AgoraPhilosophyClient {
 
     if (!Array.isArray(rawList) || rawList.length === 0) {
       rawList = DEMO_COMMENTS.filter((c) => c.entityId === entityId);
+    }
+
+    if (includeReplies) {
+      const flatten = (rows: any[]): any[] => rows.flatMap((row) => {
+        const { replies = [], ...comment } = row;
+        return [comment, ...flatten(Array.isArray(replies) ? replies : [])];
+      });
+      rawList = flatten(rawList);
     }
 
     const mapped = (Array.isArray(rawList) ? rawList : []).map((c: any) => {
@@ -1726,56 +1625,12 @@ export class AgoraPhilosophyClient {
     return { comments: mapped };
   }
 
-  findCommentOrPost(
-    entityId: string,
-    parentId?: string | null
-  ): { authorId?: string; authorHandle?: string; authorName?: string } | null {
-    if (parentId) {
-      let comment = DEMO_COMMENTS.find((c) => c.id === parentId);
-      if (!comment && typeof window !== "undefined") {
-        try {
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith("agora_comments_")) {
-              const list: PhilosophicalComment[] = JSON.parse(localStorage.getItem(key) || "[]");
-              const found = list.find((c) => c.id === parentId);
-              if (found) {
-                comment = found;
-                break;
-              }
-            }
-          }
-        } catch {}
-      }
-      if (comment) {
-        return { authorId: comment.authorId, authorHandle: comment.authorHandle, authorName: comment.authorName };
-      }
-    }
-
-    let post = DEMO_POSTS.find((p) => p.id === entityId);
-    if (!post && typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("agora_posts") || localStorage.getItem("agora_feed_posts");
-        if (stored) {
-          const list: any[] = JSON.parse(stored);
-          post = list.find((p) => p.id === entityId);
-        }
-      } catch {}
-    }
-    if (post) {
-      return { authorId: post.authorId, authorHandle: post.authorHandle, authorName: post.authorName };
-    }
-
-    return null;
-  }
-
   async createComment(
     entityId: string,
     content: string,
     parentId?: string | null,
     stance?: "thesis" | "antithesis" | "synthesis",
-    authorData?: { authorName?: string; authorHandle?: string; authorAvatar?: string },
-    targetAuthor?: { authorId?: string; authorHandle?: string; authorName?: string }
+    authorData?: { authorName?: string; authorHandle?: string; authorAvatar?: string }
   ): Promise<PhilosophicalComment> {
     const authorName = authorData?.authorName || "You";
     const authorHandle = authorData?.authorHandle || "you";
@@ -1835,29 +1690,6 @@ export class AgoraPhilosophyClient {
       }
     } catch {}
 
-    // Determine recipient relationally (parent comment author for replies, post author for top comments)
-    let targetAuthorId: string | null = targetAuthor?.authorId || null;
-    let targetAuthorHandle: string | null = targetAuthor?.authorHandle || null;
-
-    if (!targetAuthorId && !targetAuthorHandle) {
-      const found = this.findCommentOrPost(entityId, parentId);
-      if (found) {
-        targetAuthorId = found.authorId || null;
-        targetAuthorHandle = found.authorHandle || null;
-      }
-    }
-
-    // Trigger Telegram-style Official Reply Bot DM notification for RECIPIENT
-    this.pushReplyBotNotification(
-      authorName,
-      authorHandle,
-      content,
-      entityId,
-      targetAuthorId,
-      targetAuthorHandle,
-      !!parentId
-    );
-
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("agora_comment_added", {
         detail: { entityId, comment: createdComment }
@@ -1882,108 +1714,6 @@ export class AgoraPhilosophyClient {
     }
   }
 
-  pushReplyBotNotification(
-    authorName: string,
-    authorHandle: string,
-    commentContent: string,
-    entityId: string,
-    targetUserId?: string | null,
-    targetUserHandle?: string | null,
-    isCommentReply: boolean = false
-  ): void {
-    const currentUserId = this.getCurrentUserId();
-
-    // Resolve replier's name and handle accurately
-    let replierName = authorName && authorName !== "You" ? authorName : "";
-    let replierHandle = authorHandle && authorHandle !== "you" ? authorHandle : "";
-
-    if (!replierName || !replierHandle) {
-      if (currentUserId && currentUserId !== "guest" && currentUserId !== "usr-current") {
-        replierName = replierName || currentUserId;
-        replierHandle = replierHandle || currentUserId;
-      } else {
-        replierName = replierName || "hw";
-        replierHandle = replierHandle || "hw";
-      }
-    }
-
-    // Resolve target identifiers for recipient
-    const targetSet = new Set<string>();
-    if (targetUserId && targetUserId !== "usr-current" && targetUserId !== "guest") targetSet.add(targetUserId);
-    if (targetUserHandle && targetUserHandle !== "you" && targetUserHandle !== "guest") targetSet.add(targetUserHandle);
-
-    // Filter out target keys that match the replier themselves
-    const targets = Array.from(targetSet).filter(
-      (t) => t !== currentUserId && t !== replierHandle
-    );
-
-    if (targets.length === 0) return;
-
-    const primaryRecipient = targets[0];
-    const previewText = commentContent.length > 60 ? commentContent.slice(0, 60) + "..." : commentContent;
-    const targetTypeLabel = isCommentReply ? "your comment" : "your post";
-
-    const botMsg: ChatMessage = {
-      id: `bot-msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      conversationId: "conv-bot-reply",
-      senderId: "bot-reply-system",
-      senderName: "🤖 Agora Reply Bot",
-      senderAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80",
-      content: `💬 ${replierName} (@${replierHandle}) replied to ${targetTypeLabel}:\n"${commentContent}"`,
-      createdAt: new Date().toISOString(),
-      metadata: { 
-        entityId, 
-        recipientId: primaryRecipient,
-        recipientHandle: targetUserHandle || primaryRecipient,
-        senderId: currentUserId,
-        senderHandle: replierHandle,
-        senderName: replierName,
-        isCommentReply
-      },
-    };
-
-    const lastMsgText = `💬 ${replierName} (@${replierHandle}): "${previewText}"`;
-
-    // Store across all recipient target keys
-    for (const targetKey of targets) {
-      const userDemoKey = `conv-bot-reply_${targetKey}`;
-      if (!DEMO_MESSAGES[userDemoKey]) {
-        DEMO_MESSAGES[userDemoKey] = [];
-      }
-      if (!DEMO_MESSAGES[userDemoKey].some((m) => m.id === botMsg.id)) {
-        DEMO_MESSAGES[userDemoKey].push(botMsg);
-      }
-
-      if (typeof window !== "undefined") {
-        try {
-          const recipientKey = `agora_messages_conv-bot-reply_${targetKey}`;
-          const stored = localStorage.getItem(recipientKey);
-          const list: ChatMessage[] = stored ? JSON.parse(stored) : [];
-          if (!list.some((m) => m.id === botMsg.id)) {
-            list.push(botMsg);
-            localStorage.setItem(recipientKey, JSON.stringify(list));
-          }
-
-          localStorage.setItem(`agora_last_msg_conv-bot-reply_${targetKey}`, lastMsgText);
-          localStorage.setItem(`agora_last_time_conv-bot-reply_${targetKey}`, "Just now");
-          localStorage.setItem(`agora_unread_conv-bot-reply_${targetKey}`, "1");
-        } catch (e) {
-          console.error("Error saving bot notification to localStorage", e);
-        }
-      }
-    }
-
-    if (typeof window !== "undefined") {
-      try {
-        if (currentUserId) localStorage.setItem(`agora_unread_conv-bot-reply_${currentUserId}`, "0");
-        if (replierHandle) localStorage.setItem(`agora_unread_conv-bot-reply_${replierHandle}`, "0");
-      } catch {}
-
-      window.dispatchEvent(new CustomEvent("agora_message_sent"));
-      window.dispatchEvent(new CustomEvent("agora_notification_updated"));
-      window.dispatchEvent(new CustomEvent("agora_dm_unread_updated"));
-    }
-  }
 }
 
 export interface PhilosophicalComment {
@@ -2038,6 +1768,8 @@ export interface PhilosophyNotification {
   requestId?: string;
   conversationId?: string;
   entityId?: string;
+  commentId?: string;
+  replyId?: string;
 }
 
 export interface DirectConversation {
@@ -2139,32 +1871,7 @@ export interface PhilosophicalPost {
   createdAt: string;
 }
 
-export const REPLY_BOT_USER: User = {
-  id: "bot-reply-system",
-  name: "🤖 Agora Reply Bot",
-  username: "reply_bot",
-  avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80",
-  bio: "Official Telegram-style Reply Bot. Delivers instant comment replies & thread notifications into your DMs!",
-  reputation: 9999,
-  role: "admin",
-  projectId: "p1",
-  foreignId: null,
-  avatarFileId: null,
-  bannerFileId: null,
-  birthdate: null,
-  location: null,
-  metadata: {},
-  createdAt: "2026-01-01T00:00:00.000Z",
-};
-
 export const DEMO_CONVERSATIONS: DirectConversation[] = [
-  {
-    id: "conv-bot-reply",
-    participant: REPLY_BOT_USER,
-    lastMessage: "💬 G.W.F. Hegel (@hegel) replied to your comment: 'A brilliant synthesis!'",
-    lastMessageTime: "5m ago",
-    unreadCount: 0,
-  },
   {
     id: "conv-1",
     participant: {
@@ -2195,27 +1902,6 @@ export const DEMO_CONVERSATIONS: DirectConversation[] = [
 
 
 const DEMO_MESSAGES: Record<string, ChatMessage[]> = {
-  "conv-bot-reply": [
-    {
-      id: "bot-msg-1",
-      conversationId: "conv-bot-reply",
-      senderId: "bot-reply-system",
-      senderName: "🤖 Agora Reply Bot",
-      senderAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80",
-      content: "🤖 Welcome! Whenever someone replies to your comment or mentions you in a debate thread, you will receive an instant message right here in your DMs.",
-      createdAt: "1 hour ago",
-    },
-    {
-      id: "bot-msg-2",
-      conversationId: "conv-bot-reply",
-      senderId: "bot-reply-system",
-      senderName: "🤖 Agora Reply Bot",
-      senderAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80",
-      content: "💬 G.W.F. Hegel (@hegel) replied to your comment:\n\"A brilliant thesis! We must examine the dialectical synthesis.\"",
-      createdAt: "5m ago",
-      metadata: { entityId: "00000000-0000-0000-0000-000000000001" },
-    },
-  ],
   "conv-1": [
     {
       id: "msg-1",
@@ -2877,4 +2563,3 @@ export const DEMO_LEADERBOARD: LeaderboardEntry[] = [
 ];
 
 export const agoraClient = new AgoraPhilosophyClient();
-

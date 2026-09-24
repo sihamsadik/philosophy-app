@@ -7,6 +7,7 @@ export interface DebateThreadDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   postId: string | null;
+  targetCommentId?: string | null;
   postTitle?: string;
   postAuthorId?: string;
   postAuthorName?: string;
@@ -18,6 +19,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
   isOpen,
   onClose,
   postId,
+  targetCommentId,
   postTitle,
   postAuthorId,
   postAuthorName,
@@ -48,7 +50,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
     if (isOpen && postId) {
       setIsLoading(true);
       agoraClient
-        .getComments(postId)
+        .getComments(postId, true)
         .then((res) => setComments(res.comments))
         .catch((err) => console.error("Failed to load drawer comments:", err))
         .finally(() => setIsLoading(false));
@@ -77,7 +79,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
       const customEvent = e as CustomEvent<{ entityId: string }>;
       if (customEvent.detail?.entityId === postId) {
         agoraClient
-          .getComments(postId)
+          .getComments(postId, true)
           .then((res) => setComments(res.comments))
           .catch(() => {});
       }
@@ -89,6 +91,26 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
     };
   }, [postId]);
 
+  useEffect(() => {
+    if (isOpen && targetCommentId && comments.length > 0) {
+      const byId = new Map(comments.map((comment) => [comment.id, comment]));
+      const ancestors = new Set<string>();
+      let parentId = byId.get(targetCommentId)?.parentId;
+      while (parentId && !ancestors.has(parentId)) {
+        ancestors.add(parentId);
+        parentId = byId.get(parentId)?.parentId ?? null;
+      }
+      setCollapsedIds((prev) => prev.filter((id) => id !== targetCommentId && !ancestors.has(id)));
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`comment-${targetCommentId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, targetCommentId, comments]);
+
   if (!isOpen || !postId) return null;
 
   const currentAuthorName = user?.name || user?.username || "Thinker";
@@ -99,20 +121,13 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
     e.preventDefault();
     if (!topCommentText.trim()) return;
 
-    const targetPostAuthor = {
-      authorId: postAuthorId || activePostAuthor.id,
-      authorHandle: postAuthorHandle || activePostAuthor.handle,
-      authorName: postAuthorName || activePostAuthor.name,
-    };
-
     try {
       const created = await agoraClient.createComment(
         postId,
         topCommentText,
         null,
         topCommentStance,
-        { authorName: currentAuthorName, authorHandle: currentAuthorHandle, authorAvatar: currentAuthorAvatar },
-        targetPostAuthor
+        { authorName: currentAuthorName, authorHandle: currentAuthorHandle, authorAvatar: currentAuthorAvatar }
       );
       setComments((prev) => [created, ...prev]);
       setTopCommentText("");
@@ -124,20 +139,13 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
   const handleCreateReply = async (parentId: string) => {
     if (!replyText.trim()) return;
 
-    const parentComment = comments.find((c) => c.id === parentId);
-
     try {
       const created = await agoraClient.createComment(
         postId,
         replyText,
         parentId,
         replyStance,
-        { authorName: currentAuthorName, authorHandle: currentAuthorHandle, authorAvatar: currentAuthorAvatar },
-        {
-          authorId: parentComment?.authorId,
-          authorHandle: parentComment?.authorHandle,
-          authorName: parentComment?.authorName,
-        }
+        { authorName: currentAuthorName, authorHandle: currentAuthorHandle, authorAvatar: currentAuthorAvatar }
       );
       setComments((prev) => [...prev, created]);
       setReplyText("");
@@ -245,10 +253,13 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
       ? (comment.authorName || user?.name || user?.username || "You")
       : comment.authorName || (comment.authorHandle ? `@${comment.authorHandle}` : "Thinker");
 
+    const isTargeted = targetCommentId === comment.id;
+
     return (
       <div
         key={comment.id}
-        className={`comment-thread-node stance-${comment.stance || "synthesis"}`}
+        id={`comment-${comment.id}`}
+        className={`comment-thread-node stance-${comment.stance || "synthesis"} ${isTargeted ? "highlighted-reply-node" : ""}`}
         style={{
           marginLeft: depth > 0 ? `${Math.min(depth * 20, 80)}px` : 0,
           borderLeft: depth > 0 ? "2px solid rgba(255, 255, 255, 0.08)" : "none",
@@ -256,7 +267,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
           marginTop: depth > 0 ? "10px" : "12px",
         }}
       >
-        <div className="youtube-comment-card" style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "6px 0" }}>
+        <div className={`youtube-comment-card ${isTargeted ? "highlighted-reply-comment" : ""}`} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "6px 0" }}>
           {/* Avatar Column */}
           {comment.authorAvatar ? (
             <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />

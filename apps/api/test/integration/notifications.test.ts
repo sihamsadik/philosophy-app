@@ -54,8 +54,8 @@ describe("notification fan-out (integration)", () => {
     expect(notes).toHaveLength(0);
   });
 
-  it("a reply notifies the parent author (comment-reply) AND the entity owner (entity-comment)", async () => {
-    // alice owns the entity; bob writes the parent; carol replies → carol notifies BOTH bob and alice
+  it("a reply notifies only the direct parent author with parent and reply references", async () => {
+    // alice owns the entity; bob writes the parent; carol replies → only bob receives it
     const e = await newEntity(alice);
     const parent = await api("POST", `${B}/comments`, { token: bob.token, body: { entityId: e.id, content: "parent" } });
     const reply = await api("POST", `${B}/comments`, {
@@ -76,9 +76,30 @@ describe("notification fan-out (integration)", () => {
       initiatorId: carol.id,
     });
 
-    const ownerNotes = (await ofType(alice, "entity-comment")).filter((n) => n.metadata.commentId === reply.body.id);
-    expect(ownerNotes).toHaveLength(1);
-    expect(ownerNotes[0].metadata).toMatchObject({ entityId: e.id, commentId: reply.body.id, initiatorId: carol.id });
+    expect((await inbox(alice)).filter((n) => n.metadata.replyId === reply.body.id)).toHaveLength(0);
+  });
+
+  it("the web entity-comments endpoint also creates a direct reply notification", async () => {
+    const e = await newEntity(alice);
+    const parent = await api("POST", `${B}/entities/${e.id}/comments`, {
+      token: bob.token,
+      body: { content: "parent comment" },
+    });
+    const reply = await api("POST", `${B}/entities/${e.id}/comments`, {
+      token: carol.token,
+      body: { content: "direct reply", parentId: parent.body.id },
+    });
+
+    expect(reply.status).toBe(201);
+    const notes = (await ofType(bob, "comment-reply")).filter((n) => n.metadata.replyId === reply.body.id);
+    expect(notes).toHaveLength(1);
+    expect(notes[0].metadata).toMatchObject({
+      entityId: e.id,
+      commentId: parent.body.id,
+      replyId: reply.body.id,
+      initiatorId: carol.id,
+    });
+    expect((await inbox(alice)).filter((n) => n.metadata.replyId === reply.body.id)).toHaveLength(0);
   });
 
   it("reply where the entity owner IS the parent author yields ONE row (comment-reply, not entity-comment)", async () => {
@@ -106,6 +127,32 @@ describe("notification fan-out (integration)", () => {
     expect(reply.status).toBe(201);
     expect((await ofType(alice, "comment-reply")).filter((n) => n.metadata.replyId === reply.body.id)).toHaveLength(0);
     expect((await ofType(alice, "entity-comment")).filter((n) => n.metadata.commentId === reply.body.id)).toHaveLength(0);
+  });
+
+  it("notifies the direct parent author at each reply depth, never an earlier participant", async () => {
+    const e = await newEntity(alice);
+    const parent = await api("POST", `${B}/comments`, { token: bob.token, body: { entityId: e.id, content: "root" } });
+    const reply = await api("POST", `${B}/comments`, {
+      token: carol.token,
+      body: { entityId: e.id, parentId: parent.body.id, content: "reply to root" },
+    });
+    const dave = await createUser(projectId);
+    const nested = await api("POST", `${B}/comments`, {
+      token: dave.token,
+      body: { entityId: e.id, parentId: reply.body.id, content: "reply to reply" },
+    });
+
+    expect((await ofType(bob, "comment-reply")).filter((n) => n.metadata.replyId === reply.body.id)).toHaveLength(1);
+    const carolNotes = (await ofType(carol, "comment-reply")).filter((n) => n.metadata.replyId === nested.body.id);
+    expect(carolNotes).toHaveLength(1);
+    expect(carolNotes[0].metadata).toMatchObject({
+      entityId: e.id,
+      commentId: reply.body.id,
+      replyId: nested.body.id,
+      initiatorId: dave.id,
+    });
+    expect((await inbox(bob)).filter((n) => n.metadata.replyId === nested.body.id)).toHaveLength(0);
+    expect((await inbox(alice)).filter((n) => n.metadata.replyId === nested.body.id)).toHaveLength(0);
   });
 
   it("comment-mention notifies mentioned users", async () => {
