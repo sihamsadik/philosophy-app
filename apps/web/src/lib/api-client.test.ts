@@ -125,7 +125,12 @@ describe("AgoraPhilosophyClient", () => {
       commentId: "parent-1",
       replyId: "reply-1",
       read: false,
+      sourceType: "comment-reply",
     });
+
+    const { activities, unreadCount } = await client.getReplyActivities();
+    expect(activities.map((activity) => activity.id)).toEqual(["notification-1"]);
+    expect(unreadCount).toBe(1);
 
     fetchSpy.mockRestore();
   });

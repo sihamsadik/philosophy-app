@@ -912,9 +912,110 @@ html.modal-open {
   margin: 0;
 }
 
+.message-section-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.message-section-tabs button {
+  min-height: 42px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.message-section-tabs button.active {
+  border-bottom-color: var(--accent-color);
+  color: var(--text-main);
+}
+
 .conversations-list {
   flex: 1;
   overflow-y: auto;
+}
+
+.reply-activity-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.reply-activity-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 15px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+}
+
+.reply-activity-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.reply-activity-item.unread {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.reply-activity-heading {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+}
+
+.reply-activity-content {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.reply-activity-context,
+.reply-activity-time {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.reply-activity-context {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reply-unread-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--accent-color);
+}
+
+.reply-activity-empty-pane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.reply-activity-empty-pane h4,
+.reply-activity-empty-pane p {
+  margin: 0;
 }
 
 .conv-item-btn {

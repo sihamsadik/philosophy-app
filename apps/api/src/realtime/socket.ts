@@ -32,6 +32,7 @@ export interface ServerToClientEvents {
   "conversation:deleted": (p: { conversationId: string }) => void;
   // New-conversation fan-out to each member's user room (inbox). Payload = a zero-state ConversationPreview.
   "conversation:created": (preview: unknown) => void;
+  "conversation:read": (p: { conversationId: string; userId: string; lastReadAt: string }) => void;
   // App-notification fan-out to a user-scoped room (not chat). Payload = the full shaped row.
   "notification:created": (n: ReturnType<typeof shapeNotification>) => void;
 }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { io, type Socket } from "socket.io-client";
 import type { User } from "@philosophy/contract";
 import { useAuth } from "./context/AuthContext.js";
 import { PhilosophyProfileEditor } from "./components/PhilosophyProfileEditor.js";
@@ -58,6 +59,7 @@ export const App: React.FC = () => {
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [unreadDmCount, setUnreadDmCount] = useState(0);
+  const [realtimeSocket, setRealtimeSocket] = useState<Socket | null>(null);
   const [connectTargetUser, setConnectTargetUser] = useState<User | null>(null);
 
   const refreshNotifCount = React.useCallback(async () => {
@@ -71,9 +73,7 @@ export const App: React.FC = () => {
 
   const refreshDmUnreadCount = React.useCallback(async () => {
     try {
-      const res = await agoraClient.getConversations();
-      const totalUnread = res.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-      setUnreadDmCount(totalUnread);
+      setUnreadDmCount(await agoraClient.getUnreadMessageCount());
     } catch {
       setUnreadDmCount(0);
     }
@@ -83,30 +83,63 @@ export const App: React.FC = () => {
     refreshNotifCount();
     refreshDmUnreadCount();
 
-    const handleUpdate = () => {
-      refreshNotifCount();
-      refreshDmUnreadCount();
-    };
+    const handleNotifUpdate = () => refreshNotifCount();
+    const handleDmUpdate = () => refreshDmUnreadCount();
 
-    window.addEventListener("agora_notification_updated", handleUpdate);
-    window.addEventListener("agora_comment_added", handleUpdate);
-    window.addEventListener("agora_message_sent", handleUpdate);
-    window.addEventListener("agora_dm_unread_updated", handleUpdate);
+    window.addEventListener("agora_notification_updated", handleNotifUpdate);
+    window.addEventListener("agora_comment_added", handleNotifUpdate);
+    window.addEventListener("agora_message_sent", handleDmUpdate);
+    window.addEventListener("agora_dm_unread_updated", handleDmUpdate);
 
     // Poll every 15s to update unread badges when background activity occurs
     const interval = setInterval(() => {
       refreshNotifCount();
-      refreshDmUnreadCount();
     }, 15000);
 
     return () => {
-      window.removeEventListener("agora_notification_updated", handleUpdate);
-      window.removeEventListener("agora_comment_added", handleUpdate);
-      window.removeEventListener("agora_message_sent", handleUpdate);
-      window.removeEventListener("agora_dm_unread_updated", handleUpdate);
+      window.removeEventListener("agora_notification_updated", handleNotifUpdate);
+      window.removeEventListener("agora_comment_added", handleNotifUpdate);
+      window.removeEventListener("agora_message_sent", handleDmUpdate);
+      window.removeEventListener("agora_dm_unread_updated", handleDmUpdate);
       clearInterval(interval);
     };
   }, [refreshNotifCount, refreshDmUnreadCount, user?.id, isAuthenticated]);
+
+  React.useEffect(() => {
+    const token = agoraClient.getAuthToken();
+    if (!isAuthenticated || !token) {
+      setRealtimeSocket(null);
+      return;
+    }
+    const socket = io(window.location.origin, {
+      auth: { token },
+      query: { projectId: agoraClient.getProjectId() },
+      transports: ["websocket", "polling"],
+    });
+    const handleMessage = (raw: any) => {
+      const message = {
+        ...raw,
+        senderId: raw.userId || raw.senderId,
+        senderName: raw.user?.name || raw.user?.username || "Philosopher",
+        senderAvatar: raw.user?.avatar,
+      };
+      window.dispatchEvent(new CustomEvent("agora_chat_message_created", { detail: message }));
+      void refreshDmUnreadCount();
+    };
+    const handleRead = (receipt: { conversationId: string; userId: string; lastReadAt: string }) => {
+      window.dispatchEvent(new CustomEvent("agora_chat_conversation_read", { detail: receipt }));
+    };
+    const handleConversation = () => void refreshDmUnreadCount();
+    socket.on("connect", refreshDmUnreadCount);
+    socket.on("message:created", handleMessage);
+    socket.on("conversation:read", handleRead);
+    socket.on("conversation:created", handleConversation);
+    setRealtimeSocket(socket);
+    return () => {
+      socket.disconnect();
+      setRealtimeSocket(null);
+    };
+  }, [isAuthenticated, user?.id, refreshDmUnreadCount]);
 
 
   const [liveDebateEvent, setLiveDebateEvent] = useState<any | null>(null);
@@ -408,7 +441,11 @@ export const App: React.FC = () => {
         isOpen={isDMDrawerOpen}
         onClose={() => setIsDMDrawerOpen(false)}
         targetUser={dmTargetUser}
-        onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
+        onOpenThreadDrawer={(postId, commentId, replyId) => {
+          setActiveThreadPostId(postId);
+          setActiveThreadTargetCommentId(replyId || commentId || null);
+        }}
+        realtimeSocket={realtimeSocket}
       />
 
       <DebateSummaryDrawer

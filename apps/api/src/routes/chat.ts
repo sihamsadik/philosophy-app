@@ -37,18 +37,6 @@ type MessageRow = typeof chatMessages.$inferSelect;
 
 async function getConversation(c: any): Promise<ConversationRow> {
   const id = c.req.param("id");
-  if (id === "conv-bot-reply") {
-    return {
-      id: "conv-bot-reply",
-      projectId: c.var.projectId || "00000000-0000-0000-0000-000000000000",
-      type: "direct",
-      title: "🤖 Agora Reply Bot",
-      description: "Official Reply Bot",
-      createdById: "bot-reply-system",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any;
-  }
   const [row] = await getDb().select().from(conversations)
     .where(and(eq(conversations.projectId, c.var.projectId), eq(conversations.id, id))).limit(1);
   if (!row) throw Errors.notFound("chat/conversation-not-found", "Conversation not found");
@@ -56,14 +44,6 @@ async function getConversation(c: any): Promise<ConversationRow> {
 }
 
 async function requireMember(c: any, conversationId: string): Promise<MemberRow> {
-  if (conversationId === "conv-bot-reply") {
-    return {
-      conversationId: "conv-bot-reply",
-      userId: c.var.auth?.userId || "guest",
-      role: "member",
-      isActive: true,
-    } as any;
-  }
   const [m] = await getDb().select().from(conversationMembers)
     .where(and(
       eq(conversationMembers.projectId, c.var.projectId),
@@ -92,10 +72,16 @@ async function buildConversationPreview(c: any, convo: ConversationRow, member: 
   const [last] = await getDb().select().from(chatMessages)
     .where(eq(chatMessages.conversationId, convo.id)).orderBy(desc(chatMessages.createdAt)).limit(1);
   const [{ u } = { u: 0 }] = await getDb().select({ u: count() }).from(chatMessages)
-    .where(and(eq(chatMessages.conversationId, convo.id), member.lastReadAt ? gt(chatMessages.createdAt, member.lastReadAt) : sql`true`));
+    .where(and(
+      eq(chatMessages.conversationId, convo.id),
+      sql`${chatMessages.userDeletedAt} is null`,
+      sql`(${chatMessages.userId} is null or ${chatMessages.userId} <> ${member.userId})`,
+      member.lastReadAt ? gt(chatMessages.createdAt, member.lastReadAt) : sql`true`,
+    ));
   let otherMembers: ReturnType<typeof pickOtherMembers> = [];
+  let peerLastReadAt: string | null | undefined;
   if (convo.type !== "space") {
-    const rows = await getDb().select({ p: profiles }).from(conversationMembers)
+    const rows = await getDb().select({ p: profiles, lastReadAt: conversationMembers.lastReadAt }).from(conversationMembers)
       .innerJoin(profiles, eq(profiles.id, conversationMembers.userId))
       .where(and(
         eq(conversationMembers.conversationId, convo.id),
@@ -104,12 +90,14 @@ async function buildConversationPreview(c: any, convo: ConversationRow, member: 
       ))
       .limit(5);
     otherMembers = pickOtherMembers(rows.map((r) => shapeUser(r.p) as any));
+    peerLastReadAt = rows[0]?.lastReadAt?.toISOString() ?? null;
   }
   return shapeConversationPreview(convo, {
     unreadCount: u,
     lastMessage: last ? (shapeChatMessage(last) as Record<string, unknown>) : null,
     otherMembers,
     currentMember: shapeConversationMember(member),
+    ...(peerLastReadAt !== undefined ? { peerLastReadAt } : {}),
   });
 }
 
@@ -275,9 +263,12 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
   .post("/conversations/:id/read", requireAuth, async (c) => {
     const convo = await getConversation(c);
     await requireMember(c, convo.id);
-    await getDb().update(conversationMembers).set({ lastReadAt: new Date() })
+    const lastReadAt = new Date();
+    await getDb().update(conversationMembers).set({ lastReadAt })
       .where(and(eq(conversationMembers.conversationId, convo.id), eq(conversationMembers.userId, c.var.auth!.userId)));
-    return c.json({ success: true });
+    const receipt = { conversationId: convo.id, userId: c.var.auth!.userId, lastReadAt: lastReadAt.toISOString() };
+    emitToConversation(convo.id, "conversation:read", receipt);
+    return c.json({ success: true, ...receipt });
   })
   .post("/conversations/:id/mute", requireAuth, async (c) => {
     const convo = await getConversation(c);

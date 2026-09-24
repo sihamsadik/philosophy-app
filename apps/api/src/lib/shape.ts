@@ -614,6 +614,7 @@ export function shapeConversationPreview(
     lastMessage: Record<string, unknown> | null;
     otherMembers: Array<{ id: string; name: string | null; username: string | null; avatar: string | null }>;
     currentMember?: unknown;
+    peerLastReadAt?: string | null;
   },
 ) {
   const base = shapeConversation(row, {
@@ -622,6 +623,7 @@ export function shapeConversationPreview(
     ...(opts.currentMember !== undefined ? { currentMember: opts.currentMember } : {}),
   });
   base.otherMembers = opts.otherMembers;
+  if (opts.peerLastReadAt !== undefined) base.peerLastReadAt = opts.peerLastReadAt;
   return base;
 }
 
