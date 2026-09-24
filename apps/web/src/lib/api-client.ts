@@ -81,6 +81,10 @@ export class AgoraPhilosophyClient {
     this.projectId = projectId;
   }
 
+  getProjectId(): string {
+    return this.projectId;
+  }
+
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const isCleanApi = this.baseUrl === "/api" || this.baseUrl === "/philosophy/api" || !this.baseUrl.includes("/v7");
     const url = isCleanApi ? `${this.baseUrl}${path}` : `${this.baseUrl}/${this.projectId}${path}`;
@@ -563,6 +567,7 @@ export class AgoraPhilosophyClient {
         return {
           id: n.id || `notif-${Date.now()}`,
           type,
+          sourceType: n.type,
           title,
           message,
           read: n.isRead ?? n.read ?? false,
@@ -578,6 +583,9 @@ export class AgoraPhilosophyClient {
           entityId: n.entityId || meta.entityId || meta.targetId,
           commentId: n.commentId || meta.commentId,
           replyId: n.replyId || meta.replyId,
+          postTitle: meta.entityTitle || meta.postTitle,
+          commentContent: meta.commentContent,
+          replyContent: meta.replyContent,
         };
       });
 
@@ -586,6 +594,14 @@ export class AgoraPhilosophyClient {
     } catch {
       return { notifications: [], unreadCount: 0 };
     }
+  }
+
+  async getReplyActivities(): Promise<{ activities: PhilosophyNotification[]; unreadCount: number }> {
+    const { notifications } = await this.getNotifications();
+    const activities = notifications.filter((notification) =>
+      notification.sourceType === "comment-reply" && !!notification.entityId && !!notification.replyId
+    );
+    return { activities, unreadCount: activities.filter((activity) => !activity.read).length };
   }
 
   async markNotificationsRead(): Promise<{ success: boolean }> {
@@ -1222,12 +1238,6 @@ export class AgoraPhilosophyClient {
           ? c.lastMessage 
           : c.lastMessage?.content || c.last_message || "Conversation active";
 
-        let unread = c.unreadCount ?? 0;
-        if (typeof window !== "undefined") {
-          const override = localStorage.getItem(`agora_unread_${c.id}`);
-          if (override !== null) unread = parseInt(override, 10) || 0;
-        }
-
         return {
           id: c.id || `conv-${Date.now()}`,
           participant: {
@@ -1239,35 +1249,23 @@ export class AgoraPhilosophyClient {
           } as User,
           lastMessage: lastMsgText,
           lastMessageTime: c.lastMessageTime ? (typeof c.lastMessageTime === "string" && c.lastMessageTime.includes("ago") ? c.lastMessageTime : "Recently") : "Recently",
-          unreadCount: unread,
+          unreadCount: c.unreadCount ?? 0,
+          peerLastReadAt: c.peerLastReadAt ?? null,
         };
       });
-
-      const currentUserId = this.getCurrentUserId();
-
-      const updated = mapped.map((c) => {
-        let unread = c.unreadCount || 0;
-        if (typeof window !== "undefined") {
-          const userOverride = localStorage.getItem(`agora_unread_${c.id}_${currentUserId}`);
-          const override = userOverride !== null ? userOverride : localStorage.getItem(`agora_unread_${c.id}`);
-          if (override !== null) unread = parseInt(override, 10) || 0;
-        }
-        return { ...c, unreadCount: unread };
-      });
-
-      return { conversations: updated };
+      return { conversations: mapped };
     } catch {
-      const currentUserId = this.getCurrentUserId();
-      const updatedDemo = DEMO_CONVERSATIONS.map((c) => {
-        let unread = c.unreadCount || 0;
-        if (typeof window !== "undefined") {
-          const userOverride = localStorage.getItem(`agora_unread_${c.id}_${currentUserId}`);
-          const override = userOverride !== null ? userOverride : localStorage.getItem(`agora_unread_${c.id}`);
-          if (override !== null) unread = parseInt(override, 10) || 0;
-        }
-        return { ...c, unreadCount: unread };
-      });
-      return { conversations: updatedDemo };
+      return { conversations: DEMO_CONVERSATIONS };
+    }
+  }
+
+  async getUnreadMessageCount(): Promise<number> {
+    try {
+      const result = await this.request<{ totalUnread?: number }>("/chat/conversations/unread-count");
+      return result.totalUnread ?? 0;
+    } catch {
+      const { conversations } = await this.getConversations();
+      return conversations.reduce((sum, conversation) => sum + (conversation.unreadCount ?? 0), 0);
     }
   }
 
@@ -1275,13 +1273,6 @@ export class AgoraPhilosophyClient {
     const currentUserId = this.getCurrentUserId();
     const conv = DEMO_CONVERSATIONS.find((c) => c.id === conversationId);
     if (conv) conv.unreadCount = 0;
-
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(`agora_unread_${conversationId}_${currentUserId}`, "0");
-        localStorage.setItem(`agora_unread_${conversationId}`, "0");
-      } catch {}
-    }
 
     try {
       await this.request<{ success: boolean }>(`/chat/conversations/${conversationId}/read`, {
@@ -1341,21 +1332,7 @@ export class AgoraPhilosophyClient {
   }
 
   async getMessages(conversationId: string): Promise<{ messages: ChatMessage[] }> {
-    const currentUserId = this.getCurrentUserId();
-    let savedLocal: ChatMessage[] = [];
-    if (typeof window !== "undefined") {
-      try {
-        const globalStored = localStorage.getItem(`agora_messages_${conversationId}`);
-        const userStored = localStorage.getItem(`agora_messages_${conversationId}_${currentUserId}`);
-        const list1: ChatMessage[] = globalStored ? JSON.parse(globalStored) : [];
-        const list2: ChatMessage[] = userStored ? JSON.parse(userStored) : [];
-        const map = new Map<string, ChatMessage>();
-        for (const item of [...list1, ...list2]) {
-          map.set(item.id, item);
-        }
-        savedLocal = Array.from(map.values());
-      } catch {}
-    }
+    const isDemoConversation = conversationId.startsWith("conv-");
 
     const sortChronological = (list: ChatMessage[]) => {
       return [...list].sort((a, b) => {
@@ -1380,30 +1357,32 @@ export class AgoraPhilosophyClient {
         metadata: m.metadata,
       }));
 
-      const demoList = DEMO_MESSAGES[conversationId] || [];
-      let combined = [...mapped];
-      for (const item of [...demoList, ...savedLocal]) {
-        if (!combined.some((existing) => existing.id === item.id)) {
-          combined.push(item);
-        }
-      }
-
-      return { messages: sortChronological(combined) };
+      return { messages: sortChronological(mapped) };
     } catch {
-      const demoList = DEMO_MESSAGES[conversationId] || [];
-      let combined = [...demoList];
-      for (const item of savedLocal) {
-        if (!combined.some((existing) => existing.id === item.id)) {
-          combined.push(item);
-        }
-      }
-
-      return { messages: sortChronological(combined) };
+      return { messages: isDemoConversation ? sortChronological(DEMO_MESSAGES[conversationId] || []) : [] };
     }
   }
 
   async sendMessage(conversationId: string, content: string): Promise<ChatMessage> {
     const activeUserId = this.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
+    if (!conversationId.startsWith("conv-")) {
+      const response = await this.request<any>(`/chat/conversations/${conversationId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+      });
+      const serverMsg = response?.message || response;
+      return {
+        id: serverMsg.id,
+        conversationId: serverMsg.conversationId || conversationId,
+        senderId: serverMsg.userId || serverMsg.senderId || activeUserId,
+        senderName: serverMsg.user?.name || "You",
+        senderAvatar: serverMsg.user?.avatar,
+        content: serverMsg.content || content,
+        createdAt: serverMsg.createdAt || new Date().toISOString(),
+        metadata: serverMsg.metadata,
+      };
+    }
+
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       conversationId,
@@ -1424,19 +1403,6 @@ export class AgoraPhilosophyClient {
         list.push(newMsg);
         localStorage.setItem(`agora_messages_${conversationId}`, JSON.stringify(list));
       } catch {}
-    }
-
-    try {
-      const serverMsg = await this.request<ChatMessage>(`/chat/conversations/${conversationId}/messages`, {
-        method: "POST",
-        body: JSON.stringify({ content, senderId: activeUserId }),
-      });
-      if (serverMsg && serverMsg.id) {
-        newMsg.id = serverMsg.id;
-        newMsg.createdAt = serverMsg.createdAt || newMsg.createdAt;
-      }
-    } catch {
-      // Fallback
     }
 
     const conv = DEMO_CONVERSATIONS.find((c) => c.id === conversationId);
@@ -1770,6 +1736,10 @@ export interface PhilosophyNotification {
   entityId?: string;
   commentId?: string;
   replyId?: string;
+  sourceType?: string;
+  postTitle?: string;
+  commentContent?: string | null;
+  replyContent?: string | null;
 }
 
 export interface DirectConversation {

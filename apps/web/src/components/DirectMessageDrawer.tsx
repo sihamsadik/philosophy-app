@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
+import type { Socket } from "socket.io-client";
 import type { DirectConversation, ChatMessage } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
@@ -9,7 +10,28 @@ export interface DirectMessageDrawerProps {
   onClose: () => void;
   targetUser?: User | null;
   activeConversationId?: string | null;
-  onOpenThreadDrawer?: (postId: string) => void;
+  onOpenThreadDrawer?: (postId: string, commentId?: string, replyId?: string) => void;
+  realtimeSocket?: Socket | null;
+}
+
+export function upsertChatMessage(messages: ChatMessage[], incoming: ChatMessage): ChatMessage[] {
+  const index = messages.findIndex((message) => message.id === incoming.id);
+  if (index < 0) return [...messages, incoming];
+  return messages.map((message) => message.id === incoming.id ? incoming : message);
+}
+
+export function openReplyActivity(
+  activity: { id: string; entityId?: string; commentId?: string; replyId?: string },
+  actions: {
+    markRead: (id: string) => Promise<unknown>;
+    close: () => void;
+    openThread: (postId: string, commentId?: string, replyId?: string) => void;
+  }
+) {
+  if (!activity.entityId || !activity.replyId) return;
+  void actions.markRead(activity.id);
+  actions.close();
+  actions.openThread(activity.entityId, activity.commentId, activity.replyId);
 }
 
 const getDateDividerLabel = (createdAt?: string): string => {
@@ -82,6 +104,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
   targetUser,
   activeConversationId,
   onOpenThreadDrawer,
+  realtimeSocket,
 }) => {
   const { user: currentUser } = useAuth();
   const [conversations, setConversations] = useState<DirectConversation[]>([]);
@@ -89,6 +112,9 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [messageSection, setMessageSection] = useState<"chats" | "replies">("chats");
+  const [replyActivities, setReplyActivities] = useState<Awaited<ReturnType<typeof agoraClient.getReplyActivities>>["activities"]>([]);
+  const [replyUnreadCount, setReplyUnreadCount] = useState(0);
 
   const activeUserId = currentUser?.id || agoraClient.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
@@ -104,18 +130,16 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
   }, [messages, selectedConv, isOpen]);
 
   const handleSelectConv = (conv: DirectConversation) => {
+    setMessageSection("chats");
     setSelectedConv(conv);
-    if (conv.unreadCount && conv.unreadCount > 0) {
-      agoraClient.markConversationRead(conv.id);
-      setConversations((prev) =>
-        prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c))
-      );
-    }
+    setConversations((prev) => prev.map((c) => c.id === conv.id ? { ...c, unreadCount: 0 } : c));
+    void agoraClient.markConversationRead(conv.id);
   };
 
   // Load conversations on open or targetUser change
   useEffect(() => {
     if (!isOpen) return;
+    if (targetUser || activeConversationId) setMessageSection("chats");
 
     const loadConversations = async () => {
       setIsLoading(true);
@@ -140,12 +164,8 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
 
         if (initialConv) {
           setSelectedConv(initialConv);
-          if (initialConv.unreadCount && initialConv.unreadCount > 0) {
-            agoraClient.markConversationRead(initialConv.id);
-            setConversations((prev) =>
-              prev.map((c) => (c.id === initialConv!.id ? { ...c, unreadCount: 0 } : c))
-            );
-          }
+          setConversations((prev) => prev.map((c) => c.id === initialConv!.id ? { ...c, unreadCount: 0 } : c));
+          void agoraClient.markConversationRead(initialConv.id);
         }
       } catch (err) {
         console.error("Failed to load conversations:", err);
@@ -156,6 +176,27 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
 
     loadConversations();
   }, [isOpen, targetUser, activeConversationId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    const loadReplies = async () => {
+      const result = await agoraClient.getReplyActivities();
+      if (!active) return;
+      setReplyActivities(result.activities);
+      setReplyUnreadCount(result.unreadCount);
+    };
+    void loadReplies();
+    const interval = window.setInterval(loadReplies, 15000);
+    window.addEventListener("agora_notification_updated", loadReplies);
+    window.addEventListener("agora_comment_added", loadReplies);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("agora_notification_updated", loadReplies);
+      window.removeEventListener("agora_comment_added", loadReplies);
+    };
+  }, [isOpen]);
 
   // Load messages when selected conversation changes
   useEffect(() => {
@@ -170,6 +211,38 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
     };
     fetchMessages();
   }, [selectedConv]);
+
+  useEffect(() => {
+    if (!realtimeSocket || !selectedConv) return;
+    realtimeSocket.emit("join:conversation", { conversationId: selectedConv.id });
+    return () => realtimeSocket.emit("leave:conversation", { conversationId: selectedConv.id });
+  }, [realtimeSocket, selectedConv?.id]);
+
+  useEffect(() => {
+    const handleIncoming = (event: Event) => {
+      const incoming = (event as CustomEvent<ChatMessage>).detail;
+      if (!incoming) return;
+      if (incoming.conversationId === selectedConv?.id) {
+        setMessages((prev) => upsertChatMessage(prev, incoming));
+        if (incoming.senderId !== activeUserId) void agoraClient.markConversationRead(selectedConv.id);
+      }
+      void agoraClient.getConversations().then(({ conversations: list }) => setConversations(list));
+    };
+    const handleRead = (event: Event) => {
+      const receipt = (event as CustomEvent<{ conversationId: string; userId: string; lastReadAt: string }>).detail;
+      if (!receipt) return;
+      if (receipt.conversationId === selectedConv?.id && receipt.userId !== activeUserId) {
+        setSelectedConv((previous) => previous ? { ...previous, peerLastReadAt: receipt.lastReadAt } : previous);
+      }
+      void agoraClient.getConversations().then(({ conversations: list }) => setConversations(list));
+    };
+    window.addEventListener("agora_chat_message_created", handleIncoming);
+    window.addEventListener("agora_chat_conversation_read", handleRead);
+    return () => {
+      window.removeEventListener("agora_chat_message_created", handleIncoming);
+      window.removeEventListener("agora_chat_conversation_read", handleRead);
+    };
+  }, [selectedConv, activeUserId]);
 
   // Refresh open conversations when realtime activity arrives.
   useEffect(() => {
@@ -206,7 +279,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
 
     try {
       const newMsg = await agoraClient.sendMessage(selectedConv.id, content);
-      setMessages((prev) => [...prev, newMsg]);
+      setMessages((prev) => upsertChatMessage(prev, newMsg));
 
       // Update conversation last message in local state
       setConversations((prev) =>
@@ -233,9 +306,9 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
         {/* Header */}
         <div className="drawer-header">
           <div className="header-title-block">
-            <h3>💬 Direct Messages</h3>
+            <h3>💬 Messages</h3>
             <span className="drawer-subtitle">
-              🔒 End-to-end encrypted private & secure direct messages
+              {messageSection === "replies" ? "Community replies to your comments" : "🔒 End-to-end encrypted private & secure direct messages"}
             </span>
           </div>
           <button className="close-drawer-btn" onClick={onClose}>
@@ -246,8 +319,58 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
         <div className="dm-body">
           {/* Sidebar: Conversation List */}
           <div className="dm-sidebar">
-            <h4 className="dm-sidebar-heading">Conversations</h4>
-            {isLoading ? (
+            <h4 className="dm-sidebar-heading">{messageSection === "replies" ? "Community Replies" : "Conversations"}</h4>
+            <div className="message-section-tabs" role="tablist" aria-label="Message views">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={messageSection === "chats"}
+                className={messageSection === "chats" ? "active" : ""}
+                onClick={() => setMessageSection("chats")}
+              >
+                Chats
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={messageSection === "replies"}
+                className={messageSection === "replies" ? "active" : ""}
+                onClick={() => {
+                  setMessageSection("replies");
+                }}
+              >
+                Replies {replyUnreadCount > 0 && <span className="conv-unread-badge">{replyUnreadCount}</span>}
+              </button>
+            </div>
+            {messageSection === "replies" ? (
+              <div className="reply-activity-list">
+                {replyActivities.length === 0 ? (
+                  <div className="empty-state">No community replies yet.</div>
+                ) : replyActivities.map((activity) => (
+                  <button
+                    type="button"
+                    key={activity.id}
+                    className={`reply-activity-item ${activity.read ? "read" : "unread"}`}
+                    onClick={() => openReplyActivity(activity, {
+                      markRead: (id) => agoraClient.markSingleNotificationRead(id),
+                      close: onClose,
+                      openThread: (postId, commentId, replyId) => onOpenThreadDrawer?.(postId, commentId, replyId),
+                    })}
+                  >
+                    <span className="reply-activity-heading">
+                      <strong>{activity.sender?.name || "A community member"}</strong> replied to your comment
+                      {!activity.read && <span className="reply-unread-dot" aria-label="Unread" />}
+                    </span>
+                    <span className="reply-activity-content">{activity.replyContent || activity.message}</span>
+                    <span className="reply-activity-context">
+                      {activity.commentContent ? `In reply to: “${activity.commentContent}”` : "In your discussion"}
+                      {activity.postTitle ? ` · ${activity.postTitle}` : ""}
+                    </span>
+                    <time className="reply-activity-time">{activity.createdAt}</time>
+                  </button>
+                ))}
+              </div>
+            ) : isLoading ? (
               <div className="loading-state">Loading chats...</div>
             ) : conversations.length === 0 ? (
               <div className="empty-state">No direct messages yet</div>
@@ -255,40 +378,16 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
               <div className="conversations-list">
                 {conversations.map((conv) => {
                   const isActive = selectedConv?.id === conv.id;
-                  const p = conv.participant || ({
-                    id: "usr-peer",
-                    name: "Philosopher Peer",
-                    username: "thinker",
-                  } as User);
+                  const p = conv.participant || ({ id: "usr-peer", name: "Philosopher Peer", username: "thinker" } as User);
                   const hasUnread = Boolean(conv.unreadCount && conv.unreadCount > 0);
-
                   return (
-                    <button
-                      key={conv.id}
-                      type="button"
-                      className={`conv-item-btn ${isActive ? "active" : ""}`}
-                      onClick={() => handleSelectConv(conv)}
-                    >
-                      {p.avatar ? (
-                        <img src={p.avatar} alt="Avatar" className="conv-avatar-img" />
-                      ) : (
-                        <div className="conv-avatar-circle">
-                          {(p.name || p.username || "U").charAt(0).toUpperCase()}
-                        </div>
+                    <button key={conv.id} type="button" className={`conv-item-btn ${isActive ? "active" : ""}`} onClick={() => handleSelectConv(conv)}>
+                      {p.avatar ? <img src={p.avatar} alt="Avatar" className="conv-avatar-img" /> : (
+                        <div className="conv-avatar-circle">{(p.name || p.username || "U").charAt(0).toUpperCase()}</div>
                       )}
                       <div className="conv-details">
-                        <div className="conv-top-row">
-                          <span className="conv-name">
-                            {p.name || p.username}
-                          </span>
-                          <span className="conv-time">{conv.lastMessageTime}</span>
-                        </div>
-                        <div className="conv-bottom-row">
-                          <p className="conv-preview">{conv.lastMessage || "No messages yet"}</p>
-                          {hasUnread && (
-                            <span className="conv-unread-badge">{conv.unreadCount}</span>
-                          )}
-                        </div>
+                        <div className="conv-top-row"><span className="conv-name">{p.name || p.username}</span><span className="conv-time">{conv.lastMessageTime}</span></div>
+                        <div className="conv-bottom-row"><p className="conv-preview">{conv.lastMessage || "No messages yet"}</p>{hasUnread && <span className="conv-unread-badge">{conv.unreadCount}</span>}</div>
                       </div>
                     </button>
                   );
@@ -299,7 +398,12 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
 
           {/* Main: Message History & Input */}
           <div className="dm-chat-pane">
-            {selectedConv ? (
+            {messageSection === "replies" ? (
+              <div className="reply-activity-empty-pane">
+                <h4>Community Replies</h4>
+                <p>Select a reply to open its discussion.</p>
+              </div>
+            ) : selectedConv ? (
               <>
                 {/* Chat Partner Bar */}
                 <div className="chat-partner-bar">
@@ -383,7 +487,9 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
 
                                 <div className="message-content-footer">
                                   <span className="message-time">{timeStr}</span>
-                                  {isMe && <span className="message-ticks">✓✓</span>}
+                                  {isMe && <span className="message-ticks" aria-label={selectedConv?.peerLastReadAt && new Date(selectedConv.peerLastReadAt).getTime() >= new Date(msg.createdAt).getTime() ? "Read" : "Sent"}>
+                                    {selectedConv?.peerLastReadAt && new Date(selectedConv.peerLastReadAt).getTime() >= new Date(msg.createdAt).getTime() ? "✓✓" : "✓"}
+                                  </span>}
                                 </div>
                               </div>
                             </div>
