@@ -193,7 +193,8 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
     const foundId = (existing as any)[0]?.id as string | undefined;
     if (foundId) {
       const [row] = await getDb().select().from(conversations).where(eq(conversations.id, foundId)).limit(1);
-      return c.json(shapeConversation(row!));
+      const member = await requireMember(c, row!.id);
+      return c.json(await buildConversationPreview(c, row!, member));
     }
     const [convo] = await getDb().insert(conversations).values({ projectId, type: "direct", createdById: uid }).returning();
     await getDb().insert(conversationMembers).values([
@@ -201,7 +202,8 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
       { projectId, conversationId: convo!.id, userId: other, role: "member" as const },
     ]);
     await emitConversationCreated(c, convo!, [uid, other]);
-    return c.json(shapeConversation(convo!, { memberCount: 2 }), 201);
+    const member = await requireMember(c, convo!.id);
+    return c.json(await buildConversationPreview(c, convo!, member), 201);
   })
   // Total unread across the user's active conversations. MUST stay above /conversations/:id
   // (the SDK's chat-context fetches this on load; otherwise "unread-count" is captured as an :id → 500).

@@ -21,6 +21,17 @@ describe("AgoraPhilosophyClient", () => {
     fetchSpy.mockRestore();
   });
 
+  it("retains unread count and peer read cursor for direct conversations", async () => {
+    const client = new AgoraPhilosophyClient({ baseUrl: "https://api.example.com/v7", projectId: "project-1" });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "conversation-1", unreadCount: 3, peerLastReadAt: "2026-09-25T10:00:00Z" }),
+    } as any);
+    const conversation = await client.createDirectConversation("peer-1");
+    expect(conversation).toMatchObject({ unreadCount: 3, peerLastReadAt: "2026-09-25T10:00:00Z" });
+    fetchSpy.mockRestore();
+  });
+
   it("constructs correct recommendation query parameters", async () => {
     const client = new AgoraPhilosophyClient({ baseUrl: "https://api.example.com/v7", projectId: "proj-123" });
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({

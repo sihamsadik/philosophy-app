@@ -20,6 +20,13 @@ export function upsertChatMessage(messages: ChatMessage[], incoming: ChatMessage
   return messages.map((message) => message.id === incoming.id ? incoming : message);
 }
 
+export function wasMessageReadByPeer(peerLastReadAt: string | null | undefined, createdAt: string): boolean {
+  if (!peerLastReadAt) return false;
+  const readAt = new Date(peerLastReadAt).getTime();
+  const sentAt = new Date(createdAt).getTime();
+  return Number.isFinite(readAt) && Number.isFinite(sentAt) && readAt >= sentAt;
+}
+
 export function openReplyActivity(
   activity: { id: string; entityId?: string; commentId?: string; replyId?: string },
   actions: {
@@ -458,6 +465,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                         }
 
                         const timeStr = formatMessageTime(msg.createdAt);
+                        const wasRead = wasMessageReadByPeer(selectedConv?.peerLastReadAt, msg.createdAt);
 
                         return (
                           <React.Fragment key={msg.id}>
@@ -491,8 +499,8 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
 
                                 <div className="message-content-footer">
                                   <span className="message-time">{timeStr}</span>
-                                  {isMe && <span className="message-ticks" aria-label={selectedConv?.peerLastReadAt && new Date(selectedConv.peerLastReadAt).getTime() >= new Date(msg.createdAt).getTime() ? "Read" : "Sent"}>
-                                    {selectedConv?.peerLastReadAt && new Date(selectedConv.peerLastReadAt).getTime() >= new Date(msg.createdAt).getTime() ? "✓✓" : "✓"}
+                                  {isMe && <span className="message-ticks" aria-label={wasRead ? "Read" : "Sent"}>
+                                    {wasRead ? "✓✓" : "✓"}
                                   </span>}
                                 </div>
                               </div>

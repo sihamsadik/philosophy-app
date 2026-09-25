@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { openReplyActivity, upsertChatMessage } from "./DirectMessageDrawer.js";
+import { openReplyActivity, upsertChatMessage, wasMessageReadByPeer } from "./DirectMessageDrawer.js";
 
 describe("upsertChatMessage", () => {
   it("reconciles the API response and realtime echo as one stable message", () => {
@@ -9,6 +9,15 @@ describe("upsertChatMessage", () => {
     const afterEcho = upsertChatMessage(afterResponse, realtimeEcho);
     expect(afterEcho).toHaveLength(1);
     expect(afterEcho[0]).toMatchObject({ id: "message-1", content: "Hello", senderName: "Sara" });
+  });
+});
+
+describe("wasMessageReadByPeer", () => {
+  it("keeps sent messages at one check until the peer read cursor passes them", () => {
+    const sentAt = "2026-09-25T10:00:00.000Z";
+    expect(wasMessageReadByPeer(null, sentAt)).toBe(false);
+    expect(wasMessageReadByPeer("2026-09-25T09:59:59.000Z", sentAt)).toBe(false);
+    expect(wasMessageReadByPeer("2026-09-25T10:00:01.000Z", sentAt)).toBe(true);
   });
 });
 

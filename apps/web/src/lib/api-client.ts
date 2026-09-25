@@ -1305,7 +1305,8 @@ export class AgoraPhilosophyClient {
         } as User,
         lastMessage: c?.lastMessage || "Conversation started",
         lastMessageTime: "Just now",
-        unreadCount: 0,
+        unreadCount: c?.unreadCount ?? 0,
+        peerLastReadAt: c?.peerLastReadAt ?? null,
       };
     } catch {
       // Return or create demo conversation

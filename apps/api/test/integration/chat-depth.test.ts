@@ -252,6 +252,7 @@ describe("chat depth (socket.io e2e + REST)", () => {
     const sara = (await api("POST", `${B}/chat/conversations/direct`, {
       token: bob.token, body: { userId: alice.id },
     })).body;
+    expect(sara.peerLastReadAt).toBeNull();
     const ahmed = (await api("POST", `${B}/chat/conversations/direct`, {
       token: bob.token, body: { userId: carol.id },
     })).body;
@@ -275,6 +276,10 @@ describe("chat depth (socket.io e2e + REST)", () => {
     const afterRead = (await api("GET", `${B}/chat/conversations`, { token: bob.token })).body.conversations;
     expect(afterRead.find((c: any) => c.id === sara.id).unreadCount).toBe(0);
     expect(afterRead.find((c: any) => c.id === ahmed.id).unreadCount).toBe(2);
+    const directAgain = await api("POST", `${B}/chat/conversations/direct`, {
+      token: alice.token, body: { userId: bob.id },
+    });
+    expect(directAgain.body.peerLastReadAt).toBeTruthy();
   });
 
   it("admin-only delete fans out conversation:deleted", async () => {
