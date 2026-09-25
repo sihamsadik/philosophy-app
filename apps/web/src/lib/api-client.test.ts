@@ -46,7 +46,7 @@ describe("AgoraPhilosophyClient", () => {
     });
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      "https://api.example.com/v7/proj-123/recommendations/people?connectionIntent=discussion&school=Existentialism&limit=5",
+      "https://api.example.com/v7/proj-123/recommendations/people?intent=discussion&school=Existentialism&limit=5",
       expect.objectContaining({
         headers: expect.objectContaining({
           "Content-Type": "application/json",
@@ -54,6 +54,53 @@ describe("AgoraPhilosophyClient", () => {
       })
     );
 
+    fetchSpy.mockRestore();
+  });
+
+  it("maps backend recommendation compatibility to the gauge contract", async () => {
+    const client = new AgoraPhilosophyClient({ baseUrl: "https://api.example.com/v7", projectId: "project-1", authToken: "token" });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ recommendations: [{
+        user: { id: "peer-1", name: "Sara", philosophyProfile: { primarySchools: ["Ethics"] } },
+        compatibility: {
+          overallScore: 76,
+          sharedGroundScore: 60,
+          productiveTensionScore: 100,
+          overlappingSchools: ["Ethics"],
+          overlappingThinkers: [],
+          overlappingQuestions: ["What is a good life?"],
+          overlappingTexts: [],
+          explanation: "Shared ethical questions, different traditions.",
+        },
+      }] }),
+    } as any);
+    const { recommendations } = await client.getPeopleRecommendations();
+    expect(recommendations[0]).toMatchObject({
+      user: { id: "peer-1", name: "Sara" },
+      compatibility: { overallScore: 76, overlappingQuestions: ["What is a good life?"] },
+    });
+    fetchSpy.mockRestore();
+  });
+
+  it("uses existing sample peers with valid compatibility data when unauthenticated offline", async () => {
+    const client = new AgoraPhilosophyClient();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("offline"));
+    const { recommendations } = await client.getPeopleRecommendations({ limit: 2 });
+    expect(recommendations).toHaveLength(2);
+    expect(recommendations[0]?.user.id).toBeTruthy();
+    expect(recommendations[0]?.compatibility).toMatchObject({
+      overallScore: expect.any(Number),
+      overlappingSchools: expect.any(Array),
+      explanation: expect.any(String),
+    });
+    fetchSpy.mockRestore();
+  });
+
+  it("does not disguise an authenticated recommendation API failure with fake peers", async () => {
+    const client = new AgoraPhilosophyClient({ authToken: "token" });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("API unavailable"));
+    await expect(client.getPeopleRecommendations()).rejects.toThrow("API unavailable");
     fetchSpy.mockRestore();
   });
 

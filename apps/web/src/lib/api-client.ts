@@ -229,44 +229,63 @@ export class AgoraPhilosophyClient {
     limit?: number;
   }): Promise<{ recommendations: UserRecommendation[] }> {
     const query = new URLSearchParams();
-    if (params?.connectionIntent) query.set("connectionIntent", params.connectionIntent);
+    if (params?.connectionIntent) query.set("intent", params.connectionIntent);
     if (params?.school) query.set("school", params.school);
     if (params?.thinker) query.set("thinker", params.thinker);
     if (params?.limit) query.set("limit", params.limit.toString());
 
     const queryString = query.toString() ? `?${query.toString()}` : "";
-    const res = await this.request<any>(`/recommendations/people${queryString}`).catch(async () => {
-      return await this.request<any>(`/users${queryString}`);
-    });
-    const list = res?.recommendations || res?.data || (Array.isArray(res) ? res : []);
-    const mapped = (Array.isArray(list) ? list : []).map((u: any) => {
-      const profile = u.philosophyProfile || u.user?.philosophyProfile || u.metadata?.philosophyProfile || {
-        worldviewSummary: u.bio || u.user?.bio || "Exploring dialectics and truth.",
-        primarySchools: u.metadata?.primarySchools || ["Rationalism"],
-        keyThinkers: u.metadata?.keyThinkers || ["Descartes"],
-      };
+    try {
+      const res = await this.request<any>(`/recommendations/people${queryString}`);
+      const list = res?.recommendations || res?.data?.recommendations || res?.data || (Array.isArray(res) ? res : []);
       return {
-        user: {
-          id: u.id || u.user?.id || "usr-001",
-          name: u.name || u.user?.name || "Thinker Peer",
-          username: u.username || u.user?.username || "thinker",
-          avatar: u.avatar || u.user?.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-          bio: u.bio || u.user?.bio || "",
-          reputation: u.reputation || u.user?.reputation || 500,
-          philosophyProfile: profile,
-        } as User,
-        compatibility: u.compatibility || {
-          overallPercentage: 85,
-          alignmentCategory: "HIGH_ALIGNMENT",
-          sharedGroundScore: 88,
-          productiveTensionScore: 82,
-          resonanceAreas: ["Epistemology", "Ethics"],
-          dialecticalDivergences: ["Determinism vs Agency"],
-          matchReasoning: "Strong resonance in rationalist foundations with engaging debate capacity.",
-        },
+        recommendations: (Array.isArray(list) ? list : []).map((item: any) => {
+          const rawUser = item.user || item;
+          const rawCompatibility = item.compatibility || {};
+          const profile = rawUser.philosophyProfile || rawUser.metadata?.philosophyProfile || null;
+          return {
+            user: {
+              ...rawUser,
+              id: rawUser.id,
+              philosophyProfile: profile,
+            } as User,
+            compatibility: {
+              overallScore: rawCompatibility.overallScore ?? rawCompatibility.overallPercentage ?? 0,
+              sharedGroundScore: rawCompatibility.sharedGroundScore ?? 0,
+              productiveTensionScore: rawCompatibility.productiveTensionScore ?? 0,
+              overlappingSchools: rawCompatibility.overlappingSchools ?? rawCompatibility.resonanceAreas ?? [],
+              overlappingThinkers: rawCompatibility.overlappingThinkers ?? [],
+              overlappingQuestions: rawCompatibility.overlappingQuestions ?? [],
+              overlappingTexts: rawCompatibility.overlappingTexts ?? [],
+              explanation: rawCompatibility.explanation ?? rawCompatibility.matchReasoning ?? "",
+            },
+          };
+        }),
       };
-    });
-    return { recommendations: mapped };
+    } catch (error) {
+      if (this.authToken) throw error;
+      const recommendations = DEMO_LEADERBOARD
+        .filter(({ user }) => {
+          const profile = user.philosophyProfile;
+          return (!params?.school || profile?.primarySchools?.some((school) => school.toLowerCase().includes(params.school!.toLowerCase())))
+            && (!params?.thinker || profile?.keyThinkers?.some((thinker) => thinker.toLowerCase().includes(params.thinker!.toLowerCase())));
+        })
+        .slice(0, params?.limit ?? 10)
+        .map(({ user }) => ({
+          user,
+          compatibility: {
+            overallScore: 85,
+            sharedGroundScore: 88,
+            productiveTensionScore: 82,
+            overlappingSchools: user.philosophyProfile?.primarySchools ?? [],
+            overlappingThinkers: user.philosophyProfile?.keyThinkers ?? [],
+            overlappingQuestions: [],
+            overlappingTexts: [],
+            explanation: "Sample compatibility data for previewing the Peers interface.",
+          },
+        }));
+      return { recommendations };
+    }
   }
 
   /**
