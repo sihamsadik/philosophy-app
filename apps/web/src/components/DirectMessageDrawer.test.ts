@@ -1,5 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { openReplyActivity } from "./DirectMessageDrawer.js";
+import { openReplyActivity, upsertChatMessage } from "./DirectMessageDrawer.js";
+
+describe("upsertChatMessage", () => {
+  it("reconciles the API response and realtime echo as one stable message", () => {
+    const original = { id: "message-1", conversationId: "conversation-1", senderId: "user-1", content: "Hello", createdAt: "2026-09-25T10:00:00Z" };
+    const realtimeEcho = { ...original, senderName: "Sara" };
+    const afterResponse = upsertChatMessage([], original);
+    const afterEcho = upsertChatMessage(afterResponse, realtimeEcho);
+    expect(afterEcho).toHaveLength(1);
+    expect(afterEcho[0]).toMatchObject({ id: "message-1", content: "Hello", senderName: "Sara" });
+  });
+});
 
 describe("openReplyActivity", () => {
   it("marks the activity read and opens its exact post, parent, and reply", () => {

@@ -143,6 +143,10 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
 
     const loadConversations = async () => {
       setIsLoading(true);
+      if (!targetUser && !activeConversationId) {
+        setSelectedConv(null);
+        setMessages([]);
+      }
       try {
         const { conversations: list } = await agoraClient.getConversations();
         setConversations(list);
@@ -157,9 +161,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
           setConversations(updatedList);
         } else if (activeConversationId) {
           const matched = list.find((c) => c.id === activeConversationId);
-          initialConv = matched || list[0] || null;
-        } else {
-          initialConv = list[0] || null;
+          initialConv = matched || null;
         }
 
         if (initialConv) {
@@ -215,7 +217,9 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
   useEffect(() => {
     if (!realtimeSocket || !selectedConv) return;
     realtimeSocket.emit("join:conversation", { conversationId: selectedConv.id });
-    return () => realtimeSocket.emit("leave:conversation", { conversationId: selectedConv.id });
+    return () => {
+      realtimeSocket.emit("leave:conversation", { conversationId: selectedConv.id });
+    };
   }, [realtimeSocket, selectedConv?.id]);
 
   useEffect(() => {

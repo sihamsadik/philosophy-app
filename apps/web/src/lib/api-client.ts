@@ -1270,7 +1270,6 @@ export class AgoraPhilosophyClient {
   }
 
   async markConversationRead(conversationId: string): Promise<{ success: boolean }> {
-    const currentUserId = this.getCurrentUserId();
     const conv = DEMO_CONVERSATIONS.find((c) => c.id === conversationId);
     if (conv) conv.unreadCount = 0;
 
@@ -1748,6 +1747,7 @@ export interface DirectConversation {
   lastMessage?: string;
   lastMessageTime?: string;
   unreadCount?: number;
+  peerLastReadAt?: string | null;
 }
 
 export interface PhilosophicalSpace {

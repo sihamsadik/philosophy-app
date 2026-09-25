@@ -211,6 +211,7 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
       select count(*)::int as total_unread,
              count(distinct m.conversation_id)::int as unread_conversation_count
       from conversation_members cm
+      join conversations c on c.id = cm.conversation_id and c.project_id = cm.project_id and c.type = 'direct'
       join chat_messages m on m.conversation_id = cm.conversation_id
       where cm.project_id = ${c.var.projectId} and cm.user_id = ${me} and cm.is_active = true
         and m.user_deleted_at is null

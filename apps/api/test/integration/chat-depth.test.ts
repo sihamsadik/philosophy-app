@@ -241,9 +241,40 @@ describe("chat depth (socket.io e2e + REST)", () => {
 
     expect((await findConvo(bob.token)).unreadCount).toBe(2);
 
+    const receiptEvent = once(aliceSock, "conversation:read");
     const read = await api("POST", `${B}/chat/conversations/${convo.id}/read`, { token: bob.token });
     expect(read.status).toBe(200);
+    expect(await receiptEvent).toMatchObject({ conversationId: convo.id, userId: bob.id });
     expect((await findConvo(bob.token)).unreadCount).toBe(0);
+  });
+
+  it("counts unread direct messages globally and clears only the opened conversation", async () => {
+    const sara = (await api("POST", `${B}/chat/conversations/direct`, {
+      token: bob.token, body: { userId: alice.id },
+    })).body;
+    const ahmed = (await api("POST", `${B}/chat/conversations/direct`, {
+      token: bob.token, body: { userId: carol.id },
+    })).body;
+    for (let i = 0; i < 3; i++) await send(sara.id, alice.token, { content: `Sara ${i}` });
+    for (let i = 0; i < 2; i++) await send(ahmed.id, carol.token, { content: `Ahmed ${i}` });
+
+    const unreadUrl = `${B}/chat/conversations/unread-count`;
+    expect((await api("GET", unreadUrl, { token: bob.token })).body.totalUnread).toBe(5);
+    const conversations = (await api("GET", `${B}/chat/conversations`, { token: bob.token })).body.conversations;
+    expect(conversations.find((c: any) => c.id === sara.id).unreadCount).toBe(3);
+    expect(conversations.find((c: any) => c.id === ahmed.id).unreadCount).toBe(2);
+
+    const group = (await api("POST", `${B}/chat/conversations`, {
+      token: alice.token, body: { type: "group", name: "Not a DM", memberIds: [bob.id] },
+    })).body;
+    await send(group.id, alice.token, { content: "Group unread is excluded from the DM badge" });
+    expect((await api("GET", unreadUrl, { token: bob.token })).body.totalUnread).toBe(5);
+
+    await api("POST", `${B}/chat/conversations/${sara.id}/read`, { token: bob.token });
+    expect((await api("GET", unreadUrl, { token: bob.token })).body.totalUnread).toBe(2);
+    const afterRead = (await api("GET", `${B}/chat/conversations`, { token: bob.token })).body.conversations;
+    expect(afterRead.find((c: any) => c.id === sara.id).unreadCount).toBe(0);
+    expect(afterRead.find((c: any) => c.id === ahmed.id).unreadCount).toBe(2);
   });
 
   it("admin-only delete fans out conversation:deleted", async () => {

@@ -7,6 +7,20 @@ describe("AgoraPhilosophyClient", () => {
     expect(client).toBeDefined();
   });
 
+  it("uses the dedicated unread-DM aggregate rather than notifications", async () => {
+    const client = new AgoraPhilosophyClient({ baseUrl: "https://api.example.com/v7", projectId: "project-1" });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ totalUnread: 6 }),
+    } as any);
+    await expect(client.getUnreadMessageCount()).resolves.toBe(6);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "https://api.example.com/v7/project-1/chat/conversations/unread-count",
+      expect.anything(),
+    );
+    fetchSpy.mockRestore();
+  });
+
   it("constructs correct recommendation query parameters", async () => {
     const client = new AgoraPhilosophyClient({ baseUrl: "https://api.example.com/v7", projectId: "proj-123" });
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
