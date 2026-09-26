@@ -1,7 +1,7 @@
 // /v7/:projectId/chat/*  — conversations, members, messages.
 // REST writes fan out durable socket.io events (realtime/socket.ts) after the DB commit.
 import { Hono } from "hono";
-import { and, eq, desc, asc, count, inArray, gt, ne, sql } from "drizzle-orm";
+import { and, eq, desc, asc, count, inArray, gt, ne, or, sql } from "drizzle-orm";
 import { muteConversationSchema } from "@philosophy/contract";
 import type { Variables } from "../http/context.js";
 import { Errors } from "../http/errors.js";
@@ -9,7 +9,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
 import {
   conversations, conversationMembers, chatMessages, chatMessageReactions, reports, profiles,
-  spaces, spaceMembers,
+  spaces, spaceMembers, connections,
 } from "../db/schema/index.js";
 import { shapeConversation, shapeConversationMember, shapeChatMessage, shapeFile, shapeUser, loadMessageFiles, shapeConversationPreview, pickOtherMembers } from "../lib/shape.js";
 import { storeUpload } from "../lib/images.js";
@@ -28,12 +28,28 @@ import { indexContentAsync } from "../lib/embeddings.js";
 import * as webhooks from "../lib/webhooks.js";
 import { sanitizeMentions } from "../lib/mentions.js";
 import { dispatchChatMessagePush } from "../lib/push/index.js";
+import { notifyOnMessageRequest } from "../lib/notifications.js";
 import { spaceRepGate } from "../middleware/space-rep.js";
 import { enrichSpaceReputation } from "../lib/space-reputation-enrich.js";
 
 type ConversationRow = typeof conversations.$inferSelect;
 type MemberRow = typeof conversationMembers.$inferSelect;
 type MessageRow = typeof chatMessages.$inferSelect;
+
+async function areUsersConnected(projectId: string, u1: string, u2: string): Promise<boolean> {
+  const [row] = await getDb().select({ id: connections.id })
+    .from(connections)
+    .where(and(
+      eq(connections.projectId, projectId),
+      eq(connections.status, "connected"),
+      or(
+        and(eq(connections.requesterId, u1), eq(connections.addresseeId, u2)),
+        and(eq(connections.requesterId, u2), eq(connections.addresseeId, u1))
+      )
+    ))
+    .limit(1);
+  return !!row;
+}
 
 async function getConversation(c: any): Promise<ConversationRow> {
   const id = c.req.param("id");
@@ -184,6 +200,9 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
     const uid = c.var.auth!.userId;
     const { userId: other } = parseBody(directConversationSchema, await c.req.json().catch(() => ({})), "chat");
     if (other === uid) throw Errors.badRequest("chat/self-direct", "Cannot start a direct chat with yourself");
+
+    const connected = await areUsersConnected(projectId, uid, other);
+
     // Get-or-create the 1:1 direct conversation between the two users.
     const existing = await getDb().execute(sql`
       select c.id from conversations c
@@ -192,11 +211,23 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
       where c.project_id = ${projectId}::uuid and c.type = 'direct' limit 1`);
     const foundId = (existing as any)[0]?.id as string | undefined;
     if (foundId) {
-      const [row] = await getDb().select().from(conversations).where(eq(conversations.id, foundId)).limit(1);
+      let [row] = await getDb().select().from(conversations).where(eq(conversations.id, foundId)).limit(1);
+      if (connected && (row?.metadata as Record<string, any>)?.requestStatus === "pending") {
+        const meta = { ...(row!.metadata as Record<string, any>), requestStatus: "accepted" };
+        [row] = await getDb().update(conversations).set({ metadata: meta, updatedAt: new Date() }).where(eq(conversations.id, foundId)).returning();
+      }
       const member = await requireMember(c, row!.id);
       return c.json(await buildConversationPreview(c, row!, member));
     }
-    const [convo] = await getDb().insert(conversations).values({ projectId, type: "direct", createdById: uid }).returning();
+
+    const metadata = connected
+      ? { requestStatus: "accepted" }
+      : { isRequest: true, requestStatus: "pending", requesterId: uid, addresseeId: other };
+
+    const [convo] = await getDb().insert(conversations).values({
+      projectId, type: "direct", createdById: uid, metadata,
+    }).returning();
+
     await getDb().insert(conversationMembers).values([
       { projectId, conversationId: convo!.id, userId: uid, role: "member" as const },
       { projectId, conversationId: convo!.id, userId: other, role: "member" as const },
@@ -219,9 +250,39 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
         and m.user_deleted_at is null
         and (m.user_id is null or m.user_id <> ${me})
         and (cm.last_read_at is null or m.created_at > cm.last_read_at)
+        and coalesce(c.metadata->>'requestStatus', '') <> 'pending'
+        and coalesce(c.metadata->>'requestStatus', '') <> 'declined'
     `)) as unknown as { total_unread: number; unread_conversation_count: number }[];
     const r = rows[0] ?? { total_unread: 0, unread_conversation_count: 0 };
     return c.json({ totalUnread: r.total_unread, unreadConversationCount: r.unread_conversation_count });
+  })
+  .post("/conversations/:id/accept-request", requireAuth, async (c) => {
+    const convo = await getConversation(c);
+    const member = await requireMember(c, convo.id);
+    const meta = (convo.metadata as Record<string, any>) ?? {};
+    if (meta.addresseeId && meta.addresseeId !== c.var.auth!.userId) {
+      throw Errors.forbidden("chat/not-addressee", "Only the recipient can accept this message request");
+    }
+    const updatedMeta = { ...meta, requestStatus: "accepted" };
+    const [updated] = await getDb().update(conversations)
+      .set({ metadata: updatedMeta, updatedAt: new Date() })
+      .where(eq(conversations.id, convo.id)).returning();
+    emitToConversation(convo.id, "conversation:updated", { id: convo.id, metadata: updatedMeta, requestStatus: "accepted" });
+    return c.json(await enrichSpaceReputation(c, await buildConversationPreview(c, updated!, member)));
+  })
+  .post("/conversations/:id/decline-request", requireAuth, async (c) => {
+    const convo = await getConversation(c);
+    const member = await requireMember(c, convo.id);
+    const meta = (convo.metadata as Record<string, any>) ?? {};
+    if (meta.addresseeId && meta.addresseeId !== c.var.auth!.userId) {
+      throw Errors.forbidden("chat/not-addressee", "Only the recipient can decline this message request");
+    }
+    const updatedMeta = { ...meta, requestStatus: "declined" };
+    const [updated] = await getDb().update(conversations)
+      .set({ metadata: updatedMeta, updatedAt: new Date() })
+      .where(eq(conversations.id, convo.id)).returning();
+    emitToConversation(convo.id, "conversation:updated", { id: convo.id, metadata: updatedMeta, requestStatus: "declined" });
+    return c.json(await enrichSpaceReputation(c, await buildConversationPreview(c, updated!, member)));
   })
   .get("/conversations/:id/preview", requireAuth, async (c) => {
     const convo = await getConversation(c);
@@ -406,12 +467,56 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
     }
     const check = await webhooks.validate(c.var.projectId, "message.created", { ...body, conversationId: convo.id, userId: c.var.auth!.userId });
     if (!check.valid) throw Errors.forbidden("chat/rejected", check.message ?? "Message rejected by validation webhook");
+
+    let recipientForNotif: string | null = null;
+    if (convo.type === "direct") {
+      const meta = (convo.metadata as Record<string, any>) ?? {};
+      const status = meta.requestStatus;
+      const uid = c.var.auth!.userId;
+      const [otherMemberRow] = await getDb().select({ userId: conversationMembers.userId })
+        .from(conversationMembers)
+        .where(and(
+          eq(conversationMembers.conversationId, convo.id),
+          eq(conversationMembers.isActive, true),
+          ne(conversationMembers.userId, uid)
+        )).limit(1);
+      const otherId = otherMemberRow?.userId;
+      const connected = otherId ? await areUsersConnected(c.var.projectId, uid, otherId) : false;
+
+      if (!connected) {
+        if (status === "declined") {
+          throw Errors.forbidden("chat/request-declined", "Message request was declined");
+        }
+        if (status === "pending") {
+          const requesterId = meta.requesterId || convo.createdById;
+          if (uid === requesterId) {
+            const [{ count: msgCount } = { count: 0 }] = await getDb().select({ count: count() })
+              .from(chatMessages)
+              .where(and(eq(chatMessages.conversationId, convo.id), sql`${chatMessages.userDeletedAt} is null`));
+            if (msgCount > 0) {
+              throw Errors.forbidden("chat/request-pending", "Message request pending approval");
+            }
+            recipientForNotif = otherId ?? null;
+          } else {
+            // Addressee replying to a request accepts it
+            await getDb().update(conversations)
+              .set({ metadata: { ...meta, requestStatus: "accepted" }, updatedAt: new Date() })
+              .where(eq(conversations.id, convo.id));
+          }
+        }
+      }
+    }
+
     // Trigger (0002) bumps conversation.last_message_at + parent thread_reply_count.
     const [row] = await getDb().insert(chatMessages).values({
       projectId: c.var.projectId, conversationId: convo.id, userId: c.var.auth!.userId,
       content: body.content, gif: body.gif, mentions: await sanitizeMentions(c.var.projectId, body.mentions), metadata: body.metadata,
       parentMessageId: body.parentMessageId, quotedMessageId: body.quotedMessageId,
     }).returning();
+
+    if (recipientForNotif) {
+      await notifyOnMessageRequest(c.var.projectId, recipientForNotif, c.var.auth!.userId, convo.id, body.content);
+    }
     // Upload any attached files (images → variants, others as-is), linked to this message.
     const fileRows = [];
     for (const file of attachedFiles) {

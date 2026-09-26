@@ -15,9 +15,14 @@ export interface DirectMessageDrawerProps {
 }
 
 export function upsertChatMessage(messages: ChatMessage[], incoming: ChatMessage): ChatMessage[] {
-  const index = messages.findIndex((message) => message.id === incoming.id);
+  const incomingLocalId = incoming.localId || incoming.metadata?.localId;
+  const index = messages.findIndex((message) => {
+    if (message.id === incoming.id) return true;
+    const msgLocalId = message.localId || message.metadata?.localId;
+    return Boolean(incomingLocalId && msgLocalId && incomingLocalId === msgLocalId);
+  });
   if (index < 0) return [...messages, incoming];
-  return messages.map((message) => message.id === incoming.id ? incoming : message);
+  return messages.map((message, i) => i === index ? incoming : message);
 }
 
 export function wasMessageReadByPeer(peerLastReadAt: string | null | undefined, createdAt: string): boolean {
@@ -119,12 +124,34 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [messageSection, setMessageSection] = useState<"chats" | "replies">("chats");
+  const [messageSection, setMessageSection] = useState<"chats" | "requests" | "replies">("chats");
   const [replyActivities, setReplyActivities] = useState<Awaited<ReturnType<typeof agoraClient.getReplyActivities>>["activities"]>([]);
   const [replyUnreadCount, setReplyUnreadCount] = useState(0);
 
   const activeUserId = currentUser?.id || agoraClient.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
+
+  const handleAcceptRequest = async () => {
+    if (!selectedConv) return;
+    try {
+      await agoraClient.acceptMessageRequest(selectedConv.id);
+      setSelectedConv((prev) => prev ? { ...prev, requestStatus: "accepted" } : null);
+      setConversations((prev) => prev.map((c) => c.id === selectedConv.id ? { ...c, requestStatus: "accepted" } : c));
+    } catch (err) {
+      console.error("Accept request failed:", err);
+    }
+  };
+
+  const handleDeclineRequest = async () => {
+    if (!selectedConv) return;
+    try {
+      await agoraClient.declineMessageRequest(selectedConv.id);
+      setSelectedConv((prev) => prev ? { ...prev, requestStatus: "declined" } : null);
+      setConversations((prev) => prev.map((c) => c.id === selectedConv.id ? { ...c, requestStatus: "declined" } : c));
+    } catch (err) {
+      console.error("Decline request failed:", err);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -330,7 +357,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
         <div className="dm-body">
           {/* Sidebar: Conversation List */}
           <div className="dm-sidebar">
-            <h4 className="dm-sidebar-heading">{messageSection === "replies" ? "Community Replies" : "Conversations"}</h4>
+            <h4 className="dm-sidebar-heading">{messageSection === "replies" ? "Community Replies" : messageSection === "requests" ? "Message Requests" : "Conversations"}</h4>
             <div className="message-section-tabs" role="tablist" aria-label="Message views">
               <button
                 type="button"
@@ -340,6 +367,18 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                 onClick={() => setMessageSection("chats")}
               >
                 Chats
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={messageSection === "requests"}
+                className={messageSection === "requests" ? "active" : ""}
+                onClick={() => setMessageSection("requests")}
+              >
+                Requests {(() => {
+                  const reqCount = conversations.filter((c) => c.requestStatus === "pending" && (c.addresseeId ? c.addresseeId === activeUserId : true)).length;
+                  return reqCount > 0 ? <span className="conv-unread-badge pending">{reqCount}</span> : null;
+                })()}
               </button>
               <button
                 type="button"
@@ -383,28 +422,40 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
               </div>
             ) : isLoading ? (
               <div className="loading-state">Loading chats...</div>
-            ) : conversations.length === 0 ? (
-              <div className="empty-state">No direct messages yet</div>
-            ) : (
-              <div className="conversations-list">
-                {conversations.map((conv) => {
-                  const isActive = selectedConv?.id === conv.id;
-                  const p = conv.participant || ({ id: "usr-peer", name: "Philosopher Peer", username: "thinker" } as User);
-                  const hasUnread = Boolean(conv.unreadCount && conv.unreadCount > 0);
-                  return (
-                    <button key={conv.id} type="button" className={`conv-item-btn ${isActive ? "active" : ""}`} onClick={() => handleSelectConv(conv)}>
-                      {p.avatar ? <img src={p.avatar} alt="Avatar" className="conv-avatar-img" /> : (
-                        <div className="conv-avatar-circle">{(p.name || p.username || "U").charAt(0).toUpperCase()}</div>
-                      )}
-                      <div className="conv-details">
-                        <div className="conv-top-row"><span className="conv-name">{p.name || p.username}</span><span className="conv-time">{conv.lastMessageTime}</span></div>
-                        <div className="conv-bottom-row"><p className="conv-preview">{conv.lastMessage || "No messages yet"}</p>{hasUnread && <span className="conv-unread-badge">{conv.unreadCount}</span>}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            ) : (() => {
+              const displayList = messageSection === "requests"
+                ? conversations.filter((c) => c.requestStatus === "pending")
+                : conversations.filter((c) => c.requestStatus !== "pending" && c.requestStatus !== "declined");
+
+              if (displayList.length === 0) {
+                return (
+                  <div className="empty-state">
+                    {messageSection === "requests" ? "No message requests." : "No direct messages yet"}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="conversations-list">
+                  {displayList.map((conv) => {
+                    const isActive = selectedConv?.id === conv.id;
+                    const p = conv.participant || ({ id: "usr-peer", name: "Philosopher Peer", username: "thinker" } as User);
+                    const hasUnread = Boolean(conv.unreadCount && conv.unreadCount > 0);
+                    return (
+                      <button key={conv.id} type="button" className={`conv-item-btn ${isActive ? "active" : ""}`} onClick={() => handleSelectConv(conv)}>
+                        {p.avatar ? <img src={p.avatar} alt="Avatar" className="conv-avatar-img" /> : (
+                          <div className="conv-avatar-circle">{(p.name || p.username || "U").charAt(0).toUpperCase()}</div>
+                        )}
+                        <div className="conv-details">
+                          <div className="conv-top-row"><span className="conv-name">{p.name || p.username}</span><span className="conv-time">{conv.lastMessageTime}</span></div>
+                          <div className="conv-bottom-row"><p className="conv-preview">{conv.lastMessage || "No messages yet"}</p>{hasUnread && <span className="conv-unread-badge">{conv.unreadCount}</span>}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Main: Message History & Input */}
@@ -440,6 +491,54 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                     </span>
                   </div>
                 </div>
+
+                {/* Message Request Approval Banner */}
+                {(() => {
+                  const isPending = selectedConv.requestStatus === "pending";
+                  const isDeclined = selectedConv.requestStatus === "declined";
+                  const isAddressee = selectedConv.addresseeId ? selectedConv.addresseeId === activeUserId : true;
+                  const isRequester = selectedConv.requesterId ? selectedConv.requesterId === activeUserId : !isAddressee;
+
+                  if (isPending && isAddressee) {
+                    return (
+                      <div className="message-request-banner-box">
+                        <div className="req-banner-text">
+                          <span className="req-badge-icon">📩</span>
+                          <div>
+                            <strong>Message Request from {selectedPartner.name || selectedPartner.username}</strong>
+                            <p>Accept this request to continue messaging normally in a direct conversation.</p>
+                          </div>
+                        </div>
+                        <div className="req-banner-actions">
+                          <button type="button" className="accept-req-btn" onClick={handleAcceptRequest}>
+                            🟢 Accept
+                          </button>
+                          <button type="button" className="decline-req-btn" onClick={handleDeclineRequest}>
+                            🔴 Decline
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (isPending && isRequester) {
+                    return (
+                      <div className="message-request-banner-box pending-sent">
+                        <span>⏳ Message request pending approval from @{selectedPartner.username || "philosopher"}.</span>
+                      </div>
+                    );
+                  }
+
+                  if (isDeclined) {
+                    return (
+                      <div className="message-request-banner-box declined-sent">
+                        <span>✕ Message request was declined. Normal messaging is not enabled.</span>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
 
                 {/* Message Stream with Date Dividers & Telegram Bubbles */}
                 <div className="messages-stream">
@@ -514,18 +613,35 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                 </div>
 
                 {/* Input Bar */}
-                <form onSubmit={handleSendMessage} className="chat-input-bar">
-                  <input
-                    type="text"
-                    className="input-text"
-                    placeholder={`Message ${selectedPartner.name || selectedPartner.username || "Philosopher"}...`}
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                  />
-                  <button type="submit" className="add-btn" disabled={!inputMessage.trim()}>
-                    Send 💬
-                  </button>
-                </form>
+                {(() => {
+                  const isPending = selectedConv.requestStatus === "pending";
+                  const isDeclined = selectedConv.requestStatus === "declined";
+                  const isAddressee = selectedConv.addresseeId ? selectedConv.addresseeId === activeUserId : true;
+                  const isRequester = selectedConv.requesterId ? selectedConv.requesterId === activeUserId : !isAddressee;
+                  const canSend = !isDeclined && !(isPending && isRequester);
+
+                  return (
+                    <form onSubmit={handleSendMessage} className="chat-input-bar">
+                      <input
+                        type="text"
+                        className="input-text"
+                        placeholder={
+                          isDeclined
+                            ? "Request declined."
+                            : isPending && isRequester
+                            ? "Waiting for response..."
+                            : `Message ${selectedPartner.name || selectedPartner.username || "Philosopher"}...`
+                        }
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        disabled={!canSend}
+                      />
+                      <button type="submit" className="add-btn" disabled={!canSend || !inputMessage.trim()}>
+                        Send 💬
+                      </button>
+                    </form>
+                  );
+                })()}
               </>
             ) : (
               <div className="no-chat-selected">

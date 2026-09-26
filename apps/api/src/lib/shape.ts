@@ -407,8 +407,9 @@ export function shapeAuthUser(
     isSteward,
     isProjectOwner,
     isProjectAdmin,
+    authMethods: [],
   };
-  delete authUser.authMethods;
+  delete (authUser as any).authMethods;
   return cleanResponsePayload(authUser);
 }
 
@@ -567,6 +568,7 @@ export function shapeConversation(
   row: ConversationRow,
   opts: { unreadCount?: number; lastMessage?: unknown; currentMember?: unknown; memberCount?: number } = {}
 ) {
+  const metadata = (row.metadata as Record<string, unknown>) ?? {};
   const convo: Record<string, unknown> = {
     id: row.id,
     projectId: row.projectId,
@@ -578,10 +580,13 @@ export function shapeConversation(
     avatarFileId: row.avatarFileId ?? null,
     lastMessageAt: iso(row.lastMessageAt),
     postingPermission: row.postingPermission ?? null,
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    metadata,
     createdAt: iso(row.createdAt)!,
     updatedAt: iso(row.updatedAt)!,
   };
+  if (metadata.requestStatus) convo.requestStatus = metadata.requestStatus;
+  if (metadata.requesterId) convo.requesterId = metadata.requesterId;
+  if (metadata.addresseeId) convo.addresseeId = metadata.addresseeId;
   if (opts.memberCount !== undefined) convo.memberCount = opts.memberCount;
   if (opts.currentMember !== undefined) convo.currentMember = opts.currentMember;
   if (opts.unreadCount !== undefined) convo.unreadCount = opts.unreadCount;
