@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, or } from "drizzle-orm";
 import type { Variables } from "../http/context.js";
 import { Errors } from "../http/errors.js";
 import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
-import { profiles } from "../db/schema/index.js";
+import { profiles, connections } from "../db/schema/index.js";
 import { shapeUser } from "../lib/shape.js";
 import { calculateIntellectualCompatibility } from "../lib/intellectual-matching.js";
 import type { UserRecommendation, ConnectionIntent, User } from "@philosophy/contract";
@@ -35,6 +35,25 @@ export const recommendationRoutes = new Hono<{ Variables: Variables }>()
       throw Errors.notFound("users/not-found", "Target user profile not found");
     }
 
+    // Load all connections involving current user to determine relationship state & filter connected peers
+    const connRows = await getDb()
+      .select()
+      .from(connections)
+      .where(and(
+        eq(connections.projectId, projectId),
+        or(eq(connections.requesterId, currentUserId), eq(connections.addresseeId, currentUserId))
+      ));
+
+    const connMap = new Map<string, { status: string; connectionId: string; isRequester: boolean }>();
+    for (const r of connRows) {
+      const otherId = r.requesterId === currentUserId ? r.addresseeId : r.requesterId;
+      connMap.set(otherId, {
+        status: r.status,
+        connectionId: r.id,
+        isRequester: r.requesterId === currentUserId,
+      });
+    }
+
     const candidateRows = await getDb()
       .select()
       .from(profiles)
@@ -42,6 +61,12 @@ export const recommendationRoutes = new Hono<{ Variables: Variables }>()
       .limit(200);
 
     let candidates = candidateRows.map(shapeUser).filter((u): u is User => u !== null);
+
+    // Filter out already connected users
+    candidates = candidates.filter((candidate) => {
+      const conn = connMap.get(candidate.id);
+      return !conn || conn.status !== "connected";
+    });
 
     if (intentQuery) {
       candidates = candidates.filter((candidate) => {
@@ -64,11 +89,21 @@ export const recommendationRoutes = new Hono<{ Variables: Variables }>()
       });
     }
 
-    const recommendations: UserRecommendation[] = candidates.map((candidate) => {
+    const recommendations = candidates.map((candidate) => {
       const compatibility = calculateIntellectualCompatibility(targetUser, candidate);
+      const conn = connMap.get(candidate.id);
+      let relationshipState: "none" | "outgoing_pending" | "incoming_pending" | "connected" = "none";
+      if (conn) {
+        if (conn.status === "connected") relationshipState = "connected";
+        else if (conn.status === "pending") {
+          relationshipState = conn.isRequester ? "outgoing_pending" : "incoming_pending";
+        }
+      }
       return {
         user: candidate,
         compatibility,
+        relationshipState,
+        connectionId: conn?.connectionId,
       };
     });
 

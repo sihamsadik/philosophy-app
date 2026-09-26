@@ -541,6 +541,31 @@ export class AgoraPhilosophyClient {
     }
   }
 
+  async getSentConnectionRequests(): Promise<{ requests: ConnectionRequest[] }> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      return { requests: DEMO_CONNECTION_REQUESTS.filter((r) => r.sender?.id === this.currentUserId) };
+    }
+    try {
+      const res = await this.request<any>("/connections/pending/sent");
+      const rawList = res?.requests || res?.data || (Array.isArray(res) ? res : []);
+      const mapped = rawList.map((r: any) => ({
+        id: r.id || `req-${Date.now()}`,
+        sender: r.user || r.sender || ({
+          id: this.currentUserId || "usr-current",
+          name: "You",
+          username: "you",
+        } as User),
+        recipientId: r.userId || r.recipientId || "usr-target",
+        message: r.message,
+        status: r.status || "pending",
+        createdAt: r.createdAt ? (typeof r.createdAt === "string" && r.createdAt.includes("ago") ? r.createdAt : new Date(r.createdAt).toLocaleDateString()) : "Recently",
+      }));
+      return { requests: mapped };
+    } catch {
+      return { requests: [] };
+    }
+  }
+
   async acceptConnectionRequest(requestId: string): Promise<{ success: boolean }> {
     if (!this.authToken || this.authToken === "mock-auth-token") {
       const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
@@ -585,6 +610,19 @@ export class AgoraPhilosophyClient {
     }
   }
 
+  async getConnectionCount(userId?: string): Promise<{ count: number }> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      return { count: 1 };
+    }
+    try {
+      const endpoint = userId ? `/users/${userId}/connections-count` : "/connections/count";
+      const res = await this.request<{ count: number }>(endpoint);
+      return { count: typeof res.count === "number" ? res.count : 0 };
+    } catch {
+      return { count: 1 };
+    }
+  }
+
   async getNotifications(): Promise<{ notifications: PhilosophyNotification[]; unreadCount: number }> {
     if (!this.authToken || this.authToken === "mock-auth-token") {
       return { notifications: [], unreadCount: 0 };
@@ -599,7 +637,8 @@ export class AgoraPhilosophyClient {
         const postTitle = meta.entityTitle || meta.postTitle || "a debate topic";
 
         let type: PhilosophyNotification["type"] = "comment_reply";
-        if (n.type === "connection-request" || n.type === "connection_request" || n.type === "connection-accepted") type = "connection_request";
+        if (n.type === "connection-accepted" || n.type === "connection_accepted") type = "connection_accepted";
+        else if (n.type === "connection-request" || n.type === "connection_request") type = "connection_request";
         else if (n.type === "direct-message" || n.type === "direct_message") type = "direct_message";
         else if (n.type?.includes("upvote") || n.type?.includes("reaction")) type = "post_upvote";
         else type = "comment_reply";
@@ -609,14 +648,16 @@ export class AgoraPhilosophyClient {
           if (type === "comment_reply") title = `${actorName} (@${actorHandle}) replied to your comment!`;
           else if (type === "post_upvote") title = `${actorName} upvoted your post/comment!`;
           else if (type === "connection_request") title = `${actorName} sent you a connection request`;
+          else if (type === "connection_accepted") title = `${actorName} (@${actorHandle}) accepted your connection request!`;
           else title = "New Notification";
         }
 
         let message = n.message || n.content;
         if (!message) {
-          if (meta.replyContent) message = `"${meta.replyContent}" on "${postTitle}"`;
+          if (type === "connection_accepted") message = `You are now connected with ${actorName}. You can start direct messaging.`;
+          else if (meta.replyContent) message = `"${meta.replyContent}" on "${postTitle}"`;
           else if (meta.commentContent) message = `"${meta.commentContent}" on "${postTitle}"`;
-          else message = `Activity on "${postTitle}"`;
+          else message = type === "connection_request" ? `Connection request from ${actorName}` : `Activity on "${postTitle}"`;
         }
 
         return {
@@ -1326,8 +1367,12 @@ export class AgoraPhilosophyClient {
       const result = await this.request<{ totalUnread?: number }>("/chat/conversations/unread-count");
       return result.totalUnread ?? 0;
     } catch {
+      const currentUserId = this.getCurrentUserId();
       const { conversations } = await this.getConversations();
-      return conversations.reduce((sum, conversation) => sum + (conversation.unreadCount ?? 0), 0);
+      return conversations.reduce((sum, conversation) => {
+        const isPendingIncomingRequest = conversation.requestStatus === "pending" && (conversation as any).addresseeId === currentUserId;
+        return sum + (conversation.unreadCount ?? 0) + (isPendingIncomingRequest ? 1 : 0);
+      }, 0);
     }
   }
 
@@ -1380,6 +1425,29 @@ export class AgoraPhilosophyClient {
   }
 
   async createDirectConversation(targetUserId: string, targetUser?: User): Promise<DirectConversation> {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      const existing = DEMO_CONVERSATIONS.find((c) => c.participant.id === targetUserId);
+      if (existing) return existing;
+
+      const newConv: DirectConversation = {
+        id: `conv-${Date.now()}`,
+        participant: targetUser || ({
+          id: targetUserId,
+          name: "Philosopher Friend",
+          username: "philosopher",
+          bio: "Exploring ideas on Agora",
+        } as User),
+        lastMessage: "Conversation started",
+        lastMessageTime: "Just now",
+        unreadCount: 0,
+        requestStatus: "pending",
+        requesterId: this.currentUserId || "usr-current",
+        addresseeId: targetUserId,
+      };
+      DEMO_CONVERSATIONS.unshift(newConv);
+      DEMO_MESSAGES[newConv.id] = [];
+      return newConv;
+    }
     try {
       const res = await this.request<any>("/chat/conversations/direct", {
         method: "POST",
@@ -1409,7 +1477,6 @@ export class AgoraPhilosophyClient {
         addresseeId: addrId,
       };
     } catch {
-      // Return or create demo conversation
       const existing = DEMO_CONVERSATIONS.find((c) => c.participant.id === targetUserId);
       if (existing) return existing;
 
@@ -1424,6 +1491,9 @@ export class AgoraPhilosophyClient {
         lastMessage: "Conversation started",
         lastMessageTime: "Just now",
         unreadCount: 0,
+        requestStatus: "pending",
+        requesterId: this.currentUserId || "usr-current",
+        addresseeId: targetUserId,
       };
       DEMO_CONVERSATIONS.unshift(newConv);
       DEMO_MESSAGES[newConv.id] = [];
@@ -1826,7 +1896,7 @@ export interface ConnectionRequest {
 
 export interface PhilosophyNotification {
   id: string;
-  type: "connection_request" | "direct_message" | "post_upvote" | "comment_reply";
+  type: "connection_request" | "connection_accepted" | "direct_message" | "post_upvote" | "comment_reply";
   title: string;
   message: string;
   read: boolean;

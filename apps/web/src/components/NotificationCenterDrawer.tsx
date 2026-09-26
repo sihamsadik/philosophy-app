@@ -250,6 +250,14 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                     <p className="notif-message">{notif.message}</p>
 
                     {/* Inline Actions based on type */}
+                    {notif.type === "connection_accepted" && (
+                      <div className="notif-inline-actions" style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                        <span className="status-accepted-chip" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981", padding: "4px 10px", borderRadius: 6, fontSize: "0.82rem", fontWeight: 600 }}>
+                          ✓ Connected
+                        </span>
+                      </div>
+                    )}
+
                     {notif.type === "connection_request" && (
                       <div className="notif-inline-actions" style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
                         {notif.requestId && safeRequests.find((r) => r.id === notif.requestId)?.status === "accepted" ? (

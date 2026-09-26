@@ -157,6 +157,12 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
   };
 
   // ---------------------------------------------------------------------------
+  const [connectionCount, setConnectionCount] = useState<number>(1);
+
+  React.useEffect(() => {
+    agoraClient.getConnectionCount(userId).then((res) => setConnectionCount(res.count)).catch(() => {});
+  }, [userId]);
+
   // VIEW MODE (Read-only Professional Profile)
   // ---------------------------------------------------------------------------
   if (!isEditing) {
@@ -183,10 +189,21 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
                 )}
               </div>
               <div className="profile-user-details">
-                <div className="profile-name-row">
+                <div className="profile-name-row" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <h1 className="profile-display-name">{displayName}</h1>
                   <span className="profile-reputation-badge" title="Philosophy Reputation Score">
                     ⚡ {reputation} Rep
+                  </span>
+                  <span
+                    className="profile-reputation-badge"
+                    style={{
+                      background: "rgba(99, 102, 241, 0.18)",
+                      border: "1px solid rgba(99, 102, 241, 0.4)",
+                      color: "#818cf8",
+                    }}
+                    title="Total Established Connections"
+                  >
+                    🤝 {connectionCount} {connectionCount === 1 ? "Connection" : "Connections"}
                   </span>
                 </div>
                 <p className="profile-handle-text">{handleTag}</p>

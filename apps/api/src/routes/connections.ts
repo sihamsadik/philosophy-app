@@ -62,7 +62,17 @@ export const connectionRoutes = new Hono<{ Variables: Variables }>()
     const existing = await between(self.projectId, self.id, target);
     if (existing) {
       if (existing.status === "connected") throw Errors.conflict("connections/already-connected", "Already connected");
-      if (existing.status === "pending") throw Errors.conflict("connections/already-pending", "A pending request already exists");
+      if (existing.status === "pending") {
+        if (existing.requesterId === self.id) {
+          throw Errors.conflict("connections/already-pending", "A pending request already exists");
+        }
+        // Reverse request: target invited self earlier → auto-accept the connection
+        const [updated] = await getDb().update(connections)
+          .set({ status: "connected", respondedAt: new Date() })
+          .where(eq(connections.id, existing.id)).returning();
+        await notifyOnConnectionAccept(self.projectId, target, self.id, existing.id);
+        return c.json({ id: updated!.id, status: "connected", respondedAt: iso(updated!.respondedAt) });
+      }
       // a prior declined row → reopen as a fresh pending request from self
       const [row] = await getDb().update(connections)
         .set({ requesterId: self.id, addresseeId: target, status: "pending", message, respondedAt: null, createdAt: new Date() })
@@ -86,7 +96,17 @@ export const connectionRoutes = new Hono<{ Variables: Variables }>()
     const existing = await between(self.projectId, self.id, target);
     if (existing) {
       if (existing.status === "connected") throw Errors.conflict("connections/already-connected", "Already connected");
-      if (existing.status === "pending") throw Errors.conflict("connections/already-pending", "A pending request already exists");
+      if (existing.status === "pending") {
+        if (existing.requesterId === self.id) {
+          throw Errors.conflict("connections/already-pending", "A pending request already exists");
+        }
+        // Reverse request: target invited self earlier → auto-accept the connection
+        const [updated] = await getDb().update(connections)
+          .set({ status: "connected", respondedAt: new Date() })
+          .where(eq(connections.id, existing.id)).returning();
+        await notifyOnConnectionAccept(self.projectId, target, self.id, existing.id);
+        return c.json({ id: updated!.id, status: "connected", respondedAt: iso(updated!.respondedAt) });
+      }
       const [row] = await getDb().update(connections)
         .set({ requesterId: self.id, addresseeId: target, status: "pending", message, respondedAt: null, createdAt: new Date() })
         .where(eq(connections.id, existing.id)).returning();
@@ -175,11 +195,16 @@ export const connectionRoutes = new Hono<{ Variables: Variables }>()
   // ── accept / decline / withdraw a connection by id ──────────────────────────
   .patch("/connections/:id/accept", requireAuth, scopeDbToAuthProject, async (c) => {
     const self = await me(c);
+    const connId = uuidParam(c, "id");
     const [row] = await getDb().select().from(connections)
-      .where(and(eq(connections.id, uuidParam(c, "id")), eq(connections.addresseeId, self.id), eq(connections.status, "pending"))).limit(1);
-    if (!row) throw Errors.notFound("connections/not-pending", "No pending request to accept");
+      .where(and(eq(connections.id, connId), or(eq(connections.addresseeId, self.id), eq(connections.requesterId, self.id)))).limit(1);
+    if (!row) throw Errors.notFound("connections/not-found", "Connection request not found");
+    if (row.status === "connected") {
+      return c.json({ id: row.id, status: "connected", respondedAt: iso(row.respondedAt) });
+    }
     const [updated] = await getDb().update(connections).set({ status: "connected", respondedAt: new Date() }).where(eq(connections.id, row.id)).returning();
-    await notifyOnConnectionAccept(self.projectId, row.requesterId, self.id, row.id);
+    const otherId = row.requesterId === self.id ? row.addresseeId : row.requesterId;
+    await notifyOnConnectionAccept(self.projectId, otherId, self.id, row.id);
     return c.json({ id: updated!.id, status: "connected", respondedAt: iso(updated!.respondedAt) });
   })
   .patch("/connections/:id/decline", requireAuth, scopeDbToAuthProject, async (c) => {
