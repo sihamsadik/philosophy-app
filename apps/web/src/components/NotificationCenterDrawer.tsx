@@ -8,6 +8,7 @@ export interface NotificationCenterDrawerProps {
   onUnreadCountChange?: (count: number) => void;
   onOpenDM?: (targetUser: User) => void;
   onOpenThreadDrawer?: (postId: string, commentId?: string, replyId?: string) => void;
+  onNavigateToPeers?: () => void;
 }
 
 export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> = ({
@@ -16,6 +17,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
   onUnreadCountChange,
   onOpenDM,
   onOpenThreadDrawer,
+  onNavigateToPeers,
 }) => {
   const [notifications, setNotifications] = useState<PhilosophyNotification[]>([]);
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
@@ -248,28 +250,46 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                     <p className="notif-message">{notif.message}</p>
 
                     {/* Inline Actions based on type */}
-                    {notif.type === "connection_request" && notif.requestId && (
-                      <div className="notif-inline-actions">
-                        {safeRequests.find((r) => r.id === notif.requestId)?.status === "accepted" ? (
+                    {notif.type === "connection_request" && (
+                      <div className="notif-inline-actions" style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                        {notif.requestId && safeRequests.find((r) => r.id === notif.requestId)?.status === "accepted" ? (
                           <span className="status-accepted-chip">✓ Connection Accepted</span>
-                        ) : connectionRequests.find((r) => r.id === notif.requestId)?.status === "declined" ? (
+                        ) : notif.requestId && connectionRequests.find((r) => r.id === notif.requestId)?.status === "declined" ? (
                           <span className="status-declined-chip">✕ Request Declined</span>
                         ) : (
                           <>
-                            <button
-                              type="button"
-                              className="accept-req-btn-sm"
-                              onClick={() => handleAcceptRequest(notif.requestId!)}
-                            >
-                              🟢 Accept
-                            </button>
-                            <button
-                              type="button"
-                              className="decline-req-btn-sm"
-                              onClick={() => handleDeclineRequest(notif.requestId!)}
-                            >
-                              🔴 Decline
-                            </button>
+                            {notif.requestId && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="accept-req-btn-sm"
+                                  onClick={() => handleAcceptRequest(notif.requestId!)}
+                                >
+                                  🟢 Accept
+                                </button>
+                                <button
+                                  type="button"
+                                  className="decline-req-btn-sm"
+                                  onClick={() => handleDeclineRequest(notif.requestId!)}
+                                >
+                                  🔴 Decline
+                                </button>
+                              </>
+                            )}
+                            {onNavigateToPeers && (
+                              <button
+                                type="button"
+                                className="action-btn-sm"
+                                style={{ fontSize: "0.8rem", padding: "4px 8px" }}
+                                onClick={() => {
+                                  handleMarkSingleRead(notif.id);
+                                  onClose();
+                                  onNavigateToPeers();
+                                }}
+                              >
+                                🤝 View in Peers Page
+                              </button>
+                            )}
                           </>
                         )}
                       </div>

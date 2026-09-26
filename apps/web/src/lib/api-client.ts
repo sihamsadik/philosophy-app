@@ -455,12 +455,7 @@ export class AgoraPhilosophyClient {
     message?: string,
     targetUser?: User
   ): Promise<ConnectionRequest> {
-    try {
-      return await this.request<ConnectionRequest>("/connections/requests", {
-        method: "POST",
-        body: JSON.stringify({ targetUserId, message }),
-      });
-    } catch {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
       const newReq: ConnectionRequest = {
         id: `req-${Date.now()}`,
         sender: targetUser || ({
@@ -476,6 +471,47 @@ export class AgoraPhilosophyClient {
       };
       DEMO_CONNECTION_REQUESTS.unshift(newReq);
       return newReq;
+    }
+    try {
+      const res = await this.request<any>(`/users/${targetUserId}/connection`, {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      });
+      return {
+        id: res.id || `req-${Date.now()}`,
+        sender: targetUser || ({
+          id: this.currentUserId || "usr-current",
+          name: "You",
+          username: "you",
+        } as User),
+        recipientId: targetUserId,
+        message: message || "I would love to connect and exchange philosophical perspectives.",
+        status: res.status || "pending",
+        createdAt: "Just now",
+      };
+    } catch {
+      try {
+        return await this.request<ConnectionRequest>("/connections/requests", {
+          method: "POST",
+          body: JSON.stringify({ targetUserId, message }),
+        });
+      } catch {
+        const newReq: ConnectionRequest = {
+          id: `req-${Date.now()}`,
+          sender: targetUser || ({
+            id: "00000000-0000-0000-0000-000000000001",
+            name: "Jean-Paul Sartre",
+            username: "sartre",
+            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+          } as User),
+          recipientId: targetUserId,
+          message: message || "I would love to connect and exchange philosophical perspectives.",
+          status: "pending",
+          createdAt: "Just now",
+        };
+        DEMO_CONNECTION_REQUESTS.unshift(newReq);
+        return newReq;
+      }
     }
   }
 
@@ -1257,6 +1293,10 @@ export class AgoraPhilosophyClient {
           ? c.lastMessage 
           : c.lastMessage?.content || c.last_message || "Conversation active";
 
+        const reqStatus = c.requestStatus || c.metadata?.requestStatus;
+        const reqId = c.requesterId || c.metadata?.requesterId;
+        const addrId = c.addresseeId || c.metadata?.addresseeId;
+
         return {
           id: c.id || `conv-${Date.now()}`,
           participant: {
@@ -1270,6 +1310,9 @@ export class AgoraPhilosophyClient {
           lastMessageTime: c.lastMessageTime ? (typeof c.lastMessageTime === "string" && c.lastMessageTime.includes("ago") ? c.lastMessageTime : "Recently") : "Recently",
           unreadCount: c.unreadCount ?? 0,
           peerLastReadAt: c.peerLastReadAt ?? null,
+          requestStatus: reqStatus,
+          requesterId: reqId,
+          addresseeId: addrId,
         };
       });
       return { conversations: mapped };
@@ -1304,6 +1347,37 @@ export class AgoraPhilosophyClient {
     return { success: true };
   }
 
+  async acceptMessageRequest(conversationId: string): Promise<{ success: boolean }> {
+    const conv = DEMO_CONVERSATIONS.find((c) => c.id === conversationId);
+    if (conv) conv.requestStatus = "accepted";
+
+    try {
+      await this.request<any>(`/chat/conversations/${conversationId}/accept-request`, {
+        method: "POST",
+      });
+    } catch {}
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("agora_dm_unread_updated"));
+    }
+    return { success: true };
+  }
+
+  async declineMessageRequest(conversationId: string): Promise<{ success: boolean }> {
+    const conv = DEMO_CONVERSATIONS.find((c) => c.id === conversationId);
+    if (conv) conv.requestStatus = "declined";
+
+    try {
+      await this.request<any>(`/chat/conversations/${conversationId}/decline-request`, {
+        method: "POST",
+      });
+    } catch {}
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("agora_dm_unread_updated"));
+    }
+    return { success: true };
+  }
 
   async createDirectConversation(targetUserId: string, targetUser?: User): Promise<DirectConversation> {
     try {
@@ -1313,6 +1387,10 @@ export class AgoraPhilosophyClient {
       });
       const c = res?.conversation || res;
       const rawPartner = targetUser || c?.participant || (Array.isArray(c?.otherMembers) && c?.otherMembers[0]) || c?.otherUser || c?.user || {};
+      const reqStatus = c?.requestStatus || c?.metadata?.requestStatus;
+      const reqId = c?.requesterId || c?.metadata?.requesterId;
+      const addrId = c?.addresseeId || c?.metadata?.addresseeId;
+
       return {
         id: c?.id || `conv-${Date.now()}`,
         participant: {
@@ -1326,6 +1404,9 @@ export class AgoraPhilosophyClient {
         lastMessageTime: "Just now",
         unreadCount: c?.unreadCount ?? 0,
         peerLastReadAt: c?.peerLastReadAt ?? null,
+        requestStatus: reqStatus,
+        requesterId: reqId,
+        addresseeId: addrId,
       };
     } catch {
       // Return or create demo conversation
@@ -1729,7 +1810,9 @@ export interface ChatMessage {
     postTitle?: string;
     authorHandle?: string;
     authorName?: string;
+    localId?: string;
   };
+  localId?: string;
 }
 
 export interface ConnectionRequest {
@@ -1768,6 +1851,9 @@ export interface DirectConversation {
   lastMessageTime?: string;
   unreadCount?: number;
   peerLastReadAt?: string | null;
+  requestStatus?: "pending" | "accepted" | "declined";
+  requesterId?: string;
+  addresseeId?: string;
 }
 
 export interface PhilosophicalSpace {

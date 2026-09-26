@@ -474,6 +474,10 @@ export const App: React.FC = () => {
           setActiveThreadPostId(postId);
           setActiveThreadTargetCommentId(replyId || commentId || null);
         }}
+        onNavigateToPeers={() => {
+          setIsNotifDrawerOpen(false);
+          setActiveTab("recommendations");
+        }}
       />
 
       <ConnectionRequestModal

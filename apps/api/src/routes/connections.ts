@@ -76,6 +76,29 @@ export const connectionRoutes = new Hono<{ Variables: Variables }>()
     await notifyOnConnectionRequest(self.projectId, target, self.id, row!.id);
     return c.json({ id: row!.id, status: row!.status, createdAt: iso(row!.createdAt) }, 201);
   })
+  .post("/connections/requests", requireAuth, scopeDbToAuthProject, async (c) => {
+    const self = await me(c);
+    const body = await c.req.json().catch(() => ({}));
+    const target = body.targetUserId || body.userId;
+    if (!target) throw Errors.badRequest("connections/missing-target", "targetUserId is required");
+    if (target === self.id) throw Errors.badRequest("connections/self", "Cannot connect with yourself");
+    const { message } = parseBody(connectionRequestSchema, body, "connections");
+    const existing = await between(self.projectId, self.id, target);
+    if (existing) {
+      if (existing.status === "connected") throw Errors.conflict("connections/already-connected", "Already connected");
+      if (existing.status === "pending") throw Errors.conflict("connections/already-pending", "A pending request already exists");
+      const [row] = await getDb().update(connections)
+        .set({ requesterId: self.id, addresseeId: target, status: "pending", message, respondedAt: null, createdAt: new Date() })
+        .where(eq(connections.id, existing.id)).returning();
+      await notifyOnConnectionRequest(self.projectId, target, self.id, row!.id);
+      return c.json({ id: row!.id, status: row!.status, createdAt: iso(row!.createdAt) });
+    }
+    const [row] = await getDb().insert(connections)
+      .values({ projectId: self.projectId, requesterId: self.id, addresseeId: target, status: "pending", message })
+      .returning();
+    await notifyOnConnectionRequest(self.projectId, target, self.id, row!.id);
+    return c.json({ id: row!.id, status: row!.status, createdAt: iso(row!.createdAt) }, 201);
+  })
   .get("/users/:userId/connection", requireAuth, scopeDbToAuthProject, async (c) => {
     const self = await me(c);
     const row = await between(self.projectId, self.id, uuidParam(c, "userId"));

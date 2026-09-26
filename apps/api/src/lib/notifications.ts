@@ -354,6 +354,25 @@ export async function notifyOnConnectionAccept(
   }
 }
 
+/** On a message request: notify the recipient (message-request). */
+export async function notifyOnMessageRequest(
+  projectId: string, recipientId: string, requesterId: string, conversationId: string, messageContent?: string | null,
+): Promise<void> {
+  try {
+    const actor = await loadActor(projectId, requesterId);
+    if (!actor) return;
+    await insert(projectId, recipientId, requesterId, "message-request", "open-conversation", {
+      conversationId,
+      messageContent,
+      ...actor,
+    });
+  } catch (err) {
+    logger.error("[notifications] notifyOnMessageRequest failed");
+    logger.debug({ err }, "[notifications] notifyOnMessageRequest failed");
+  }
+}
+
+
 // ─── steward conflict-resolution notifications ───────────────────────────────
 // The case lifecycle stage being announced.
 export type StewardCaseKind = "opened" | "in_mediation" | "closed";

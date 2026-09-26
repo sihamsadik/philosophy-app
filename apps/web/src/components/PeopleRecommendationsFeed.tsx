@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { User, UserRecommendation, ConnectionIntent } from "@philosophy/contract";
-import { agoraClient } from "../lib/api-client.js";
+import { agoraClient, type ConnectionRequest } from "../lib/api-client.js";
 import { DualAxisCompatibilityGauge } from "./DualAxisCompatibilityGauge.js";
 
 const INTENT_FILTERS: { id: ConnectionIntent | "all"; label: string; icon: string }[] = [
@@ -23,17 +23,26 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Pending incoming connection requests & local connection state tracking
+  const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
+  const [acceptedUserIds, setAcceptedUserIds] = useState<Set<string>>(new Set());
+  const [declinedUserIds, setDeclinedUserIds] = useState<Set<string>>(new Set());
+
   const fetchRecommendations = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await agoraClient.getPeopleRecommendations({
-        connectionIntent: selectedIntent === "all" ? undefined : selectedIntent,
-        school: schoolFilter || undefined,
-        thinker: thinkerFilter || undefined,
-        limit: 10,
-      });
-      setRecommendations(res.recommendations);
+      const [recRes, reqRes] = await Promise.all([
+        agoraClient.getPeopleRecommendations({
+          connectionIntent: selectedIntent === "all" ? undefined : selectedIntent,
+          school: schoolFilter || undefined,
+          thinker: thinkerFilter || undefined,
+          limit: 10,
+        }),
+        agoraClient.getConnectionRequests().catch(() => ({ requests: [] })),
+      ]);
+      setRecommendations(recRes.recommendations);
+      setConnectionRequests(reqRes.requests || []);
     } catch (err: any) {
       setError(err.message || "Failed to load recommendations");
     } finally {
@@ -48,6 +57,28 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchRecommendations();
+  };
+
+  const handleAcceptConnection = async (requestId: string, userId: string) => {
+    try {
+      await agoraClient.acceptConnectionRequest(requestId);
+      setAcceptedUserIds((prev) => new Set([...prev, userId]));
+      setConnectionRequests((prev) => prev.filter((r) => r.id !== requestId));
+      window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+    } catch (err) {
+      console.error("Failed to accept connection:", err);
+    }
+  };
+
+  const handleDeclineConnection = async (requestId: string, userId: string) => {
+    try {
+      await agoraClient.declineConnectionRequest(requestId);
+      setDeclinedUserIds((prev) => new Set([...prev, userId]));
+      setConnectionRequests((prev) => prev.filter((r) => r.id !== requestId));
+      window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+    } catch (err) {
+      console.error("Failed to decline connection:", err);
+    }
   };
 
   return (
@@ -119,6 +150,14 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
           {recommendations.map((rec) => {
             const { user, compatibility } = rec;
             const profile = user.philosophyProfile;
+            
+            // Check if there is an incoming pending connection request from this user
+            const pendingReq = connectionRequests.find(
+              (r) => r.status === "pending" && (r.sender?.id === user.id || r.sender?.username === user.username)
+            );
+            const isAccepted = acceptedUserIds.has(user.id);
+            const isDeclined = declinedUserIds.has(user.id);
+
             return (
               <div key={user.id} className="user-recommendation-card">
                 <div className="user-card-header">
@@ -148,23 +187,53 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                 <DualAxisCompatibilityGauge compatibility={compatibility} />
 
                 {/* Action Buttons */}
-                <div className="card-actions" style={{ gap: 10 }}>
-                  {onOpenConnectModal && (
-                    <button
-                      className="connect-btn"
-                      style={{ fontSize: "0.85rem" }}
-                      onClick={() => onOpenConnectModal(user)}
-                    >
-                      🤝 Send Invite
-                    </button>
+                <div className="card-actions" style={{ gap: 10, flexWrap: "wrap" }}>
+                  {isAccepted ? (
+                    <span className="status-accepted-chip" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981", padding: "6px 12px", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600 }}>
+                      ✓ Connected
+                    </span>
+                  ) : isDeclined ? (
+                    <span className="status-declined-chip" style={{ background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", padding: "6px 12px", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600 }}>
+                      ✕ Request Declined
+                    </span>
+                  ) : pendingReq ? (
+                    /* Incoming Request: show Accept and Decline choice directly on card */
+                    <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                      <button
+                        className="accept-req-btn"
+                        style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", borderRadius: 8, background: "#10b981", color: "#ffffff", border: "none", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                        onClick={() => handleAcceptConnection(pendingReq.id, user.id)}
+                      >
+                        🟢 Accept Connection
+                      </button>
+                      <button
+                        className="decline-req-btn"
+                        style={{ fontSize: "0.85rem", padding: "8px 12px", borderRadius: 8, background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.4)", cursor: "pointer", fontWeight: 600 }}
+                        onClick={() => handleDeclineConnection(pendingReq.id, user.id)}
+                      >
+                        🔴 Decline
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {onOpenConnectModal && (
+                        <button
+                          className="connect-btn"
+                          style={{ fontSize: "0.85rem" }}
+                          onClick={() => onOpenConnectModal(user)}
+                        >
+                          🤝 Send Invite
+                        </button>
+                      )}
+                      <button
+                        className="action-btn"
+                        style={{ fontSize: "0.85rem" }}
+                        onClick={() => onOpenDM && onOpenDM(user)}
+                      >
+                        💬 Message
+                      </button>
+                    </>
                   )}
-                  <button
-                    className="action-btn"
-                    style={{ fontSize: "0.85rem" }}
-                    onClick={() => onOpenDM && onOpenDM(user)}
-                  >
-                    💬 Message
-                  </button>
                 </div>
               </div>
             );
@@ -174,4 +243,3 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
     </div>
   );
 };
-
