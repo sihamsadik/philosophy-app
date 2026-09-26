@@ -23,6 +23,7 @@ import { PwaInstallModal } from "./components/PwaInstallModal.js";
 import { MomentsCarousel } from "./components/MomentsCarousel.js";
 import { LiveTextDebateModal } from "./components/LiveTextDebateModal.js";
 import { LiveEventJoinModal } from "./components/LiveEventJoinModal.js";
+import { PublicUserProfileModal } from "./components/PublicUserProfileModal.js";
 import { PublicLandingDashboard } from "./components/PublicLandingDashboard.js";
 import { BottomNavDock, type NavTab as BottomNavTab } from "./components/BottomNavDock.js";
 import { agoraClient } from "./lib/api-client.js";
@@ -62,6 +63,16 @@ export const App: React.FC = () => {
   const [realtimeSocket, setRealtimeSocket] = useState<Socket | null>(null);
   const [connectTargetUser, setConnectTargetUser] = useState<User | null>(null);
 
+  // Public User Profile Modal state
+  const [publicProfileUser, setPublicProfileUser] = useState<User | { id: string; name?: string; username?: string; avatar?: string } | null>(null);
+  const [isPublicProfileOpen, setIsPublicProfileOpen] = useState(false);
+
+  const handleOpenPublicProfile = React.useCallback((target: User | { id: string; name?: string; username?: string; avatar?: string } | null) => {
+    if (!target) return;
+    setPublicProfileUser(target);
+    setIsPublicProfileOpen(true);
+  }, []);
+
   const refreshNotifCount = React.useCallback(async () => {
     try {
       const res = await agoraClient.getNotifications();
@@ -85,11 +96,17 @@ export const App: React.FC = () => {
 
     const handleNotifUpdate = () => refreshNotifCount();
     const handleDmUpdate = () => refreshDmUnreadCount();
+    const handleOpenProfileEvent = (e: any) => {
+      if (e.detail?.user || e.detail?.userId) {
+        handleOpenPublicProfile(e.detail.user || { id: e.detail.userId, username: e.detail.username });
+      }
+    };
 
     window.addEventListener("agora_notification_updated", handleNotifUpdate);
     window.addEventListener("agora_comment_added", handleNotifUpdate);
     window.addEventListener("agora_message_sent", handleDmUpdate);
     window.addEventListener("agora_dm_unread_updated", handleDmUpdate);
+    window.addEventListener("agora_open_profile", handleOpenProfileEvent);
 
     // Poll every 15s to update unread badges when background activity occurs
     const interval = setInterval(() => {
@@ -101,6 +118,7 @@ export const App: React.FC = () => {
       window.removeEventListener("agora_comment_added", handleNotifUpdate);
       window.removeEventListener("agora_message_sent", handleDmUpdate);
       window.removeEventListener("agora_dm_unread_updated", handleDmUpdate);
+      window.removeEventListener("agora_open_profile", handleOpenProfileEvent);
       clearInterval(interval);
     };
   }, [refreshNotifCount, refreshDmUnreadCount, user?.id, isAuthenticated]);
@@ -357,6 +375,7 @@ export const App: React.FC = () => {
                 <PeopleRecommendationsFeed
                   onOpenDM={(targetUser) => handleOpenDM(targetUser)}
                   onOpenConnectModal={(targetUser) => setConnectTargetUser(targetUser)}
+                  onOpenProfile={(targetUser) => handleOpenPublicProfile(targetUser)}
                 />
               )}
 
@@ -365,6 +384,7 @@ export const App: React.FC = () => {
                   key={feedRefreshKey}
                   onOpenDebateSummary={(entityId) => setActiveDrawerEntityId(entityId)}
                   onOpenDM={(authorUser) => handleOpenDM(authorUser)}
+                  onOpenProfile={(authorUser) => handleOpenPublicProfile(authorUser)}
                   onOpenComposer={() => {
                     setComposerSpaceId(undefined);
                     setIsPostComposerOpen(true);
@@ -382,7 +402,7 @@ export const App: React.FC = () => {
                 />
               )}
 
-              {activeTab === "search" && <SemanticSearch />}
+              {activeTab === "search" && <SemanticSearch onOpenProfile={(targetUser) => handleOpenPublicProfile(targetUser)} />}
             </>
           )}
         </ErrorBoundary>
@@ -522,6 +542,15 @@ export const App: React.FC = () => {
         onClose={() => setIsPwaModalOpen(false)}
         deferredPrompt={(window as any).deferredPwaPrompt}
         onTriggerInstall={handleTriggerPwaInstall}
+      />
+
+      <PublicUserProfileModal
+        isOpen={isPublicProfileOpen}
+        onClose={() => setIsPublicProfileOpen(false)}
+        targetUser={publicProfileUser}
+        onOpenDM={(targetUser) => handleOpenDM(targetUser)}
+        onEditOwnProfile={() => setActiveTab("profile")}
+        onOpenThreadDrawer={(postId) => setActiveThreadPostId(postId)}
       />
     </div>
   );

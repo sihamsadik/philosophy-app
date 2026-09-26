@@ -468,7 +468,20 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
             ) : selectedConv ? (
               <>
                 {/* Chat Partner Bar */}
-                <div className="chat-partner-bar">
+                <div
+                  className="chat-partner-bar"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    if (selectedPartner) {
+                      window.dispatchEvent(
+                        new CustomEvent("agora_open_profile", {
+                          detail: { user: selectedPartner },
+                        })
+                      );
+                    }
+                  }}
+                  title={`View ${selectedPartner.name || selectedPartner.username}'s public profile`}
+                >
                   {selectedPartner.avatar ? (
                     <img
                       src={selectedPartner.avatar}

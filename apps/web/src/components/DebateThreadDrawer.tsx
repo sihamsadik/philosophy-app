@@ -13,6 +13,7 @@ export interface DebateThreadDrawerProps {
   postAuthorName?: string;
   postAuthorHandle?: string;
   onOpenDebateSummary?: (postId: string) => void;
+  onOpenProfile?: (user: any) => void;
 }
 
 export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
@@ -25,6 +26,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
   postAuthorName,
   postAuthorHandle,
   onOpenDebateSummary,
+  onOpenProfile,
 }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<PhilosophicalComment[]>([]);
@@ -269,13 +271,29 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
       >
         <div className={`youtube-comment-card ${isTargeted ? "highlighted-reply-comment" : ""}`} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "6px 0" }}>
           {/* Avatar Column */}
-          {comment.authorAvatar ? (
-            <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
-          ) : (
-            <div className="author-avatar-circle-sm" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "#ffffff" }}>
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div
+            style={{ cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onOpenProfile) {
+                onOpenProfile({
+                  id: comment.authorId || "usr-comment",
+                  name: comment.authorName,
+                  username: comment.authorHandle,
+                  avatar: comment.authorAvatar,
+                });
+              }
+            }}
+            title={`View ${displayName}'s public profile`}
+          >
+            {comment.authorAvatar ? (
+              <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
+            ) : (
+              <div className="author-avatar-circle-sm" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "#ffffff" }}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
 
           {/* Body Column */}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -290,6 +308,18 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                   background: isAuthor ? "rgba(56, 189, 248, 0.12)" : "transparent",
                   padding: isAuthor ? "1px 6px" : 0,
                   borderRadius: isAuthor ? 6 : 0,
+                  cursor: "pointer",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onOpenProfile) {
+                    onOpenProfile({
+                      id: comment.authorId || "usr-comment",
+                      name: comment.authorName,
+                      username: comment.authorHandle,
+                      avatar: comment.authorAvatar,
+                    });
+                  }
                 }}
               >
                 {displayName} {isCurrentUser && displayName !== "You" ? <span style={{ color: "#38bdf8", fontWeight: 600, fontSize: "0.78rem" }}>(You)</span> : null}

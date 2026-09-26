@@ -13,9 +13,10 @@ const INTENT_FILTERS: { id: ConnectionIntent | "all"; label: string; icon: strin
 export interface PeopleRecommendationsFeedProps {
   onOpenDM?: (user: User) => void;
   onOpenConnectModal?: (user: User) => void;
+  onOpenProfile?: (user: User) => void;
 }
 
-export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps> = ({ onOpenDM, onOpenConnectModal }) => {
+export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps> = ({ onOpenDM, onOpenConnectModal, onOpenProfile }) => {
   const [recommendations, setRecommendations] = useState<UserRecommendation[]>([]);
   const [selectedIntent, setSelectedIntent] = useState<ConnectionIntent | "all">("all");
   const [schoolFilter, setSchoolFilter] = useState("");
@@ -361,7 +362,14 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
             return (
               <div key={user.id} className="user-recommendation-card">
                 <div className="user-card-header">
-                  <div className="user-avatar-block">
+                  <div
+                    className="user-avatar-block"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      if (onOpenProfile) onOpenProfile(user);
+                    }}
+                    title={`View ${user.name || user.username}'s public profile`}
+                  >
                     {user.avatar ? (
                       <img src={user.avatar} alt="Avatar" className="navbar-avatar-img" />
                     ) : (

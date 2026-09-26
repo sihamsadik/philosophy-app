@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { agoraClient } from "../lib/api-client.js";
 
-export const SemanticSearch: React.FC = () => {
+export interface SemanticSearchProps {
+  onOpenProfile?: (user: any) => void;
+}
+
+export const SemanticSearch: React.FC<SemanticSearchProps> = ({ onOpenProfile }) => {
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"all" | "users" | "entities" | "spaces">("all");
   const [results, setResults] = useState<any[]>([]);
@@ -128,7 +132,16 @@ export const SemanticSearch: React.FC = () => {
                 <div className="result-card-body">
                   {type === "profile" && (
                     <div>
-                      <h4 className="result-title">{record.name || record.username}</h4>
+                      <h4
+                        className="result-title"
+                        style={{ cursor: "pointer", color: "#38bdf8" }}
+                        onClick={() => {
+                          if (onOpenProfile) onOpenProfile(record);
+                        }}
+                        title={`View ${record.name || record.username}'s public profile`}
+                      >
+                        {record.name || record.username}
+                      </h4>
                       <p className="result-snippet">{record.philosophyProfile?.worldviewSummary || record.bio || "No bio provided."}</p>
                       {record.philosophyProfile?.primarySchools && (
                         <div className="chip-row">

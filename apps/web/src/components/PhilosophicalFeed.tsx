@@ -6,6 +6,7 @@ import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js"
 export interface PhilosophicalFeedProps {
   onOpenDebateSummary: (postId: string) => void;
   onOpenDM: (authorUser: User) => void;
+  onOpenProfile?: (user: User | { id: string; name?: string; username?: string; avatar?: string }) => void;
   onOpenComposer: () => void;
   onOpenThreadDrawer?: (postId: string) => void;
 }
@@ -13,6 +14,7 @@ export interface PhilosophicalFeedProps {
 export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
   onOpenDebateSummary,
   onOpenDM,
+  onOpenProfile,
   onOpenComposer,
   onOpenThreadDrawer,
 }) => {
@@ -155,7 +157,24 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
               <div key={post.id} className="search-result-card post-feed-card">
                 {/* Author Bar */}
                 <div className="post-author-row">
-                  <div className="author-identity">
+                  <div
+                    className="author-identity"
+                    style={{ cursor: "pointer" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const authorObj = {
+                        id: post.authorId,
+                        name: post.authorName,
+                        username: post.authorHandle,
+                        avatar: post.authorAvatar,
+                      };
+                      if (onOpenProfile) {
+                        onOpenProfile(authorObj);
+                      }
+                      window.dispatchEvent(new CustomEvent("agora_open_profile", { detail: { user: authorObj } }));
+                    }}
+                    title={`View ${post.authorName || post.authorHandle}'s public profile`}
+                  >
                     {post.authorAvatar ? (
                       <img src={post.authorAvatar} alt="Avatar" className="author-avatar-img" />
                     ) : (
@@ -260,6 +279,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                     postAuthorName={post.authorName}
                     postAuthorHandle={post.authorHandle}
                     onOpenDebateSummary={onOpenDebateSummary}
+                    onOpenProfile={onOpenProfile}
                   />
                 )}
               </div>

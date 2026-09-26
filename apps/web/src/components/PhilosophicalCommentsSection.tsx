@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import type { User } from "@philosophy/contract";
 import type { PhilosophicalComment } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
@@ -9,6 +10,7 @@ export interface PhilosophicalCommentsSectionProps {
   postAuthorName?: string;
   postAuthorHandle?: string;
   onOpenDebateSummary?: (entityId: string) => void;
+  onOpenProfile?: (user: User | { id: string; name?: string; username?: string; avatar?: string }) => void;
 }
 
 export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSectionProps> = ({
@@ -17,6 +19,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
   postAuthorName,
   postAuthorHandle,
   onOpenDebateSummary,
+  onOpenProfile,
 }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<PhilosophicalComment[]>([]);
@@ -223,13 +226,31 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
       >
         <div className="youtube-comment-card" style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "6px 0" }}>
           {/* Avatar Column */}
-          {comment.authorAvatar ? (
-            <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
-          ) : (
-            <div className="author-avatar-circle-sm" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "#ffffff" }}>
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div
+            style={{ cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const authorObj = {
+                id: comment.authorId || "usr-comment",
+                name: comment.authorName,
+                username: comment.authorHandle,
+                avatar: comment.authorAvatar,
+              };
+              if (onOpenProfile) {
+                onOpenProfile(authorObj);
+              }
+              window.dispatchEvent(new CustomEvent("agora_open_profile", { detail: { user: authorObj } }));
+            }}
+            title={`View ${displayName}'s public profile`}
+          >
+            {comment.authorAvatar ? (
+              <img src={comment.authorAvatar} alt="Avatar" className="author-avatar-img-sm" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
+            ) : (
+              <div className="author-avatar-circle-sm" style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "#ffffff" }}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
 
           {/* Body Column */}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -244,6 +265,18 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                   background: isAuthor ? "rgba(56, 189, 248, 0.12)" : "transparent",
                   padding: isAuthor ? "1px 6px" : 0,
                   borderRadius: isAuthor ? 6 : 0,
+                  cursor: "pointer",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onOpenProfile) {
+                    onOpenProfile({
+                      id: comment.authorId || "usr-comment",
+                      name: comment.authorName,
+                      username: comment.authorHandle,
+                      avatar: comment.authorAvatar,
+                    });
+                  }
                 }}
               >
                 {displayName} {isCurrentUser && displayName !== "You" ? <span style={{ color: "#38bdf8", fontWeight: 600, fontSize: "0.78rem" }}>(You)</span> : null}
