@@ -194,7 +194,27 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
                   boxShadow: boxShadowStyle,
                 }}
               >
-                <img src={item.avatar} alt={item.name} className="moment-avatar-img" />
+                {item.avatar ? (
+                  <img src={item.avatar} alt={item.name} className="moment-avatar-img" />
+                ) : (
+                  <div
+                    className="moment-avatar-img initials-avatar"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #6366f1, #a855f7)",
+                      color: "#fff",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.1rem"
+                    }}
+                  >
+                    {(item.name || "H").charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div
                   style={{
                     position: "absolute",

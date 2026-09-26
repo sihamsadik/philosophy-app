@@ -374,12 +374,26 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                 <p className="event-description">{event.description}</p>
 
                 {/* Host Identity */}
-                <div className="event-host-row">
-                  <img
-                    src={event.hostUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"}
-                    alt={event.hostUser.name || event.hostUser.username || "Host"}
-                    className="host-avatar"
-                  />
+                <div
+                  className="event-host-row"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: event.hostUser } }));
+                  }}
+                  style={{ cursor: "pointer" }}
+                  title={`View ${event.hostUser.name || event.hostUser.username}'s profile`}
+                >
+                  {event.hostUser.avatar ? (
+                    <img
+                      src={event.hostUser.avatar}
+                      alt={event.hostUser.name || event.hostUser.username || "Host"}
+                      className="host-avatar"
+                    />
+                  ) : (
+                    <div className="host-avatar initials-avatar">
+                      {(event.hostUser.name || event.hostUser.username || "H").charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="host-info">
                     <div className="host-name">{event.hostUser.name || event.hostUser.username}</div>
                     <div className="host-school">
@@ -536,12 +550,35 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
               ) : (
                 filteredRsvps.map((rsvp) => (
                   <div key={rsvp.id} className="roster-item-card">
-                    <img
-                      src={rsvp.user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"}
-                      alt={rsvp.user.name || rsvp.user.username || "Thinker"}
-                      className="thinker-avatar"
-                    />
-                    <div className="thinker-info">
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: rsvp.user } }));
+                      }}
+                      style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+                      title={`View ${rsvp.user.name || rsvp.user.username}'s profile`}
+                    >
+                      {rsvp.user.avatar ? (
+                        <img
+                          src={rsvp.user.avatar}
+                          alt={rsvp.user.name || rsvp.user.username || "Thinker"}
+                          className="thinker-avatar"
+                        />
+                      ) : (
+                        <div className="thinker-avatar initials-avatar">
+                          {(rsvp.user.name || rsvp.user.username || "T").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className="thinker-info"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: rsvp.user } }));
+                      }}
+                      style={{ cursor: "pointer" }}
+                      title={`View ${rsvp.user.name || rsvp.user.username}'s profile`}
+                    >
                       <div className="thinker-name-row">
                         <span className="thinker-name">{rsvp.user.name || rsvp.user.username}</span>
                         <span className={`rsvp-status-badge status-${rsvp.status}`}>

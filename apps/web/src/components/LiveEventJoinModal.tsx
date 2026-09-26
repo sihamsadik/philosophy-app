@@ -420,13 +420,40 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
           <span className="host-card-label" style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 700, letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>
             EVENT CREATOR & HOST {isHost ? "👑 (YOU)" : ""}
           </span>
-          <div className="host-identity-row" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <img
-              src={host.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"}
-              alt={host.name || host.username || "Host"}
-              className="host-large-avatar"
-              style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }}
-            />
+          <div
+            className="host-identity-row"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: host } }));
+            }}
+            style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+            title={`View ${host.name || host.username}'s profile`}
+          >
+            {host.avatar ? (
+              <img
+                src={host.avatar}
+                alt={host.name || host.username || "Host"}
+                className="host-large-avatar"
+                style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.1rem"
+                }}
+              >
+                {(host.name || host.username || "H").charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="host-details" style={{ flex: 1 }}>
               <h4 className="host-name" style={{ margin: 0, fontSize: "0.98rem" }}>{host.name || host.username}</h4>
               <span className="host-handle" style={{ fontSize: "0.8rem", color: "#94a3b8" }}>@{host.username || "organizer"}</span>
@@ -595,8 +622,32 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <img src={msg.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"} alt="" style={{ width: 20, height: 20, borderRadius: "50%" }} />
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.dispatchEvent(
+                          new CustomEvent('agora_open_profile', {
+                            detail: {
+                              user: {
+                                id: msg.authorHandle || msg.id,
+                                name: msg.authorName,
+                                username: msg.authorHandle || msg.authorName.toLowerCase().replace(/\s+/g, "_"),
+                                avatar: msg.authorAvatar,
+                              },
+                            },
+                          })
+                        );
+                      }}
+                      title={`View ${msg.authorName}'s profile`}
+                    >
+                      {msg.authorAvatar ? (
+                        <img src={msg.authorAvatar} alt="" style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#6366f1", color: "#fff", fontSize: "0.65rem", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {(msg.authorName || "U").charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <span style={{ fontWeight: 700, fontSize: "0.82rem", color: "#f8fafc" }}>{msg.authorName}</span>
                     </div>
                     <span style={{ fontSize: "0.7rem", padding: "2px 6px", borderRadius: 8, background: msg.stance === "thesis" ? "rgba(74, 222, 128, 0.15)" : msg.stance === "antithesis" ? "rgba(248, 113, 113, 0.15)" : "rgba(168, 85, 247, 0.15)", color: msg.stance === "thesis" ? "#4ade80" : msg.stance === "antithesis" ? "#f87171" : "#c084fc", fontWeight: 700 }}>

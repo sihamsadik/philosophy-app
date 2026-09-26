@@ -72,7 +72,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
         id: "00000000-0000-0000-0000-000000000001",
         name: "You (Event Organizer)",
         username: "you",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        avatar: undefined,
         philosophyProfile: {
           primarySchools: ["Philosophy"],
           keyThinkers: ["Socrates"],
@@ -116,7 +116,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
 
   const activeHostName = user?.name || user?.username || "You (Event Organizer)";
   const activeHostHandle = user?.username || "organizer";
-  const activeHostAvatar = user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+  const activeHostAvatar = user?.avatar || undefined;
   const activeHostSchool = user?.philosophyProfile?.primarySchools?.[0] || "Philosophical Host";
 
   return (
@@ -182,7 +182,27 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
 
         {/* Organizer Preview Card */}
         <div style={{ background: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 16, padding: 14, marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
-          <img src={activeHostAvatar} alt="Host Avatar" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid #3b82f6" }} />
+          {activeHostAvatar ? (
+            <img src={activeHostAvatar} alt="Host Avatar" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid #3b82f6" }} />
+          ) : (
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+                color: "#ffffff",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.1rem",
+                border: "2px solid #3b82f6"
+              }}
+            >
+              {(activeHostName || "H").charAt(0).toUpperCase()}
+            </div>
+          )}
           <div style={{ flex: 1 }}>
             <span style={{ fontSize: "0.72rem", color: "#60a5fa", fontWeight: 700, letterSpacing: "0.05em", display: "block" }}>EVENT CREATOR & HOST</span>
             <h4 style={{ margin: "2px 0 0 0", fontSize: "0.95rem", color: "#f8fafc" }}>{activeHostName} <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: "0.82rem" }}>@{activeHostHandle}</span></h4>

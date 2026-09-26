@@ -55,7 +55,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
 
   const currentAuthorName = authorName || user?.name || user?.username || "You (Thinker)";
   const currentAuthorHandle = authorHandle || user?.username || "you";
-  const currentAuthorAvatar = authorAvatar || user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+  const currentAuthorAvatar = authorAvatar || user?.avatar || undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

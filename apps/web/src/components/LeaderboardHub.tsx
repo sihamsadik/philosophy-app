@@ -125,12 +125,37 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
               {topThree[1] && (
                 <div className="podium-card rank-2">
                   <div className="podium-rank-badge">🥈 2nd</div>
-                  <img
-                    src={topThree[1].user.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"}
-                    alt={topThree[1].user.name || topThree[1].user.username || "Thinker"}
-                    className="podium-avatar"
-                  />
-                  <h3 className="podium-name">{topThree[1].user.name || topThree[1].user.username}</h3>
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: topThree[1]!.user } }));
+                    }}
+                    style={{ cursor: "pointer", display: "inline-block" }}
+                    title={`View ${topThree[1]!.user.name || topThree[1]!.user.username}'s profile`}
+                  >
+                    {topThree[1]!.user.avatar ? (
+                      <img
+                        src={topThree[1]!.user.avatar}
+                        alt={topThree[1]!.user.name || topThree[1]!.user.username || "Thinker"}
+                        className="podium-avatar"
+                      />
+                    ) : (
+                      <div className="podium-avatar initials-avatar">
+                        {(topThree[1]!.user.name || topThree[1]!.user.username || "U").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <h3
+                    className="podium-name"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: topThree[1]!.user } }));
+                    }}
+                    style={{ cursor: "pointer" }}
+                    title={`View ${topThree[1]!.user.name || topThree[1]!.user.username}'s profile`}
+                  >
+                    {topThree[1]!.user.name || topThree[1]!.user.username}
+                  </h3>
                   <span className="podium-school">{topThree[1].primarySchool}</span>
 
                   <div className="rep-score-chip">
@@ -148,7 +173,10 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   {onOpenDM && topThree[1]?.user && (
                     <button
                       className="btn-dm-podium"
-                      onClick={() => onOpenDM(topThree[1]!.user)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDM(topThree[1]!.user);
+                      }}
                     >
                       💬 DM
                     </button>
@@ -161,12 +189,37 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                 <div className="podium-card rank-1">
                   <div className="podium-crown">👑</div>
                   <div className="podium-rank-badge gold-badge">🥇 1st Place</div>
-                  <img
-                    src={topThree[0].user.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80"}
-                    alt={topThree[0].user.name || topThree[0].user.username || "Thinker"}
-                    className="podium-avatar rank-1-avatar"
-                  />
-                  <h3 className="podium-name">{topThree[0].user.name || topThree[0].user.username}</h3>
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: topThree[0]!.user } }));
+                    }}
+                    style={{ cursor: "pointer", display: "inline-block" }}
+                    title={`View ${topThree[0]!.user.name || topThree[0]!.user.username}'s profile`}
+                  >
+                    {topThree[0]!.user.avatar ? (
+                      <img
+                        src={topThree[0]!.user.avatar}
+                        alt={topThree[0]!.user.name || topThree[0]!.user.username || "Thinker"}
+                        className="podium-avatar rank-1-avatar"
+                      />
+                    ) : (
+                      <div className="podium-avatar rank-1-avatar initials-avatar">
+                        {(topThree[0]!.user.name || topThree[0]!.user.username || "U").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <h3
+                    className="podium-name"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: topThree[0]!.user } }));
+                    }}
+                    style={{ cursor: "pointer" }}
+                    title={`View ${topThree[0]!.user.name || topThree[0]!.user.username}'s profile`}
+                  >
+                    {topThree[0]!.user.name || topThree[0]!.user.username}
+                  </h3>
                   <span className="podium-school">{topThree[0].primarySchool}</span>
 
                   <div className="rep-score-chip gold-rep">
@@ -184,7 +237,10 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   {onOpenDM && topThree[0]?.user && (
                     <button
                       className="btn-dm-podium gold-btn"
-                      onClick={() => onOpenDM(topThree[0]!.user)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDM(topThree[0]!.user);
+                      }}
                     >
                       💬 DM Champion
                     </button>
@@ -196,12 +252,37 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
               {topThree[2] && (
                 <div className="podium-card rank-3">
                   <div className="podium-rank-badge">🥉 3rd</div>
-                  <img
-                    src={topThree[2].user.avatar || "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80"}
-                    alt={topThree[2].user.name || topThree[2].user.username || "Thinker"}
-                    className="podium-avatar"
-                  />
-                  <h3 className="podium-name">{topThree[2].user.name || topThree[2].user.username}</h3>
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: topThree[2]!.user } }));
+                    }}
+                    style={{ cursor: "pointer", display: "inline-block" }}
+                    title={`View ${topThree[2]!.user.name || topThree[2]!.user.username}'s profile`}
+                  >
+                    {topThree[2]!.user.avatar ? (
+                      <img
+                        src={topThree[2]!.user.avatar}
+                        alt={topThree[2]!.user.name || topThree[2]!.user.username || "Thinker"}
+                        className="podium-avatar"
+                      />
+                    ) : (
+                      <div className="podium-avatar initials-avatar">
+                        {(topThree[2]!.user.name || topThree[2]!.user.username || "U").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <h3
+                    className="podium-name"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: topThree[2]!.user } }));
+                    }}
+                    style={{ cursor: "pointer" }}
+                    title={`View ${topThree[2]!.user.name || topThree[2]!.user.username}'s profile`}
+                  >
+                    {topThree[2]!.user.name || topThree[2]!.user.username}
+                  </h3>
                   <span className="podium-school">{topThree[2].primarySchool}</span>
 
                   <div className="rep-score-chip">
@@ -219,7 +300,10 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   {onOpenDM && topThree[2]?.user && (
                     <button
                       className="btn-dm-podium"
-                      onClick={() => onOpenDM(topThree[2]!.user)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDM(topThree[2]!.user);
+                      }}
                     >
                       💬 DM
                     </button>
@@ -253,12 +337,26 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                       </td>
 
                       <td className="user-cell">
-                        <div className="user-info-group">
-                          <img
-                            src={entry.user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"}
-                            alt={entry.user.name || entry.user.username || "User"}
-                            className="table-avatar"
-                          />
+                        <div
+                          className="user-info-group"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.dispatchEvent(new CustomEvent('agora_open_profile', { detail: { user: entry.user } }));
+                          }}
+                          style={{ cursor: "pointer" }}
+                          title={`View ${entry.user.name || entry.user.username}'s profile`}
+                        >
+                          {entry.user.avatar ? (
+                            <img
+                              src={entry.user.avatar}
+                              alt={entry.user.name || entry.user.username || "User"}
+                              className="table-avatar"
+                            />
+                          ) : (
+                            <div className="table-avatar initials-avatar">
+                              {(entry.user.name || entry.user.username || "U").charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div className="table-user-details">
                             <span className="table-user-name">
                               {entry.user.name || entry.user.username}
@@ -283,7 +381,10 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                         {onOpenDM && (
                           <button
                             className="table-dm-btn"
-                            onClick={() => onOpenDM(entry.user)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenDM(entry.user);
+                            }}
                           >
                             💬 DM
                           </button>
