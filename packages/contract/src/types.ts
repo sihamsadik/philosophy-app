@@ -29,6 +29,8 @@ export interface CompatibilityScore {
 export interface UserRecommendation {
   user: User;
   compatibility: CompatibilityScore;
+  relationshipState?: "none" | "outgoing_pending" | "incoming_pending" | "connected";
+  connectionId?: string;
 }
 
 export interface User {

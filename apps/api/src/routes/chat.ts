@@ -242,7 +242,15 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
     const me = c.var.auth!.userId;
     const rows = (await getDb().execute(sql`
       select count(*)::int as total_unread,
-             count(distinct m.conversation_id)::int as unread_conversation_count
+             count(distinct m.conversation_id)::int as unread_conversation_count,
+             (
+               select count(*)::int
+               from conversation_members cm2
+               join conversations c2 on c2.id = cm2.conversation_id and c2.project_id = cm2.project_id and c2.type = 'direct'
+               where cm2.project_id = ${c.var.projectId} and cm2.user_id = ${me} and cm2.is_active = true
+                 and coalesce(c2.metadata->>'requestStatus', '') = 'pending'
+                 and coalesce(c2.metadata->>'addresseeId', '') = ${me}
+             ) as pending_request_count
       from conversation_members cm
       join conversations c on c.id = cm.conversation_id and c.project_id = cm.project_id and c.type = 'direct'
       join chat_messages m on m.conversation_id = cm.conversation_id
@@ -252,9 +260,10 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
         and (cm.last_read_at is null or m.created_at > cm.last_read_at)
         and coalesce(c.metadata->>'requestStatus', '') <> 'pending'
         and coalesce(c.metadata->>'requestStatus', '') <> 'declined'
-    `)) as unknown as { total_unread: number; unread_conversation_count: number }[];
-    const r = rows[0] ?? { total_unread: 0, unread_conversation_count: 0 };
-    return c.json({ totalUnread: r.total_unread, unreadConversationCount: r.unread_conversation_count });
+    `)) as unknown as { total_unread: number; unread_conversation_count: number; pending_request_count: number }[];
+    const r = rows[0] ?? { total_unread: 0, unread_conversation_count: 0, pending_request_count: 0 };
+    const total = (r.total_unread || 0) + (r.pending_request_count || 0);
+    return c.json({ totalUnread: total, unreadConversationCount: r.unread_conversation_count, pendingRequestCount: r.pending_request_count });
   })
   .post("/conversations/:id/accept-request", requireAuth, async (c) => {
     const convo = await getConversation(c);
