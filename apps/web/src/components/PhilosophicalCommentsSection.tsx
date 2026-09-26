@@ -77,7 +77,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
 
     const authorName = user?.name || user?.username || "You";
     const authorHandle = user?.username || "you";
-    const authorAvatar = user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+    const authorAvatar = user?.avatar || undefined;
 
     try {
       const created = await agoraClient.createComment(
@@ -99,7 +99,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
 
     const authorName = user?.name || user?.username || "You";
     const authorHandle = user?.username || "you";
-    const authorAvatar = user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+    const authorAvatar = user?.avatar || undefined;
 
     try {
       const created = await agoraClient.createComment(

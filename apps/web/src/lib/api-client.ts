@@ -189,7 +189,12 @@ export class AgoraPhilosophyClient {
   async getUser(userId: string): Promise<User> {
     return this.request<User>(`/users/${userId}`);
   }
-
+  //  Fetch user profile by username
+  
+  async getUserByUsername(username: string): Promise<User> {
+    return this.request<User>(`/users/by-username?username=${encodeURIComponent(username)}`);
+  }
+  /**
   /**
    * Update user's full profile (name, avatar, bio, philosophyProfile)
    */
@@ -1592,8 +1597,9 @@ export class AgoraPhilosophyClient {
   /**
    * Philosophical Posts & Feed
    */
-  async getPosts(): Promise<{ posts: PhilosophicalPost[] }> {
-    const res = await this.request<any>("/entities");
+  async getPosts(authorUserId?: string): Promise<{ posts: PhilosophicalPost[] }> {
+    const url = authorUserId ? `/entities?userId=${encodeURIComponent(authorUserId)}` : "/entities";
+    const res = await this.request<any>(url);
     const list = res?.posts || res?.data || (Array.isArray(res) ? res : []);
     const mapped = (Array.isArray(list) ? list : []).map((p: any) => {
       const meta = p.metadata || {};
@@ -1604,7 +1610,7 @@ export class AgoraPhilosophyClient {
         authorId: p.userId || "usr-001",
         authorName: meta.authorName || p.user?.name || p.user?.username || "Thinker",
         authorHandle: meta.authorHandle || p.user?.username || "thinker",
-        authorAvatar: p.user?.avatar || meta.authorAvatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+        authorAvatar: p.user?.avatar || meta.authorAvatar || undefined,
         postType: meta.postType || "argument",
         primarySchool: meta.primarySchool || "General Philosophy",
         keyThinkers: meta.keyThinkers || [],
@@ -1628,7 +1634,7 @@ export class AgoraPhilosophyClient {
   }): Promise<PhilosophicalPost> {
     const authorName = postData.authorName || "You (Thinker)";
     const authorHandle = postData.authorHandle || "you";
-    const authorAvatar = postData.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+    const authorAvatar = postData.authorAvatar || undefined;
 
     const payload = {
       title: postData.title,
@@ -1737,11 +1743,13 @@ export class AgoraPhilosophyClient {
         "thinker";
 
       const authorAvatar =
+        c.user?.avatar ||
+        c.authorUser?.avatar ||
+        userObj.avatar ||
         c.authorAvatar ||
         meta.authorAvatar ||
         c.author_avatar ||
-        userObj.avatar ||
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+        undefined;
 
       return {
         id: c.id || `comment-${Date.now()}`,
@@ -1770,7 +1778,7 @@ export class AgoraPhilosophyClient {
   ): Promise<PhilosophicalComment> {
     const authorName = authorData?.authorName || "You";
     const authorHandle = authorData?.authorHandle || "you";
-    const authorAvatar = authorData?.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
+    const authorAvatar = authorData?.authorAvatar || undefined;
 
     const post = DEMO_POSTS.find((p) => p.id === entityId);
     if (post) {
