@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
+import { RichReactionPicker } from "./RichReactionPicker.js";
 
 export interface PhilosophicalFeedProps {
   onOpenDebateSummary: (postId: string) => void;
@@ -223,13 +224,26 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                 {/* Post Footer & Actions */}
                 <div className="card-actions" style={{ justifyContent: "space-between" }}>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      className={`upvote-btn ${isUpvoted ? "active" : ""}`}
-                      onClick={() => handleUpvote(post.id)}
-                    >
-                      ▲ {post.upvotesCount}
-                    </button>
+                    <RichReactionPicker
+                      targetId={post.id}
+                      targetType="entity"
+                      reactionCounts={post.reactionCounts}
+                      userReaction={post.userReaction}
+                      onReactionChange={(newReaction, newCounts) => {
+                        setPosts((prev) =>
+                          (Array.isArray(prev) ? prev : []).map((p) =>
+                            p.id === post.id
+                              ? {
+                                  ...p,
+                                  userReaction: newReaction,
+                                  reactionCounts: newCounts,
+                                  upvotesCount: Object.values(newCounts).reduce((a, b) => a + (b || 0), 0),
+                                }
+                              : p
+                          )
+                        );
+                      }}
+                    />
 
                     <button
                       type="button"

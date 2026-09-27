@@ -3,6 +3,7 @@ import type { User } from "@philosophy/contract";
 import type { PhilosophicalComment } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
+import { RichReactionPicker } from "./RichReactionPicker.js";
 
 export interface PhilosophicalCommentsSectionProps {
   entityId: string;
@@ -339,14 +340,27 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
 
             {/* YouTube Action Bar */}
             <div className="comment-actions-bar" style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <button
-                type="button"
-                className={`upvote-btn-sm ${isUpvoted ? "active" : ""}`}
-                style={{ background: isUpvoted ? "rgba(59, 130, 246, 0.2)" : "none", border: "none", color: isUpvoted ? "#60a5fa" : "#94a3b8", fontSize: "0.78rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "2px 6px", borderRadius: 6 }}
-                onClick={() => handleUpvoteComment(comment.id)}
-              >
-                👍 {comment.upvotesCount}
-              </button>
+              <RichReactionPicker
+                targetId={comment.id}
+                targetType="comment"
+                reactionCounts={comment.reactionCounts}
+                userReaction={comment.userReaction}
+                size="sm"
+                onReactionChange={(newReaction, newCounts) => {
+                  setComments((prev) =>
+                    prev.map((c) =>
+                      c.id === comment.id
+                        ? {
+                            ...c,
+                            userReaction: newReaction,
+                            reactionCounts: newCounts,
+                            upvotesCount: Object.values(newCounts).reduce((a, b) => a + (b || 0), 0),
+                          }
+                        : c
+                    )
+                  );
+                }}
+              />
 
               <button
                 type="button"
@@ -562,13 +576,27 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                       </div>
                       <p className="comment-content-body">{comment.content}</p>
                       <div className="comment-actions-bar">
-                        <button
-                          type="button"
-                          className="upvote-btn-sm"
-                          onClick={() => handleUpvoteComment(comment.id)}
-                        >
-                          ▲ {comment.upvotesCount}
-                        </button>
+                        <RichReactionPicker
+                          targetId={comment.id}
+                          targetType="comment"
+                          reactionCounts={comment.reactionCounts}
+                          userReaction={comment.userReaction}
+                          size="sm"
+                          onReactionChange={(newReaction, newCounts) => {
+                            setComments((prev) =>
+                              prev.map((c) =>
+                                c.id === comment.id
+                                  ? {
+                                      ...c,
+                                      userReaction: newReaction,
+                                      reactionCounts: newCounts,
+                                      upvotesCount: Object.values(newCounts).reduce((a, b) => a + (b || 0), 0),
+                                    }
+                                  : c
+                              )
+                            );
+                          }}
+                        />
                       </div>
                     </div>
                   ))
@@ -594,13 +622,27 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                       </div>
                       <p className="comment-content-body">{comment.content}</p>
                       <div className="comment-actions-bar">
-                        <button
-                          type="button"
-                          className="upvote-btn-sm"
-                          onClick={() => handleUpvoteComment(comment.id)}
-                        >
-                          ▲ {comment.upvotesCount}
-                        </button>
+                        <RichReactionPicker
+                          targetId={comment.id}
+                          targetType="comment"
+                          reactionCounts={comment.reactionCounts}
+                          userReaction={comment.userReaction}
+                          size="sm"
+                          onReactionChange={(newReaction, newCounts) => {
+                            setComments((prev) =>
+                              prev.map((c) =>
+                                c.id === comment.id
+                                  ? {
+                                      ...c,
+                                      userReaction: newReaction,
+                                      reactionCounts: newCounts,
+                                      upvotesCount: Object.values(newCounts).reduce((a, b) => a + (b || 0), 0),
+                                    }
+                                  : c
+                              )
+                            );
+                          }}
+                        />
                       </div>
                     </div>
                   ))
@@ -627,13 +669,27 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                     </div>
                     <p className="comment-content-body">{comment.content}</p>
                     <div className="comment-actions-bar">
-                      <button
-                        type="button"
-                        className="upvote-btn-sm"
-                        onClick={() => handleUpvoteComment(comment.id)}
-                      >
-                        ▲ {comment.upvotesCount}
-                      </button>
+                      <RichReactionPicker
+                        targetId={comment.id}
+                        targetType="comment"
+                        reactionCounts={comment.reactionCounts}
+                        userReaction={comment.userReaction}
+                        size="sm"
+                        onReactionChange={(newReaction, newCounts) => {
+                          setComments((prev) =>
+                            prev.map((c) =>
+                              c.id === comment.id
+                                ? {
+                                    ...c,
+                                    userReaction: newReaction,
+                                    reactionCounts: newCounts,
+                                    upvotesCount: Object.values(newCounts).reduce((a, b) => a + (b || 0), 0),
+                                  }
+                                : c
+                            )
+                          );
+                        }}
+                      />
                     </div>
                   </div>
                 ))
