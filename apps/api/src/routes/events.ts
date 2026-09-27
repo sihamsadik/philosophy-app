@@ -327,8 +327,8 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
         : sql`(${spaceReadable} and ${events.visibility} = 'public')`);
     }
     const where = and(...conds);
-    const sortBy = q("sortBy");
-    const dir = q("sortDir") === "asc" ? sql`asc` : sql`desc`;
+    const sortBy = q("sortBy") ?? "startTime";
+    const dir = q("sortDir") === "desc" ? sql`desc` : (q("sortDir") === "asc" ? sql`asc` : (sortBy === "startTime" ? sql`asc` : sql`desc`));
     const orderBy = sortBy === "going"
       ? sql`(select count(*) from event_rsvps r where r.event_id = ${events.id} and r.status = 'going') ${dir}, ${events.startTime} asc`
       : sql`${events.startTime} ${dir}`;

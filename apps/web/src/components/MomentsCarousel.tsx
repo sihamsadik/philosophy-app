@@ -104,7 +104,14 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
       };
     })
     .filter((item) => item.isLive || item.isUpcoming)
-    .sort((a, b) => a.priorityScore - b.priorityScore);
+    .sort((a, b) => {
+      if (a.priorityScore !== b.priorityScore) {
+        return a.priorityScore - b.priorityScore;
+      }
+      const startA = new Date(a.event.startTime).getTime();
+      const startB = new Date(b.event.startTime).getTime();
+      return startA - startB;
+    });
 
   const handleItemClick = (item: StoryCircleItem) => {
     if (onSelectEvent) {

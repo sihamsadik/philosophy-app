@@ -4,7 +4,7 @@
 // Drives the app with a resolver whose handle throws at query time (resolveProject's existence
 // check) — the exact shape the CR targets. No real DB.
 import { afterEach, describe, expect, it } from "vitest";
-import { resetDbResolver, setDbResolver, type Db } from "@agora/core/db";
+import { resetDbResolver, setDbResolver, type Db } from "@philosophy/core/db";
 import { createSecureApp } from "./app.js";
 
 // A Db whose select-chain rejects with `err` at .limit() — mirrors resolveProject's

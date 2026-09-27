@@ -8,8 +8,10 @@ import { createApp } from "../../src/app.js";
 import { getDb } from "../../src/db/index.js";
 import { projects, profiles } from "../../src/db/schema/index.js";
 
+import { env } from "../../src/lib/env.js";
+
 const app = createApp();
-const secret = new TextEncoder().encode(process.env.ACCESS_TOKEN_SECRET);
+const getSecret = () => new TextEncoder().encode(env.ACCESS_TOKEN_SECRET);
 
 type Init = { token?: string; body?: unknown; headers?: Record<string, string> };
 
@@ -53,7 +55,7 @@ export function signToken(
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
     .setExpirationTime("1h")
-    .sign(secret);
+    .sign(getSecret());
 }
 
 export async function createProject(): Promise<string> {

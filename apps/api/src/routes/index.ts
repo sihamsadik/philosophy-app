@@ -65,6 +65,7 @@ export function mountRoutes() {
   project.route("/push-notifications", pushNotificationRoutes);
   project.route("/match", matchRoutes);
   project.route("/recommendations", recommendationRoutes);
+  project.route("/", connectionRoutes);
   // oauth, projects, crypto, utils — small, grouped in misc
   project.route("/", miscRoutes);
 
@@ -73,6 +74,7 @@ export function mountRoutes() {
   // Match explicit UUID project IDs (e.g. /v7/00000000-0000-0000-0000-000000000000/auth/sign-up)
   router.route("/:projectId([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})", project);
   // Direct clean paths (e.g. /api/auth/sign-up, /api/entities, /api/notifications)
+  router.route("/api", project);
   router.route("/", project);
   return router;
 }

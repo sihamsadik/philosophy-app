@@ -41,7 +41,7 @@ const PROJECT_TABLES = ["projects", "project_integrations"];
 const DATA_TABLES = [
   "app_notifications", "chat_message_reactions", "chat_messages", "collection_entities",
   "collections", "comments", "connections", "content_embeddings", "conversation_members",
-  "conversations", "entities", "entity_embeddings", "files", "follows", "oauth_identities",
+  "conversations", "entities", "files", "follows", "oauth_identities",
   "oauth_states", "profiles", "reactions", "refresh_tokens", "reports", "space_members",
   "space_rules", "spaces", "user_suspensions",
 ];
