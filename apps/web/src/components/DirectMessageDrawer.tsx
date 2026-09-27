@@ -195,13 +195,18 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
           setConversations(updatedList);
         } else if (activeConversationId) {
           const matched = list.find((c) => c.id === activeConversationId);
-          initialConv = matched || null;
+          initialConv = matched || (list.length > 0 ? list[0]! : null);
+        } else if (list.length > 0) {
+          initialConv = list[0]!;
         }
 
         if (initialConv) {
           setSelectedConv(initialConv);
           setConversations((prev) => prev.map((c) => c.id === initialConv!.id ? { ...c, unreadCount: 0 } : c));
           void agoraClient.markConversationRead(initialConv.id);
+        } else {
+          setSelectedConv(null);
+          setMessages([]);
         }
       } catch (err) {
         console.error("Failed to load conversations:", err);
@@ -287,6 +292,18 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
     const handleUpdate = () => {
       agoraClient.getConversations().then(({ conversations: list }) => {
         setConversations(list);
+        if (selectedConv && !list.some((c) => c.id === selectedConv.id) && !selectedConv.id.startsWith("conv-")) {
+          const fallback = list.length > 0 ? list[0]! : null;
+          setSelectedConv(fallback);
+          if (fallback) {
+            agoraClient.getMessages(fallback.id).then(({ messages: msgs }) => {
+              setMessages(msgs);
+            });
+          } else {
+            setMessages([]);
+          }
+          return;
+        }
       });
       if (selectedConv) {
         agoraClient.getMessages(selectedConv.id).then(({ messages: msgs }) => {

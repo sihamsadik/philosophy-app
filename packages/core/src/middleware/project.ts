@@ -15,11 +15,11 @@ const cache = new Map<string, boolean>();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const resolveProject = createMiddleware<{ Variables: Variables }>(async (c, next) => {
-  let projectId = c.req.param("projectId");
+  let projectId = c.req.param("projectId") || c.req.header("x-project-id");
   if (!projectId || !UUID_RE.test(projectId)) {
     const rawUrl = c.req.url || (c.req.raw ? c.req.raw.url : "") || c.req.path;
     const match = rawUrl.match(/\/v7\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/i)
-      || rawUrl.match(/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/i);
+      || rawUrl.match(/[\?&]projectId=([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/i);
     projectId = match ? match[1]! : "00000000-0000-0000-0000-000000000000";
   }
 

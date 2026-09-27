@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
-import { agoraClient, DEMO_EVENTS, DEMO_RSVPS, type EventType, type PhilosophyEvent, type EventRSVP, type RSVPStatus } from "../lib/api-client.js";
+import { agoraClient, DEMO_EVENTS, DEMO_RSVPS, type EventType, type PhilosophyEvent, type EventRSVP, type RSVPStatus, getAvatarUrl } from "../lib/api-client.js";
 import { LiveEventJoinModal } from "./LiveEventJoinModal.js";
 
 export interface SymposiumsDirectoryProps {
@@ -383,17 +383,11 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                   style={{ cursor: "pointer" }}
                   title={`View ${event.hostUser.name || event.hostUser.username}'s profile`}
                 >
-                  {event.hostUser.avatar ? (
-                    <img
-                      src={event.hostUser.avatar}
-                      alt={event.hostUser.name || event.hostUser.username || "Host"}
-                      className="host-avatar"
-                    />
-                  ) : (
-                    <div className="host-avatar initials-avatar">
-                      {(event.hostUser.name || event.hostUser.username || "H").charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <img
+                    src={getAvatarUrl(event.hostUser.avatar, event.hostUser.name || event.hostUser.username || "Host")}
+                    alt={event.hostUser.name || event.hostUser.username || "Host"}
+                    className="host-avatar"
+                  />
                   <div className="host-info">
                     <div className="host-name">{event.hostUser.name || event.hostUser.username}</div>
                     <div className="host-school">

@@ -22,6 +22,68 @@ export interface AuthSessionResponse {
   accessToken?: string;
 }
 
+/**
+ * Generates a beautified SVG data URI featuring the user's first letter
+ * over a vibrant, stylish gradient if the avatar is missing, null, empty,
+ * or an Unsplash stock image fallback.
+ */
+export function getAvatarUrl(avatar?: string | null, name: string = "Thinker"): string {
+  if (
+    avatar &&
+    typeof avatar === "string" &&
+    avatar.trim() !== "" &&
+    !avatar.includes("images.unsplash.com") &&
+    !avatar.startsWith("data:image/svg+xml;utf8,<svg")
+  ) {
+    return avatar.trim();
+  }
+
+  const cleanName = (name || "Thinker").trim();
+  const firstLetter = cleanName.charAt(0).toUpperCase() || "T";
+
+  // Curated vibrant gradient pairings
+  const gradients = [
+    { start: "#6366f1", end: "#a855f7" }, // Indigo -> Purple
+    { start: "#ec4899", end: "#8b5cf6" }, // Pink -> Violet
+    { start: "#2563eb", end: "#06b6d4" }, // Blue -> Cyan
+    { start: "#10b981", end: "#059669" }, // Emerald -> Teal
+    { start: "#f59e0b", end: "#d97706" }, // Amber -> Orange
+    { start: "#ef4444", end: "#b91c1c" }, // Red -> Dark Red
+    { start: "#8b5cf6", end: "#d946ef" }, // Purple -> Fuchsia
+    { start: "#0284c7", end: "#4f46e5" }, // Sky -> Indigo
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < cleanName.length; i++) {
+    hash = (hash << 5) - hash + cleanName.charCodeAt(i);
+    hash |= 0;
+  }
+  const grad = gradients[Math.abs(hash) % gradients.length]!;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+    <defs>
+      <linearGradient id="g-${Math.abs(hash)}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${grad.start}" />
+        <stop offset="100%" stop-color="${grad.end}" />
+      </linearGradient>
+    </defs>
+    <circle cx="60" cy="60" r="60" fill="url(#g-${Math.abs(hash)})" />
+    <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="54" font-weight="700">${firstLetter}</text>
+  </svg>`;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+export function normalizeUser<T extends { avatar?: string | null; name?: string | null; username?: string | null }>(user: T): T {
+  if (!user) return user;
+  const name = user.name || user.username || "Thinker";
+  return {
+    ...user,
+    avatar: getAvatarUrl(user.avatar, name),
+  };
+}
+
+
 export class AgoraPhilosophyClient {
   private baseUrl: string;
   private projectId: string;
@@ -812,6 +874,23 @@ export class AgoraPhilosophyClient {
         count = 1;
       }
 
+      const rawHost = e.user || e.hostUser;
+      const hostName = rawHost?.name || rawHost?.username || e.metadata?.hostName || "You (Event Organizer)";
+      const hostHandle = rawHost?.username || e.metadata?.hostHandle || "you";
+      const hostAvatar = getAvatarUrl(rawHost?.avatar || e.metadata?.hostAvatar, hostName);
+      const hostUserObj: User = rawHost
+        ? { ...rawHost, name: hostName, avatar: hostAvatar }
+        : ({
+            id: e.userId || "usr-creator",
+            name: hostName,
+            username: hostHandle,
+            avatar: hostAvatar,
+            philosophyProfile: {
+              primarySchools: ["Philosophy"],
+              keyThinkers: ["Socrates"],
+            },
+          } as unknown as User);
+
       return {
         id: e.id,
         title: e.title,
@@ -820,16 +899,7 @@ export class AgoraPhilosophyClient {
         startTime: e.startTime || e.start_time,
         endTime: e.endTime || e.end_time,
         locationUrl: e.url || "https://agora.philosophy/symposium/live",
-        hostUser: e.user || e.hostUser || {
-          id: e.userId || "usr-creator",
-          name: e.metadata?.hostName || "You (Event Organizer)",
-          username: e.metadata?.hostHandle || "you",
-          avatar: e.metadata?.hostAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-          philosophyProfile: {
-            primarySchools: ["Philosophy"],
-            keyThinkers: ["Socrates"],
-          },
-        },
+        hostUser: hostUserObj,
         spaceId: e.spaceId,
         spaceName: e.metadata?.spaceName || "Philosophy Circle",
         maxCapacity: e.capacity || e.maxCapacity || 50,
@@ -880,18 +950,20 @@ export class AgoraPhilosophyClient {
   }): Promise<PhilosophyEvent> {
     const hostName = data.hostUser?.name || data.hostUser?.username || "You (Event Organizer)";
     const hostHandle = data.hostUser?.username || "you";
-    const hostAvatar = data.hostUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
+    const hostAvatar = getAvatarUrl(data.hostUser?.avatar, hostName);
 
-    const defaultHost: User = data.hostUser || ({
-      id: "00000000-0000-0000-0000-000000000001",
-      name: hostName,
-      username: hostHandle,
-      avatar: hostAvatar,
-      philosophyProfile: {
-        primarySchools: ["Philosophy"],
-        keyThinkers: ["Socrates"],
-      },
-    } as unknown as User);
+    const defaultHost: User = data.hostUser
+      ? { ...data.hostUser, name: hostName, avatar: hostAvatar }
+      : ({
+          id: "00000000-0000-0000-0000-000000000001",
+          name: hostName,
+          username: hostHandle,
+          avatar: hostAvatar,
+          philosophyProfile: {
+            primarySchools: ["Philosophy"],
+            keyThinkers: ["Socrates"],
+          },
+        } as unknown as User);
 
     try {
       const apiPayload = {

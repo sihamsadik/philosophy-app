@@ -276,14 +276,17 @@ export async function notifyOnReaction(args: {
     if (!ownerId || ownerId === reactorId) return;
 
     const isUpvote = reactionType === "upvote";
+    // Upvotes on posts/comments are silent to prevent notification noise
+    if (isUpvote) return;
+
     const baseType = targetType === "entity" ? "entity" : "comment";
     const action = targetType === "entity" ? "open-entity" : "open-comment";
 
     // Per-reaction notification.
-    await insert(projectId, ownerId, reactorId, `${baseType}-${isUpvote ? "upvote" : "reaction"}`, action, {
+    await insert(projectId, ownerId, reactorId, `${baseType}-reaction`, action, {
       ...entityMeta,
       ...commentMeta,
-      ...(isUpvote ? {} : { reactionType }),
+      reactionType,
       ...actor,
     });
 

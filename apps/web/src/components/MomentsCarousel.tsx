@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
-import { agoraClient, type PhilosophyEvent, isRegisteredRSVP } from "../lib/api-client.js";
+import { agoraClient, type PhilosophyEvent, isRegisteredRSVP, getAvatarUrl } from "../lib/api-client.js";
 
 export interface MomentsCarouselProps {
   currentUser?: User | null;
@@ -83,24 +83,33 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
       else if (isUpcoming && !isDeclined) priorityScore = 4;
       else if (isDeclined) priorityScore = 5;
 
-      const host = e.hostUser || {
-        id: "usr-creator",
-        name: "You (Host)",
-        username: "you",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+      const rawHost = e.hostUser;
+      const hostName = rawHost?.name || rawHost?.username || "Event Organizer";
+      const hostAvatar = getAvatarUrl(rawHost?.avatar, hostName);
+      const host = {
+        id: rawHost?.id || "usr-creator",
+        name: hostName,
+        username: rawHost?.username || "organizer",
+        avatar: hostAvatar,
       };
 
       return {
         id: e.id,
         name: host.name || host.username || e.title,
         username: host.username || "organizer",
-        avatar: host.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80",
+        avatar: hostAvatar,
         isLive,
         isUpcoming,
         userRsvpStatus: rsvp,
         priorityScore,
         event: e,
-        hostUser: host as User,
+        hostUser: {
+          ...(rawHost || {}),
+          id: host.id,
+          name: host.name,
+          username: host.username,
+          avatar: hostAvatar,
+        } as User,
       };
     })
     .filter((item) => item.isLive || item.isUpcoming)
@@ -121,19 +130,15 @@ export const MomentsCarousel: React.FC<MomentsCarouselProps> = ({
     }
   };
 
+  const userAvatar = getAvatarUrl(currentUser?.avatar, currentUser?.name || currentUser?.username || "You");
+
   return (
     <div className="moments-carousel-wrapper">
       <div className="moments-scroll-container" style={{ display: "flex", alignItems: "center", gap: 14 }}>
         {/* Add Moment / Live Event Button */}
         <div className="moment-item" onClick={onOpenComposer} title="Create / Schedule Live Event">
           <div className="moment-avatar-ring add-moment-ring">
-            {currentUser?.avatar ? (
-              <img src={currentUser.avatar} alt="User Avatar" className="moment-avatar-img" />
-            ) : (
-              <div className="moment-avatar-placeholder">
-                {(currentUser?.name || currentUser?.username || "U").charAt(0).toUpperCase()}
-              </div>
-            )}
+            <img src={userAvatar} alt="User Avatar" className="moment-avatar-img" />
             <div className="add-moment-badge">+</div>
           </div>
           <span className="moment-label">Add live</span>
