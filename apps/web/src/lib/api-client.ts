@@ -85,6 +85,14 @@ export class AgoraPhilosophyClient {
     return this.projectId;
   }
 
+  isAuthenticated(): boolean {
+    return Boolean(this.authToken && this.authToken !== "mock-auth-token" && this.authToken.length > 20);
+  }
+
+  isUUID(id: string): boolean {
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i.test(id ?? "");
+  }
+
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const isCleanApi = this.baseUrl === "/api" || this.baseUrl === "/philosophy/api" || !this.baseUrl.includes("/v7");
     const url = isCleanApi ? `${this.baseUrl}${path}` : `${this.baseUrl}/${this.projectId}${path}`;
@@ -847,6 +855,13 @@ export class AgoraPhilosophyClient {
       return true;
     });
 
+    // Sort events so that those happening sooner appear at the top
+    activeOrRecent.sort((a: PhilosophyEvent, b: PhilosophyEvent) => {
+      const startA = new Date(a.startTime).getTime();
+      const startB = new Date(b.startTime).getTime();
+      return startA - startB;
+    });
+
     return { events: activeOrRecent };
   }
 
@@ -1325,6 +1340,9 @@ export class AgoraPhilosophyClient {
    * Direct Conversations (DMs)
    */
   async getConversations(): Promise<{ conversations: DirectConversation[] }> {
+    if (!this.isAuthenticated()) {
+      return { conversations: DEMO_CONVERSATIONS };
+    }
     try {
       const res = await this.request<any>("/chat/conversations");
       const rawList = res?.conversations || res?.data || (Array.isArray(res) ? res : []);
@@ -1368,16 +1386,18 @@ export class AgoraPhilosophyClient {
   }
 
   async getUnreadMessageCount(): Promise<number> {
+    if (!this.isAuthenticated()) {
+      const currentUserId = this.getCurrentUserId();
+      return DEMO_CONVERSATIONS.reduce((sum, conversation) => {
+        const isPendingIncomingRequest = conversation.requestStatus === "pending" && (conversation as any).addresseeId === currentUserId;
+        return sum + (conversation.unreadCount ?? 0) + (isPendingIncomingRequest ? 1 : 0);
+      }, 0);
+    }
     try {
       const result = await this.request<{ totalUnread?: number }>("/chat/conversations/unread-count");
       return result.totalUnread ?? 0;
     } catch {
-      const currentUserId = this.getCurrentUserId();
-      const { conversations } = await this.getConversations();
-      return conversations.reduce((sum, conversation) => {
-        const isPendingIncomingRequest = conversation.requestStatus === "pending" && (conversation as any).addresseeId === currentUserId;
-        return sum + (conversation.unreadCount ?? 0) + (isPendingIncomingRequest ? 1 : 0);
-      }, 0);
+      return 0;
     }
   }
 
@@ -1385,11 +1405,13 @@ export class AgoraPhilosophyClient {
     const conv = DEMO_CONVERSATIONS.find((c) => c.id === conversationId);
     if (conv) conv.unreadCount = 0;
 
-    try {
-      await this.request<{ success: boolean }>(`/chat/conversations/${conversationId}/read`, {
-        method: "POST",
-      });
-    } catch {}
+    if (this.isAuthenticated() && this.isUUID(conversationId)) {
+      try {
+        await this.request<{ success: boolean }>(`/chat/conversations/${conversationId}/read`, {
+          method: "POST",
+        });
+      } catch {}
+    }
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("agora_dm_unread_updated"));
@@ -1401,11 +1423,13 @@ export class AgoraPhilosophyClient {
     const conv = DEMO_CONVERSATIONS.find((c) => c.id === conversationId);
     if (conv) conv.requestStatus = "accepted";
 
-    try {
-      await this.request<any>(`/chat/conversations/${conversationId}/accept-request`, {
-        method: "POST",
-      });
-    } catch {}
+    if (this.isAuthenticated() && this.isUUID(conversationId)) {
+      try {
+        await this.request<any>(`/chat/conversations/${conversationId}/accept-request`, {
+          method: "POST",
+        });
+      } catch {}
+    }
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("agora_dm_unread_updated"));
@@ -1417,11 +1441,13 @@ export class AgoraPhilosophyClient {
     const conv = DEMO_CONVERSATIONS.find((c) => c.id === conversationId);
     if (conv) conv.requestStatus = "declined";
 
-    try {
-      await this.request<any>(`/chat/conversations/${conversationId}/decline-request`, {
-        method: "POST",
-      });
-    } catch {}
+    if (this.isAuthenticated() && this.isUUID(conversationId)) {
+      try {
+        await this.request<any>(`/chat/conversations/${conversationId}/decline-request`, {
+          method: "POST",
+        });
+      } catch {}
+    }
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("agora_dm_unread_updated"));
@@ -1534,28 +1560,40 @@ export class AgoraPhilosophyClient {
 
       return { messages: sortChronological(mapped) };
     } catch {
-      return { messages: isDemoConversation ? sortChronological(DEMO_MESSAGES[conversationId] || []) : [] };
+      let localMsgs: ChatMessage[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem(`agora_messages_${conversationId}`);
+          if (stored) localMsgs = JSON.parse(stored);
+        } catch {}
+      }
+      const fallbackList = localMsgs.length > 0 ? localMsgs : (isDemoConversation ? DEMO_MESSAGES[conversationId] || [] : []);
+      return { messages: sortChronological(fallbackList) };
     }
   }
 
   async sendMessage(conversationId: string, content: string): Promise<ChatMessage> {
     const activeUserId = this.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
     if (!conversationId.startsWith("conv-")) {
-      const response = await this.request<any>(`/chat/conversations/${conversationId}/messages`, {
-        method: "POST",
-        body: JSON.stringify({ content }),
-      });
-      const serverMsg = response?.message || response;
-      return {
-        id: serverMsg.id,
-        conversationId: serverMsg.conversationId || conversationId,
-        senderId: serverMsg.userId || serverMsg.senderId || activeUserId,
-        senderName: serverMsg.user?.name || "You",
-        senderAvatar: serverMsg.user?.avatar,
-        content: serverMsg.content || content,
-        createdAt: serverMsg.createdAt || new Date().toISOString(),
-        metadata: serverMsg.metadata,
-      };
+      try {
+        const response = await this.request<any>(`/chat/conversations/${conversationId}/messages`, {
+          method: "POST",
+          body: JSON.stringify({ content }),
+        });
+        const serverMsg = response?.message || response;
+        return {
+          id: serverMsg.id,
+          conversationId: serverMsg.conversationId || conversationId,
+          senderId: serverMsg.userId || serverMsg.senderId || activeUserId,
+          senderName: serverMsg.user?.name || "You",
+          senderAvatar: serverMsg.user?.avatar,
+          content: serverMsg.content || content,
+          createdAt: serverMsg.createdAt || new Date().toISOString(),
+          metadata: serverMsg.metadata,
+        };
+      } catch {
+        // Fallback to local storage if backend conversation row does not exist
+      }
     }
 
     const newMsg: ChatMessage = {
@@ -1617,9 +1655,45 @@ export class AgoraPhilosophyClient {
         upvotesCount: p.reactionCounts?.insightful || p.upvotesCount || 1,
         commentsCount: p.repliesCount || p.commentsCount || 0,
         createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "Recently",
+        reactionCounts: p.reactionCounts || { love: 0, upvote: p.upvotesCount || 1, wow: 0, funny: 0, downvote: 0 },
+        userReaction: p.userReaction || null,
       };
     });
     return { posts: mapped };
+  }
+
+  async reactToEntity(
+    entityId: string,
+    reactionType: "love" | "upvote" | "like" | "wow" | "funny" | "downvote"
+  ): Promise<{ userReaction: string | null; reactionCounts: Record<string, number> }> {
+    try {
+      return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
+        `/entities/${entityId}/reactions`,
+        {
+          method: "POST",
+          body: JSON.stringify({ reactionType }),
+        }
+      );
+    } catch {
+      return { userReaction: reactionType, reactionCounts: { [reactionType]: 1 } };
+    }
+  }
+
+  async reactToComment(
+    commentId: string,
+    reactionType: "love" | "upvote" | "like" | "wow" | "funny" | "downvote"
+  ): Promise<{ userReaction: string | null; reactionCounts: Record<string, number> }> {
+    try {
+      return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
+        `/comments/${commentId}/reactions`,
+        {
+          method: "POST",
+          body: JSON.stringify({ reactionType }),
+        }
+      );
+    } catch {
+      return { userReaction: reactionType, reactionCounts: { [reactionType]: 1 } };
+    }
   }
 
   async createPost(postData: {
@@ -1697,12 +1771,14 @@ export class AgoraPhilosophyClient {
   async getComments(entityId: string, includeReplies = false): Promise<{ comments: PhilosophicalComment[] }> {
     let rawList: any[] = [];
 
-    try {
-      const res = includeReplies
-        ? await this.request<any>(`/comments/thread?entityId=${encodeURIComponent(entityId)}`)
-        : await this.request<any>(`/entities/${entityId}/comments`);
-      rawList = res?.comments || res?.data || (Array.isArray(res) ? res : []);
-    } catch {}
+    if (this.isUUID(entityId)) {
+      try {
+        const res = includeReplies
+          ? await this.request<any>(`/comments/thread?entityId=${encodeURIComponent(entityId)}`)
+          : await this.request<any>(`/entities/${entityId}/comments`);
+        rawList = res?.comments || res?.data || (Array.isArray(res) ? res : []);
+      } catch {}
+    }
 
     if (!Array.isArray(rawList) || rawList.length === 0) {
       try {
@@ -1871,6 +1947,8 @@ export interface PhilosophicalComment {
   parentId?: string | null;
   stance?: "thesis" | "antithesis" | "synthesis";
   upvotesCount: number;
+  reactionCounts?: Record<string, number>;
+  userReaction?: string | null;
   createdAt: string;
   replies?: PhilosophicalComment[];
 }
@@ -2021,6 +2099,8 @@ export interface PhilosophicalPost {
   spaceId?: string;
   spaceName?: string;
   upvotesCount: number;
+  reactionCounts?: Record<string, number>;
+  userReaction?: string | null;
   commentsCount: number;
   createdAt: string;
 }

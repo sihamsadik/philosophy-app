@@ -34,20 +34,6 @@ export const collectionEntities = pgTable("collection_entities", {
   index("collection_entities_entity_idx").on(t.entityId),
 ]);
 
-// Generic per-project custom-table rows (the SDK's `/db/:tableName` surface). Schemaless `data`
-// jsonb; `user_id` is the per-row owner (set-null on profile delete). `deleted_at` = soft-delete.
-export const tableRows = pgTable("table_rows", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
-  tableName: text("table_name").notNull(),
-  userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
-  data: jsonb("data").notNull().default(sql`'{}'::jsonb`),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
-}, (t) => [
-  index("table_rows_lookup_idx").on(t.projectId, t.tableName, t.userId),
-]);
 
 export const files = pgTable("files", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -141,12 +127,6 @@ export const moderationAnalyses = pgTable("moderation_analyses", {
   index("moderation_analyses_target_idx").on(t.targetType, t.targetId),
 ]);
 
-export const entityEmbeddings = pgTable("entity_embeddings", {
-  entityId: uuid("entity_id").primaryKey().references(() => entities.id, { onDelete: "cascade" }),
-  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
-  embedding: vector("embedding", { dimensions: 1024 }), // Voyage voyage-3.5 @ 1024
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
 
 // Generic content embeddings across source types (entity | comment | message) for semantic
 // search. source_id is the row's uuid in its own table; we don't FK it (it spans 3 tables) —
