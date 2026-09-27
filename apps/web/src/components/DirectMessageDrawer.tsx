@@ -344,8 +344,10 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
             : c
         )
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to send message:", err);
+      setInputMessage(content);
+      alert(`Failed to send message: ${err?.message || "Server error"}`);
     }
   };
 

@@ -88,8 +88,9 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           setSelectedSpace(res.space);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Join/Leave space failed:", err);
+      alert(`Unable to update space membership: ${err?.message || "Server error"}`);
     }
   };
 

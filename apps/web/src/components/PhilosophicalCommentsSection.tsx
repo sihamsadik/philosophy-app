@@ -90,8 +90,9 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
       );
       setComments((prev) => [created, ...prev]);
       setTopCommentText("");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to post comment:", err);
+      alert(`Failed to post comment: ${err?.message || "Server error"}`);
     }
   };
 
@@ -113,8 +114,9 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
       setComments((prev) => [...prev, created]);
       setReplyText("");
       setReplyingToId(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to post reply:", err);
+      alert(`Failed to post reply: ${err?.message || "Server error"}`);
     }
   };
 
@@ -127,15 +129,27 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
     setComments((prev) =>
       prev.map((c) =>
         c.id === commentId
-          ? { ...c, upvotesCount: c.upvotesCount + (hasUpvoted ? -1 : 1) }
+          ? { ...c, upvotesCount: Math.max(0, c.upvotesCount + (hasUpvoted ? -1 : 1)) }
           : c
       )
     );
 
     try {
-      await agoraClient.upvoteComment(commentId);
-    } catch (err) {
+      await agoraClient.reactToComment(commentId, "upvote");
+    } catch (err: any) {
       console.error("Upvote failed:", err);
+      // Rollback on failure
+      setUpvotedCommentIds((prev) =>
+        hasUpvoted ? [...prev, commentId] : prev.filter((id) => id !== commentId)
+      );
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? { ...c, upvotesCount: Math.max(0, c.upvotesCount + (hasUpvoted ? 1 : -1)) }
+            : c
+        )
+      );
+      alert(`Unable to save vote: ${err?.message || "Server error"}`);
     }
   };
 

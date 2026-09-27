@@ -442,11 +442,7 @@ export class AgoraPhilosophyClient {
   }
 
   async joinSpace(spaceId: string): Promise<{ success: boolean; space: PhilosophicalSpace }> {
-    try {
-      return await this.request<{ success: boolean; space: PhilosophicalSpace }>(`/spaces/${spaceId}/join`, {
-        method: "POST",
-      });
-    } catch {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
       const space = DEMO_SPACES.find((s) => s.id === spaceId);
       if (space) {
         if (!space.isJoined) {
@@ -457,14 +453,13 @@ export class AgoraPhilosophyClient {
       }
       return { success: false, space: DEMO_SPACES[0]! };
     }
+    return await this.request<{ success: boolean; space: PhilosophicalSpace }>(`/spaces/${spaceId}/join`, {
+      method: "POST",
+    });
   }
 
   async leaveSpace(spaceId: string): Promise<{ success: boolean; space: PhilosophicalSpace }> {
-    try {
-      return await this.request<{ success: boolean; space: PhilosophicalSpace }>(`/spaces/${spaceId}/leave`, {
-        method: "POST",
-      });
-    } catch {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
       const space = DEMO_SPACES.find((s) => s.id === spaceId);
       if (space) {
         if (space.isJoined) {
@@ -475,6 +470,9 @@ export class AgoraPhilosophyClient {
       }
       return { success: false, space: DEMO_SPACES[0]! };
     }
+    return await this.request<{ success: boolean; space: PhilosophicalSpace }>(`/spaces/${spaceId}/leave`, {
+      method: "POST",
+    });
   }
 
   async createSpace(spaceData: {
@@ -484,12 +482,7 @@ export class AgoraPhilosophyClient {
     primarySchool?: string;
     keyThinkers?: string[];
   }): Promise<PhilosophicalSpace> {
-    try {
-      return await this.request<PhilosophicalSpace>("/spaces", {
-        method: "POST",
-        body: JSON.stringify(spaceData),
-      });
-    } catch {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
       const newSpace: PhilosophicalSpace = {
         id: `space-${Date.now()}`,
         name: spaceData.name,
@@ -498,7 +491,7 @@ export class AgoraPhilosophyClient {
         category: spaceData.category || "school",
         primarySchool: spaceData.primarySchool || "General Philosophy",
         keyThinkers: spaceData.keyThinkers || [],
-        avatarImage: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=200&q=80",
+        avatarImage: getAvatarUrl(null, spaceData.name),
         membersCount: 1,
         postsCount: 0,
         isJoined: true,
@@ -507,6 +500,10 @@ export class AgoraPhilosophyClient {
       DEMO_SPACES.unshift(newSpace);
       return newSpace;
     }
+    return await this.request<PhilosophicalSpace>("/spaces", {
+      method: "POST",
+      body: JSON.stringify(spaceData),
+    });
   }
 
   /**
@@ -537,7 +534,7 @@ export class AgoraPhilosophyClient {
           id: "00000000-0000-0000-0000-000000000001",
           name: "Jean-Paul Sartre",
           username: "sartre",
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+          avatar: getAvatarUrl(null, "Jean-Paul Sartre"),
         } as User),
         recipientId: targetUserId,
         message: message || "I would love to connect and exchange philosophical perspectives.",
@@ -547,47 +544,22 @@ export class AgoraPhilosophyClient {
       DEMO_CONNECTION_REQUESTS.unshift(newReq);
       return newReq;
     }
-    try {
-      const res = await this.request<any>(`/users/${targetUserId}/connection`, {
-        method: "POST",
-        body: JSON.stringify({ message }),
-      });
-      return {
-        id: res.id || `req-${Date.now()}`,
-        sender: targetUser || ({
-          id: this.currentUserId || "usr-current",
-          name: "You",
-          username: "you",
-        } as User),
-        recipientId: targetUserId,
-        message: message || "I would love to connect and exchange philosophical perspectives.",
-        status: res.status || "pending",
-        createdAt: "Just now",
-      };
-    } catch {
-      try {
-        return await this.request<ConnectionRequest>("/connections/requests", {
-          method: "POST",
-          body: JSON.stringify({ targetUserId, message }),
-        });
-      } catch {
-        const newReq: ConnectionRequest = {
-          id: `req-${Date.now()}`,
-          sender: targetUser || ({
-            id: "00000000-0000-0000-0000-000000000001",
-            name: "Jean-Paul Sartre",
-            username: "sartre",
-            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-          } as User),
-          recipientId: targetUserId,
-          message: message || "I would love to connect and exchange philosophical perspectives.",
-          status: "pending",
-          createdAt: "Just now",
-        };
-        DEMO_CONNECTION_REQUESTS.unshift(newReq);
-        return newReq;
-      }
-    }
+    const res = await this.request<any>(`/users/${targetUserId}/connection`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
+    return {
+      id: res.id || `req-${Date.now()}`,
+      sender: targetUser || ({
+        id: this.currentUserId || "usr-current",
+        name: "You",
+        username: "you",
+      } as User),
+      recipientId: targetUserId,
+      message: message || "I would love to connect and exchange philosophical perspectives.",
+      status: res.status || "pending",
+      createdAt: "Just now",
+    };
   }
 
   async getConnectionRequests(): Promise<{ requests: ConnectionRequest[] }> {
@@ -603,7 +575,7 @@ export class AgoraPhilosophyClient {
           id: r.userId || "usr-001",
           name: "Philosopher Peer",
           username: "thinker",
-          avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+          avatar: getAvatarUrl(null, "Philosopher Peer"),
         } as User),
         recipientId: r.recipientId || "usr-current",
         message: r.message,
@@ -649,18 +621,10 @@ export class AgoraPhilosophyClient {
       if (notif) notif.read = true;
       return { success: true };
     }
-    try {
-      await this.request<{ success: boolean }>(`/connections/${requestId}/accept`, {
-        method: "PATCH",
-      });
-      return { success: true };
-    } catch {
-      const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
-      if (req) req.status = "accepted";
-      const notif = DEMO_NOTIFICATIONS.find((n) => n.requestId === requestId);
-      if (notif) notif.read = true;
-      return { success: true };
-    }
+    await this.request<{ success: boolean }>(`/connections/${requestId}/accept`, {
+      method: "PATCH",
+    });
+    return { success: true };
   }
 
   async declineConnectionRequest(requestId: string): Promise<{ success: boolean }> {
@@ -671,18 +635,10 @@ export class AgoraPhilosophyClient {
       if (notif) notif.read = true;
       return { success: true };
     }
-    try {
-      await this.request<{ success: boolean }>(`/connections/${requestId}/decline`, {
-        method: "PATCH",
-      });
-      return { success: true };
-    } catch {
-      const req = DEMO_CONNECTION_REQUESTS.find((r) => r.id === requestId);
-      if (req) req.status = "declined";
-      const notif = DEMO_NOTIFICATIONS.find((n) => n.requestId === requestId);
-      if (notif) notif.read = true;
-      return { success: true };
-    }
+    await this.request<{ success: boolean }>(`/connections/${requestId}/decline`, {
+      method: "PATCH",
+    });
+    return { success: true };
   }
 
   async getConnectionCount(userId?: string): Promise<{ count: number }> {
@@ -1058,62 +1014,13 @@ export class AgoraPhilosophyClient {
 
   async rsvpEvent(eventId: string, status: RSVPStatus): Promise<{ success: boolean; event: PhilosophyEvent }> {
     const userId = this.getCurrentUserId();
-    try {
-      localStorage.setItem(`agora_user_rsvp_${userId}_${eventId}`, status);
-      localStorage.setItem(`agora_user_rsvp_${eventId}`, status);
-    } catch {}
 
-    try {
-      const res = await this.request<any>(`/events/${eventId}/rsvp`, {
-        method: "POST",
-        body: JSON.stringify({ status }),
-      });
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      try {
+        localStorage.setItem(`agora_user_rsvp_${userId}_${eventId}`, status);
+        localStorage.setItem(`agora_user_rsvp_${eventId}`, status);
+      } catch {}
 
-      let updatedEvent: PhilosophyEvent;
-
-      if (res?.event) {
-        updatedEvent = { ...res.event };
-      } else if (res?.id) {
-        const count = res.rsvpCounts?.going ?? res.registeredCount ?? res.attendeeCount ?? 0;
-        updatedEvent = {
-          id: res.id,
-          title: res.title || "Symposium Event",
-          type: res.metadata?.eventType || res.type || "symposium",
-          description: res.description || "",
-          startTime: res.startTime || res.start_time,
-          endTime: res.endTime || res.end_time,
-          locationUrl: res.url || "https://agora.philosophy/symposium/live",
-          hostUser: res.user || res.hostUser || {
-            id: res.userId || "usr-creator",
-            name: res.metadata?.hostName || "Host",
-            username: res.metadata?.hostHandle || "organizer",
-            avatar: res.metadata?.hostAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-          },
-          spaceId: res.spaceId,
-          spaceName: res.metadata?.spaceName || "Philosophy Circle",
-          maxCapacity: res.capacity || res.maxCapacity || 30,
-          attendeeCount: count,
-          registeredCount: count,
-          activeViewers: res.activeViewers ?? 0,
-          userRsvpStatus: status,
-          tags: res.metadata?.tags || ["Ethics", "Dialogue"],
-          createdAt: res.createdAt || new Date().toISOString(),
-        };
-      } else {
-        throw new Error("Invalid response format");
-      }
-
-      updatedEvent.userRsvpStatus = status;
-      if (res?.rsvpCounts?.going !== undefined) {
-        updatedEvent.registeredCount = res.rsvpCounts.going;
-        updatedEvent.attendeeCount = res.rsvpCounts.going;
-      } else if (res?.event?.rsvpCounts?.going !== undefined) {
-        updatedEvent.registeredCount = res.event.rsvpCounts.going;
-        updatedEvent.attendeeCount = res.event.rsvpCounts.going;
-      }
-
-      return { success: true, event: updatedEvent };
-    } catch {
       const event = DEMO_EVENTS.find((e) => e.id === eventId);
       if (!event) throw new Error("Event not found");
 
@@ -1142,6 +1049,61 @@ export class AgoraPhilosophyClient {
 
       return { success: true, event };
     }
+
+    const res = await this.request<any>(`/events/${eventId}/rsvp`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    });
+
+    try {
+      localStorage.setItem(`agora_user_rsvp_${userId}_${eventId}`, status);
+      localStorage.setItem(`agora_user_rsvp_${eventId}`, status);
+    } catch {}
+
+    let updatedEvent: PhilosophyEvent;
+
+    if (res?.event) {
+      updatedEvent = { ...res.event };
+    } else if (res?.id) {
+      const count = res.rsvpCounts?.going ?? res.registeredCount ?? res.attendeeCount ?? 0;
+      updatedEvent = {
+        id: res.id,
+        title: res.title || "Symposium Event",
+        type: res.metadata?.eventType || res.type || "symposium",
+        description: res.description || "",
+        startTime: res.startTime || res.start_time,
+        endTime: res.endTime || res.end_time,
+        locationUrl: res.url || "https://agora.philosophy/symposium/live",
+        hostUser: res.user || res.hostUser || {
+          id: res.userId || "usr-creator",
+          name: res.metadata?.hostName || "Host",
+          username: res.metadata?.hostHandle || "organizer",
+          avatar: getAvatarUrl(res.metadata?.hostAvatar, res.metadata?.hostName || "Host"),
+        },
+        spaceId: res.spaceId,
+        spaceName: res.metadata?.spaceName || "Philosophy Circle",
+        maxCapacity: res.capacity || res.maxCapacity || 30,
+        attendeeCount: count,
+        registeredCount: count,
+        activeViewers: res.activeViewers ?? 0,
+        userRsvpStatus: status,
+        tags: res.metadata?.tags || ["Ethics", "Dialogue"],
+        createdAt: res.createdAt || new Date().toISOString(),
+      };
+    } else {
+      throw new Error("Invalid response format");
+    }
+
+    updatedEvent.userRsvpStatus = status;
+    if (res?.rsvpCounts?.going !== undefined) {
+      updatedEvent.registeredCount = res.rsvpCounts.going;
+      updatedEvent.attendeeCount = res.rsvpCounts.going;
+    } else if (res?.event?.rsvpCounts?.going !== undefined) {
+      updatedEvent.registeredCount = res.event.rsvpCounts.going;
+      updatedEvent.attendeeCount = res.event.rsvpCounts.going;
+    }
+
+    return { success: true, event: updatedEvent };
   }
 
   async getEventRsvps(eventId: string): Promise<{ rsvps: EventRSVP[] }> {
@@ -1647,25 +1609,21 @@ export class AgoraPhilosophyClient {
   async sendMessage(conversationId: string, content: string): Promise<ChatMessage> {
     const activeUserId = this.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
     if (!conversationId.startsWith("conv-")) {
-      try {
-        const response = await this.request<any>(`/chat/conversations/${conversationId}/messages`, {
-          method: "POST",
-          body: JSON.stringify({ content }),
-        });
-        const serverMsg = response?.message || response;
-        return {
-          id: serverMsg.id,
-          conversationId: serverMsg.conversationId || conversationId,
-          senderId: serverMsg.userId || serverMsg.senderId || activeUserId,
-          senderName: serverMsg.user?.name || "You",
-          senderAvatar: serverMsg.user?.avatar,
-          content: serverMsg.content || content,
-          createdAt: serverMsg.createdAt || new Date().toISOString(),
-          metadata: serverMsg.metadata,
-        };
-      } catch {
-        // Fallback to local storage if backend conversation row does not exist
-      }
+      const response = await this.request<any>(`/chat/conversations/${conversationId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+      });
+      const serverMsg = response?.message || response;
+      return {
+        id: serverMsg.id,
+        conversationId: serverMsg.conversationId || conversationId,
+        senderId: serverMsg.userId || serverMsg.senderId || activeUserId,
+        senderName: serverMsg.user?.name || "You",
+        senderAvatar: serverMsg.user?.avatar,
+        content: serverMsg.content || content,
+        createdAt: serverMsg.createdAt || new Date().toISOString(),
+        metadata: serverMsg.metadata,
+      };
     }
 
     const newMsg: ChatMessage = {
@@ -1738,34 +1696,32 @@ export class AgoraPhilosophyClient {
     entityId: string,
     reactionType: "love" | "upvote" | "like" | "wow" | "funny" | "downvote"
   ): Promise<{ userReaction: string | null; reactionCounts: Record<string, number> }> {
-    try {
-      return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
-        `/entities/${entityId}/reactions`,
-        {
-          method: "POST",
-          body: JSON.stringify({ reactionType }),
-        }
-      );
-    } catch {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
       return { userReaction: reactionType, reactionCounts: { [reactionType]: 1 } };
     }
+    return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
+      `/entities/${entityId}/reactions`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reactionType }),
+      }
+    );
   }
 
   async reactToComment(
     commentId: string,
     reactionType: "love" | "upvote" | "like" | "wow" | "funny" | "downvote"
   ): Promise<{ userReaction: string | null; reactionCounts: Record<string, number> }> {
-    try {
-      return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
-        `/comments/${commentId}/reactions`,
-        {
-          method: "POST",
-          body: JSON.stringify({ reactionType }),
-        }
-      );
-    } catch {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
       return { userReaction: reactionType, reactionCounts: { [reactionType]: 1 } };
     }
+    return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
+      `/comments/${commentId}/reactions`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reactionType }),
+      }
+    );
   }
 
   async createPost(postData: {
@@ -1928,43 +1884,14 @@ export class AgoraPhilosophyClient {
     const authorHandle = authorData?.authorHandle || "you";
     const authorAvatar = authorData?.authorAvatar || undefined;
 
-    const post = DEMO_POSTS.find((p) => p.id === entityId);
-    if (post) {
-      post.commentsCount = (post.commentsCount || 0) + 1;
-    }
-
-    let createdComment: PhilosophicalComment;
-
-    try {
-      const res = await this.request<any>(`/entities/${entityId}/comments`, {
-        method: "POST",
-        body: JSON.stringify({ content, parentId, stance, authorName, authorHandle, authorAvatar }),
-      });
-      const c = res?.comment || res;
-      const meta = c?.metadata || {};
-      const userObj = c?.user || c?.authorUser || {};
-
-      createdComment = {
-        id: c?.id || `comment-${Date.now()}`,
-        entityId: c?.entityId || entityId,
-        authorId: c?.userId || c?.authorId || "usr-current",
-        authorName: c?.authorName || meta.authorName || c?.author_name || userObj.name || authorName,
-        authorHandle: c?.authorHandle || meta.authorHandle || c?.author_handle || userObj.username || authorHandle,
-        authorAvatar: c?.authorAvatar || meta.authorAvatar || c?.author_avatar || userObj.avatar || authorAvatar,
-        content: c?.content || content,
-        parentId: c?.parentId || parentId || null,
-        stance: c?.stance || stance || "synthesis",
-        upvotesCount: c?.upvotesCount ?? 0,
-        createdAt: "Just now",
-      };
-    } catch {
-      createdComment = {
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      const createdComment: PhilosophicalComment = {
         id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         entityId,
         authorId: "usr-current",
         authorName,
         authorHandle,
-        authorAvatar,
+        authorAvatar: getAvatarUrl(authorAvatar, authorName),
         content,
         parentId: parentId || null,
         stance: stance || "synthesis",
@@ -1972,15 +1899,35 @@ export class AgoraPhilosophyClient {
         createdAt: "Just now",
       };
       DEMO_COMMENTS.push(createdComment);
+      return createdComment;
     }
 
-    try {
-      const storedKey = `agora_comments_${entityId}`;
-      const existing = JSON.parse(localStorage.getItem(storedKey) || "[]");
-      if (Array.isArray(existing) && !existing.some((item: any) => item.id === createdComment.id)) {
-        localStorage.setItem(storedKey, JSON.stringify([...existing, createdComment]));
-      }
-    } catch {}
+    const res = await this.request<any>(`/entities/${entityId}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ content, parentId, stance, authorName, authorHandle, authorAvatar }),
+    });
+    const c = res?.comment || res;
+    const meta = c?.metadata || {};
+    const userObj = c?.user || c?.authorUser || {};
+
+    const createdComment: PhilosophicalComment = {
+      id: c?.id || `comment-${Date.now()}`,
+      entityId: c?.entityId || entityId,
+      authorId: c?.userId || c?.authorId || "usr-current",
+      authorName: c?.authorName || meta.authorName || c?.author_name || userObj.name || authorName,
+      authorHandle: c?.authorHandle || meta.authorHandle || c?.author_handle || userObj.username || authorHandle,
+      authorAvatar: getAvatarUrl(c?.authorAvatar || meta.authorAvatar || c?.author_avatar || userObj.avatar || authorAvatar, c?.authorName || authorName),
+      content: c?.content || content,
+      parentId: c?.parentId || parentId || null,
+      stance: c?.stance || stance || "synthesis",
+      upvotesCount: c?.upvotesCount ?? 0,
+      createdAt: "Just now",
+    };
+
+    const post = DEMO_POSTS.find((p) => p.id === entityId);
+    if (post) {
+      post.commentsCount = (post.commentsCount || 0) + 1;
+    }
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("agora_comment_added", {

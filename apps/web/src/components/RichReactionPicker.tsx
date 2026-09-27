@@ -125,8 +125,15 @@ export const RichReactionPicker: React.FC<RichReactionPickerProps> = ({
           onReactionChange(finalActive, mergedCounts);
         }
       }
-    } catch (err) {
-      console.warn(`Local reaction mode for ${targetType}:`, err);
+    } catch (err: any) {
+      console.error(`Reaction failed for ${targetType}:`, err);
+      // Rollback to previous reaction state
+      setActiveReaction(prevReaction);
+      setCounts(counts);
+      if (onReactionChange) {
+        onReactionChange(prevReaction, counts);
+      }
+      alert(`Unable to save reaction to server: ${err?.message || "Server error"}`);
     }
   };
 

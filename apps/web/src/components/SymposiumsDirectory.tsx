@@ -96,8 +96,9 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
           )
         );
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("RSVP failed:", err);
+      alert(`Unable to update RSVP: ${err?.message || "Server error"}`);
       loadEvents();
     }
   };
