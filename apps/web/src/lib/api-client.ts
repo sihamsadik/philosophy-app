@@ -164,6 +164,11 @@ export class AgoraPhilosophyClient {
     return "guest";
   }
 
+  getCurrentUser(): { id: string } | null {
+    const id = this.getCurrentUserId();
+    return id && id !== "guest" ? { id } : null;
+  }
+
   setAuthToken(token: string) {
     this.authToken = token;
     if (typeof window !== "undefined") {

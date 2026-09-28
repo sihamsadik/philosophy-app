@@ -19,8 +19,8 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
       setError(null);
       const res = await agoraClient.getLeaderboard(selectedSchool);
       setEntries(res.entries);
-      const currentUser = agoraClient.getCurrentUser();
-      const targetUserId = currentUser?.id || res.entries[0]?.user?.id;
+      const currentUserId = agoraClient.getCurrentUserId();
+      const targetUserId = (currentUserId && currentUserId !== "guest") ? currentUserId : res.entries[0]?.user?.id;
       if (targetUserId) {
         try {
           const userBadges = await agoraClient.getUserBadges(targetUserId);
