@@ -1,7 +1,7 @@
 // Small grouped domains mounted at the project root: oauth, projects, crypto (testing), utils.
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, isNull, inArray, count } from "drizzle-orm";
 import { shapeUser } from "../lib/shape.js";
 import { importPKCS8, SignJWT } from "jose";
 import type { Provider } from "@supabase/supabase-js";
@@ -9,7 +9,7 @@ import type { Variables } from "../http/context.js";
 import { Errors } from "../http/errors.js";
 import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
-import { oauthIdentities, oauthStates, profiles, projects, projectIntegrations } from "../db/schema/index.js";
+import { oauthIdentities, oauthStates, profiles, projects, projectIntegrations, entities, eventHosts } from "../db/schema/index.js";
 import { pkceClient, oauthConfigured, rewritePublicAuthUrl, isAllowedRedirect, resolveRedirectAllowlist } from "../lib/oauth.js";
 import { env } from "../lib/env.js";
 import { defaultUsername } from "../lib/profiles.js";
@@ -36,23 +36,56 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
       .where(eq(profiles.projectId, c.var.projectId))
       .orderBy(desc(profiles.reputation))
       .limit(50);
-    const mapped = rows.map((u, idx) => ({
+
+    const userIds = rows.map((r) => r.id);
+    let argMap = new Map<string, number>();
+    let hostMap = new Map<string, number>();
+
+    if (userIds.length > 0) {
+      const argCounts = await getDb()
+        .select({ userId: entities.userId, n: count() })
+        .from(entities)
+        .where(and(eq(entities.projectId, c.var.projectId), inArray(entities.userId, userIds), isNull(entities.deletedAt)))
+        .groupBy(entities.userId);
+      argMap = new Map(argCounts.map((r) => [r.userId, Number(r.n)]));
+
+      const hostCounts = await getDb()
+        .select({ userId: eventHosts.userId, n: count() })
+        .from(eventHosts)
+        .where(and(eq(eventHosts.projectId, c.var.projectId), inArray(eventHosts.userId, userIds)))
+        .groupBy(eventHosts.userId);
+      hostMap = new Map(hostCounts.map((r) => [r.userId, Number(r.n)]));
+    }
+
+    const mapped = rows.map((u) => {
+      const argsCount = argMap.get(u.id) ?? 0;
+      const sympCount = hostMap.get(u.id) ?? 0;
+      const rep = u.reputation ?? 0;
+      return {
+        user: shapeUser(u),
+        reputationPoints: rep,
+        primarySchool: (u.metadata as any)?.philosophyProfile?.primarySchools?.[0] || (u.metadata as any)?.primarySchool || "General Philosophy",
+        argumentsCount: argsCount,
+        symposiumsHosted: sympCount,
+        trend: "same",
+        badges: [],
+      };
+    });
+
+    mapped.sort((a, b) => b.reputationPoints - a.reputationPoints || b.argumentsCount - a.argumentsCount);
+
+    const entries = mapped.map((item, idx) => ({
+      ...item,
       rank: idx + 1,
-      user: shapeUser(u),
-      reputationPoints: u.reputation || 0,
-      primarySchool: (u.metadata as any)?.philosophyProfile?.primarySchools?.[0] || (u.metadata as any)?.primarySchool || "General Philosophy",
-      argumentsCount: (u.metadata as any)?.argumentsCount || 12,
-      symposiumsHosted: (u.metadata as any)?.symposiumsHosted || 5,
-      trend: "same",
-      badges: [],
     }));
-    let entries = mapped;
+
+    let filtered = entries;
     if (school && school !== "all") {
-      entries = mapped.filter((e) =>
+      filtered = entries.filter((e) =>
         e.primarySchool.toLowerCase().includes(school.toLowerCase())
       );
     }
-    return c.json({ entries });
+    return c.json({ entries: filtered });
   })
   // ── oauth identities (the auth user's linked providers) ─────────────────────
   .get("/oauth/identities", requireAuth, async (c) => {

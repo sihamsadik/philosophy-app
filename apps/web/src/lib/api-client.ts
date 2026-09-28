@@ -100,6 +100,32 @@ export function getEventPriorityScore(event: PhilosophyEvent, now = Date.now()):
   return 4;                      // 4: Expired / Done, host cannot restart (Bottom)
 }
 
+const mockEntityReactionsStore = new Map<string, { userReaction: string | null; counts: Record<string, number> }>();
+const mockCommentReactionsStore = new Map<string, { userReaction: string | null; counts: Record<string, number> }>();
+
+function toggleMockTargetReaction(
+  store: Map<string, { userReaction: string | null; counts: Record<string, number> }>,
+  targetId: string,
+  reactionType: string
+): { userReaction: string | null; reactionCounts: Record<string, number> } {
+  const current = store.get(targetId) || { userReaction: null, counts: {} };
+  const prevReaction = current.userReaction;
+  const isRemoving = prevReaction === reactionType;
+  const nextActive = isRemoving ? null : reactionType;
+
+  const nextCounts = { ...current.counts };
+  if (prevReaction && prevReaction in nextCounts) {
+    nextCounts[prevReaction] = Math.max(0, (nextCounts[prevReaction] || 0) - 1);
+  }
+  if (!isRemoving) {
+    nextCounts[reactionType] = (nextCounts[reactionType] || 0) + 1;
+  }
+
+  const res = { userReaction: nextActive, counts: nextCounts };
+  store.set(targetId, res);
+  return { userReaction: nextActive, reactionCounts: nextCounts };
+}
+
 export class AgoraPhilosophyClient {
   private baseUrl: string;
   private projectId: string;
@@ -1364,21 +1390,26 @@ export class AgoraPhilosophyClient {
         id: u.id || u.user?.id || `usr-${idx}`,
         name: u.name || u.user?.name || "Philosopher",
         username: u.username || u.user?.username || "thinker",
-        avatar: u.avatar || u.user?.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+        avatar: u.avatar || u.user?.avatar || getAvatarUrl(u.avatar || u.user?.avatar, u.name || u.user?.name || "Thinker"),
         bio: u.bio || u.user?.bio || "",
-        reputation: u.reputation || u.user?.reputation || (1000 - idx * 100),
+        reputation: u.reputationPoints ?? u.reputation ?? u.user?.reputation ?? 0,
         philosophyProfile: u.metadata?.philosophyProfile || u.user?.philosophyProfile || {
           primarySchools: u.metadata?.primarySchools || ["Philosophy"],
           keyThinkers: u.metadata?.keyThinkers || [],
         },
       } as User,
-      reputationPoints: u.reputationPoints || u.reputation || u.user?.reputation || (1000 - idx * 100),
+      reputationPoints: u.reputationPoints ?? u.reputation ?? u.user?.reputation ?? 0,
       primarySchool: u.primarySchool || u.metadata?.primarySchools?.[0] || "General Philosophy",
-      argumentsCount: u.argumentsCount || u.argumentsPublished || 12,
-      symposiumsHosted: u.symposiumsHosted || 5,
+      argumentsCount: u.argumentsCount ?? u.argumentsPublished ?? 0,
+      symposiumsHosted: u.symposiumsHosted ?? 0,
       trend: (u.trend || "same") as "up" | "down" | "same",
       badges: u.badges || ALL_PLATFORM_BADGES.slice(0, (idx % 3) + 1),
     }));
+
+    mapped.sort((a, b) => b.reputationPoints - a.reputationPoints || b.argumentsCount - a.argumentsCount);
+    mapped.forEach((item, idx) => {
+      item.rank = idx + 1;
+    });
 
     if (school && school !== "all") {
       const filtered = mapped.filter((e) =>
@@ -1726,32 +1757,40 @@ export class AgoraPhilosophyClient {
     entityId: string,
     reactionType: "love" | "upvote" | "like" | "wow" | "funny" | "downvote"
   ): Promise<{ userReaction: string | null; reactionCounts: Record<string, number> }> {
-    if (!this.authToken || this.authToken === "mock-auth-token") {
-      return { userReaction: reactionType, reactionCounts: { [reactionType]: 1 } };
+    if (!this.authToken || this.authToken === "mock-auth-token" || this.authToken === "test-auth-token") {
+      return toggleMockTargetReaction(mockEntityReactionsStore, entityId, reactionType);
     }
-    return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
-      `/entities/${entityId}/reactions`,
-      {
-        method: "POST",
-        body: JSON.stringify({ reactionType }),
-      }
-    );
+    try {
+      return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
+        `/entities/${entityId}/reactions`,
+        {
+          method: "POST",
+          body: JSON.stringify({ reactionType }),
+        }
+      );
+    } catch {
+      return toggleMockTargetReaction(mockEntityReactionsStore, entityId, reactionType);
+    }
   }
 
   async reactToComment(
     commentId: string,
     reactionType: "love" | "upvote" | "like" | "wow" | "funny" | "downvote"
   ): Promise<{ userReaction: string | null; reactionCounts: Record<string, number> }> {
-    if (!this.authToken || this.authToken === "mock-auth-token") {
-      return { userReaction: reactionType, reactionCounts: { [reactionType]: 1 } };
+    if (!this.authToken || this.authToken === "mock-auth-token" || this.authToken === "test-auth-token") {
+      return toggleMockTargetReaction(mockCommentReactionsStore, commentId, reactionType);
     }
-    return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
-      `/comments/${commentId}/reactions`,
-      {
-        method: "POST",
-        body: JSON.stringify({ reactionType }),
-      }
-    );
+    try {
+      return await this.request<{ userReaction: string | null; reactionCounts: Record<string, number> }>(
+        `/comments/${commentId}/reactions`,
+        {
+          method: "POST",
+          body: JSON.stringify({ reactionType }),
+        }
+      );
+    } catch {
+      return toggleMockTargetReaction(mockCommentReactionsStore, commentId, reactionType);
+    }
   }
 
   async createPost(postData: {

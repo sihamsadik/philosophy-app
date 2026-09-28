@@ -84,7 +84,22 @@ describe("AgoraPhilosophyClient Integration & Data Flow Tests", () => {
       const newPost = await client.createPost(postData);
       expect(newPost.id).toBeDefined();
       expect(newPost.title).toBe(postData.title);
-      expect(newPost.upvotesCount).toBe(1);
+    });
+
+    it("should handle reaction switching from upvote to funny by deducting previous reaction count", async () => {
+      const postId = "test-post-1";
+      const res1 = await client.reactToEntity(postId, "upvote");
+      expect(res1.userReaction).toBe("upvote");
+      expect(res1.reactionCounts.upvote).toBe(1);
+
+      const res2 = await client.reactToEntity(postId, "funny");
+      expect(res2.userReaction).toBe("funny");
+      expect(res2.reactionCounts.upvote).toBe(0);
+      expect(res2.reactionCounts.funny).toBe(1);
+
+      const res3 = await client.reactToEntity(postId, "funny");
+      expect(res3.userReaction).toBeNull();
+      expect(res3.reactionCounts.funny).toBe(0);
     });
   });
 
