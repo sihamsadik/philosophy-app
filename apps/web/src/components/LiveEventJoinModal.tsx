@@ -136,7 +136,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
   const endedElapsedMs = isEndedConcluded ? Math.max(0, nowTime - (currentEvent.endTime ? new Date(currentEvent.endTime).getTime() : endTimeMs)) : 0;
   const endedElapsedHours = Math.floor(endedElapsedMs / (3600 * 1000));
   const endedElapsedMins = Math.floor((endedElapsedMs % (3600 * 1000)) / 60000);
-  const canBeRestarted = isEndedConcluded && endedElapsedMs <= 24 * 3600 * 1000;
+  const canBeRestarted = isEndedConcluded && endedElapsedMs <= 2 * 3600 * 1000;
 
   const isHost = !!(
     user &&
@@ -512,8 +512,8 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
             </div>
             <p style={{ margin: 0, fontSize: "0.82rem", color: "#fef3c7", lineHeight: 1.45 }}>
               {isHost
-                ? `As the host, you can restart this live session at any time until tomorrow. Click '🔄 Restart Live Event' to re-open text chat and video meeting links.`
-                : `This event ended ${endedElapsedHours > 0 ? `${endedElapsedHours} hours` : `${endedElapsedMins} minutes`} ago. If the host does not restart the live event, other members cannot send live chat or join the video call. The host can restart this session until tomorrow.`}
+                ? `As the host, you can restart this live session within 2 hours after ending. Click '🔄 Restart Live Event' to re-open text chat and video meeting links.`
+                : `This event ended ${endedElapsedHours > 0 ? `${endedElapsedHours} hours` : `${endedElapsedMins} minutes`} ago. If the host does not restart the live event within 2 hours, other members cannot send live chat or join the video call.`}
             </p>
           </div>
         )}

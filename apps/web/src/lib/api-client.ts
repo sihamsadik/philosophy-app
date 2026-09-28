@@ -84,6 +84,22 @@ export function normalizeUser<T extends { avatar?: string | null; name?: string 
 }
 
 
+export function getEventPriorityScore(event: PhilosophyEvent, now = Date.now()): number {
+  const start = new Date(event.startTime).getTime();
+  const end = event.endTime ? new Date(event.endTime).getTime() : start + 2 * 3600 * 1000;
+  const isPast = now > end;
+  const endedElapsedMs = isPast ? Math.max(0, now - end) : 0;
+
+  const isLive = now >= start && now <= end;
+  const isUpcoming = now < start;
+  const canBeRestarted = isPast && endedElapsedMs <= 2 * 3600 * 1000;
+
+  if (isLive) return 1;          // 1: Live / Ongoing (Top priority)
+  if (isUpcoming) return 2;      // 2: Upcoming / Begins soon (Top section)
+  if (canBeRestarted) return 3;  // 3: Ended, but host can restart (Top section)
+  return 4;                      // 4: Expired / Done, host cannot restart (Bottom)
+}
+
 export class AgoraPhilosophyClient {
   private baseUrl: string;
   private projectId: string;
@@ -868,24 +884,38 @@ export class AgoraPhilosophyClient {
       };
     });
 
-    // Filter out concluded events older than 1 day (24 hours)
-    const ONE_DAY_MS = 24 * 3600 * 1000;
+    // Remove concluded events older than 4 days so they don't take up space
+    const FOUR_DAYS_MS = 4 * 24 * 3600 * 1000;
     const now = Date.now();
     const activeOrRecent = mapped.filter((ev: PhilosophyEvent) => {
       if (ev.endTime) {
         const endMs = new Date(ev.endTime).getTime();
-        if (!isNaN(endMs) && endMs < now && (now - endMs > ONE_DAY_MS)) {
+        if (!isNaN(endMs) && endMs < now && (now - endMs > FOUR_DAYS_MS)) {
           return false;
         }
       }
       return true;
     });
 
-    // Sort events so that those happening sooner appear at the top
+    // Sort events so live, upcoming, and restartable events appear at top, expired/done at bottom
     activeOrRecent.sort((a: PhilosophyEvent, b: PhilosophyEvent) => {
+      const scoreA = getEventPriorityScore(a, now);
+      const scoreB = getEventPriorityScore(b, now);
+
+      if (scoreA !== scoreB) {
+        return scoreA - scoreB;
+      }
+
       const startA = new Date(a.startTime).getTime();
       const startB = new Date(b.startTime).getTime();
-      return startA - startB;
+
+      if (scoreA <= 2) {
+        return startA - startB; // Soonest starting first
+      } else {
+        const endA = a.endTime ? new Date(a.endTime).getTime() : startA + 2 * 3600 * 1000;
+        const endB = b.endTime ? new Date(b.endTime).getTime() : startB + 2 * 3600 * 1000;
+        return endB - endA; // Most recently concluded first
+      }
     });
 
     return { events: activeOrRecent };

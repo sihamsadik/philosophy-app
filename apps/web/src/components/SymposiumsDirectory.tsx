@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
-import { agoraClient, DEMO_EVENTS, DEMO_RSVPS, type EventType, type PhilosophyEvent, type EventRSVP, type RSVPStatus, getAvatarUrl } from "../lib/api-client.js";
+import { agoraClient, DEMO_EVENTS, DEMO_RSVPS, type EventType, type PhilosophyEvent, type EventRSVP, type RSVPStatus, getAvatarUrl, getEventPriorityScore } from "../lib/api-client.js";
 import { LiveEventJoinModal } from "./LiveEventJoinModal.js";
 
 export interface SymposiumsDirectoryProps {
@@ -163,25 +163,45 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
     return { status: "upcoming", text: `⚡ Starts in ${mins}m ${secs}s` };
   };
 
-  const filteredEvents = events.filter((e) => {
-    if (activeTypeTab === "live_now") {
-      const start = new Date(e.startTime).getTime();
-      const end = e.endTime ? new Date(e.endTime).getTime() : start + 2 * 3600 * 1000;
-      if (nowTime < start || nowTime > end) return false;
-    } else if (activeTypeTab !== "all") {
-      if (e.type !== activeTypeTab) return false;
-    }
+  const filteredEvents = events
+    .filter((e) => {
+      if (activeTypeTab === "live_now") {
+        const start = new Date(e.startTime).getTime();
+        const end = e.endTime ? new Date(e.endTime).getTime() : start + 2 * 3600 * 1000;
+        if (nowTime < start || nowTime > end) return false;
+      } else if (activeTypeTab !== "all") {
+        if (e.type !== activeTypeTab) return false;
+      }
 
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      e.title.toLowerCase().includes(q) ||
-      e.description.toLowerCase().includes(q) ||
-      (e.hostUser.name && e.hostUser.name.toLowerCase().includes(q)) ||
-      (e.hostUser.username && e.hostUser.username.toLowerCase().includes(q)) ||
-      (e.tags && e.tags.some((t) => t.toLowerCase().includes(q)))
-    );
-  });
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        e.title.toLowerCase().includes(q) ||
+        e.description.toLowerCase().includes(q) ||
+        (e.hostUser.name && e.hostUser.name.toLowerCase().includes(q)) ||
+        (e.hostUser.username && e.hostUser.username.toLowerCase().includes(q)) ||
+        (e.tags && e.tags.some((t) => t.toLowerCase().includes(q)))
+      );
+    })
+    .sort((a, b) => {
+      const scoreA = getEventPriorityScore(a, nowTime);
+      const scoreB = getEventPriorityScore(b, nowTime);
+
+      if (scoreA !== scoreB) {
+        return scoreA - scoreB;
+      }
+
+      const startA = new Date(a.startTime).getTime();
+      const startB = new Date(b.startTime).getTime();
+
+      if (scoreA <= 2) {
+        return startA - startB;
+      } else {
+        const endA = a.endTime ? new Date(a.endTime).getTime() : startA + 2 * 3600 * 1000;
+        const endB = b.endTime ? new Date(b.endTime).getTime() : startB + 2 * 3600 * 1000;
+        return endB - endA;
+      }
+    });
 
   const liveNowEvents = events.filter((e) => {
     const start = new Date(e.startTime).getTime();

@@ -254,19 +254,19 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
     const { page, limit, offset } = readPagination(c);
     const q = (k: string) => { const v = c.req.query(k); return v && v !== "null" && v !== "undefined" ? v : undefined; };
     const conds: SQL[] = [eq(events.projectId, projectId), isNull(events.deletedAt)];
-    // Exclude concluded events older than 24 hours (1 day) from results and mark as deleted
+    // Exclude concluded events older than 4 days from results and mark as deleted so they don't consume space
     try {
       await getDb().update(events)
         .set({ deletedAt: new Date() })
         .where(and(
           eq(events.projectId, projectId),
           isNull(events.deletedAt),
-          sql`${events.endTime} is not null and ${events.endTime} < now() - interval '24 hours'`
+          sql`${events.endTime} is not null and ${events.endTime} < now() - interval '4 days'`
         ));
     } catch {
       // Ignore cleanup error if db table locks
     }
-    conds.push(sql`(${events.endTime} is null or ${events.endTime} >= now() - interval '24 hours')`);
+    conds.push(sql`(${events.endTime} is null or ${events.endTime} >= now() - interval '4 days')`);
     if (q("spaceId")) conds.push(eq(events.spaceId, q("spaceId")!));
     // Validate enum filters against the contract enum BEFORE the ::cast — a bad value is a client
     // error (clean 400), not a Postgres invalid-enum 500. Reject, don't coerce.
@@ -329,9 +329,15 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
     const where = and(...conds);
     const sortBy = q("sortBy") ?? "startTime";
     const dir = q("sortDir") === "desc" ? sql`desc` : (q("sortDir") === "asc" ? sql`asc` : (sortBy === "startTime" ? sql`asc` : sql`desc`));
+    const priorityTier = sql`case
+      when (now() >= ${events.startTime} and (${events.endTime} is null or now() <= ${events.endTime})) then 1
+      when (${events.startTime} > now()) then 2
+      when (coalesce(${events.endTime}, ${events.startTime} + interval '2 hours') < now() and coalesce(${events.endTime}, ${events.startTime} + interval '2 hours') >= now() - interval '2 hours') then 3
+      else 4
+    end`;
     const orderBy = sortBy === "going"
-      ? sql`(select count(*) from event_rsvps r where r.event_id = ${events.id} and r.status = 'going') ${dir}, ${events.startTime} asc`
-      : sql`${events.startTime} ${dir}`;
+      ? sql`(select count(*) from event_rsvps r where r.event_id = ${events.id} and r.status = 'going') ${dir}, ${priorityTier} asc, ${events.startTime} asc`
+      : sql`${priorityTier} asc, case when ${priorityTier} <= 2 then ${events.startTime} end asc, ${events.startTime} desc`;
     const rows = await getDb().select().from(events).where(where).orderBy(orderBy).limit(limit).offset(offset);
     const [{ total } = { total: 0 }] = await getDb().select({ total: count() }).from(events).where(where);
     const data = await Promise.all(rows.map((r) => buildEventResponse(c, r)));

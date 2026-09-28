@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { AgoraPhilosophyClient } from "../lib/api-client.js";
+import { AgoraPhilosophyClient, getEventPriorityScore } from "../lib/api-client.js";
 
 describe("AgoraPhilosophyClient Integration & Data Flow Tests", () => {
   let client: AgoraPhilosophyClient;
@@ -112,6 +112,19 @@ describe("AgoraPhilosophyClient Integration & Data Flow Tests", () => {
     it("should fetch events list and filter by type", async () => {
       const { events } = await client.getEvents({ type: "reading_group" });
       expect(Array.isArray(events)).toBe(true);
+    });
+
+    it("should correctly calculate event priority score for live, upcoming, restartable, and expired events", () => {
+      const now = 1000000000000;
+      const liveEvent = { startTime: new Date(now - 1800000).toISOString(), endTime: new Date(now + 1800000).toISOString() } as any;
+      const upcomingEvent = { startTime: new Date(now + 3600000).toISOString() } as any;
+      const restartablePastEvent = { startTime: new Date(now - 7200000).toISOString(), endTime: new Date(now - 3600000).toISOString() } as any; // ended 1h ago (<= 2h)
+      const expiredPastEvent = { startTime: new Date(now - 15000000).toISOString(), endTime: new Date(now - 11000000).toISOString() } as any; // ended ~3h ago (> 2h)
+
+      expect(getEventPriorityScore(liveEvent, now)).toBe(1);
+      expect(getEventPriorityScore(upcomingEvent, now)).toBe(2);
+      expect(getEventPriorityScore(restartablePastEvent, now)).toBe(3);
+      expect(getEventPriorityScore(expiredPastEvent, now)).toBe(4);
     });
 
     it("should schedule a new symposium event and handle RSVP", async () => {
