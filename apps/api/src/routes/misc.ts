@@ -9,7 +9,8 @@ import type { Variables } from "../http/context.js";
 import { Errors } from "../http/errors.js";
 import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
-import { oauthIdentities, oauthStates, profiles, projects, projectIntegrations, entities, eventHosts } from "../db/schema/index.js";
+import { oauthIdentities, oauthStates, profiles, projects, projectIntegrations, entities, eventHosts, spaceMembers } from "../db/schema/index.js";
+import { computeBadgesFromStats } from "../lib/badges.js";
 import { pkceClient, oauthConfigured, rewritePublicAuthUrl, isAllowedRedirect, resolveRedirectAllowlist } from "../lib/oauth.js";
 import { env } from "../lib/env.js";
 import { defaultUsername } from "../lib/profiles.js";
@@ -40,6 +41,7 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
     const userIds = rows.map((r) => r.id);
     let argMap = new Map<string, number>();
     let hostMap = new Map<string, number>();
+    let spaceMap = new Map<string, number>();
 
     if (userIds.length > 0) {
       const argCounts = await getDb()
@@ -55,12 +57,27 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
         .where(and(eq(eventHosts.projectId, c.var.projectId), inArray(eventHosts.userId, userIds)))
         .groupBy(eventHosts.userId);
       hostMap = new Map(hostCounts.map((r) => [r.userId, Number(r.n)]));
+
+      const spaceCounts = await getDb()
+        .select({ userId: spaceMembers.userId, n: count() })
+        .from(spaceMembers)
+        .where(and(eq(spaceMembers.projectId, c.var.projectId), inArray(spaceMembers.userId, userIds), eq(spaceMembers.status, "active")))
+        .groupBy(spaceMembers.userId);
+      spaceMap = new Map(spaceCounts.map((r) => [r.userId, Number(r.n)]));
     }
 
     const mapped = rows.map((u) => {
       const argsCount = argMap.get(u.id) ?? 0;
       const sympCount = hostMap.get(u.id) ?? 0;
+      const spacesJoined = spaceMap.get(u.id) ?? 0;
       const rep = u.reputation ?? 0;
+      const badges = computeBadgesFromStats({
+        reputation: rep,
+        argumentsCount: argsCount,
+        symposiumsHosted: sympCount,
+        spacesJoined,
+      });
+
       return {
         user: shapeUser(u),
         reputationPoints: rep,
@@ -68,7 +85,7 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
         argumentsCount: argsCount,
         symposiumsHosted: sympCount,
         trend: "same",
-        badges: [],
+        badges,
       };
     });
 

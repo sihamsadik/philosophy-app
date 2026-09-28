@@ -20,6 +20,7 @@ import { spaceRepGate } from "../middleware/space-rep.js";
 import { enrichSpaceReputation } from "../lib/space-reputation-enrich.js";
 import { indexUserAsync } from "../lib/embeddings.js";
 import { calculateIntellectualCompatibility } from "../lib/intellectual-matching.js";
+import { getUserBadges } from "../lib/badges.js";
 
 async function findUser(projectId: string, col: typeof profiles.id | typeof profiles.username | typeof profiles.foreignId, value: string) {
   const [row] = await getDb()
@@ -90,6 +91,12 @@ export const userRoutes = new Hono<{ Variables: Variables }>()
       user: await enrichSpaceReputation(c, targetUser),
       compatibility,
     });
+  })
+  .get("/:id/badges", async (c) => {
+    const row = await findUser(c.var.projectId, profiles.id, c.req.param("id"));
+    if (!row) throw Errors.notFound("users/not-found", "User not found");
+    const badges = await getUserBadges(c.var.projectId, row.id);
+    return c.json({ badges });
   })
   .get("/:id", async (c) => {
     const row = await findUser(c.var.projectId, profiles.id, c.req.param("id"));

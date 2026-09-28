@@ -19,6 +19,18 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
       setError(null);
       const res = await agoraClient.getLeaderboard(selectedSchool);
       setEntries(res.entries);
+      const currentUser = agoraClient.getCurrentUser();
+      const targetUserId = currentUser?.id || res.entries[0]?.user?.id;
+      if (targetUserId) {
+        try {
+          const userBadges = await agoraClient.getUserBadges(targetUserId);
+          if (userBadges?.badges && userBadges.badges.length > 0) {
+            setBadges(userBadges.badges);
+          }
+        } catch {
+          // ignore fallback
+        }
+      }
     } catch (err: any) {
       console.error("Failed to load leaderboard:", err);
       setError(err.message || "Unable to fetch leaderboard data from database.");
@@ -415,7 +427,13 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                       <span className={`badge-category-chip cat-${badge.category}`}>
                         {badge.category.toUpperCase()}
                       </span>
-                      <span className="badge-status-unlocked">✓ Unlocked</span>
+                      {badge.progressPercentage >= 100 ? (
+                        <span className="badge-status-unlocked" style={{ color: "#10b981", fontWeight: 600 }}>✓ Unlocked</span>
+                      ) : (
+                        <span className="badge-status-locked" style={{ color: "#94a3b8", fontSize: "0.85rem", fontWeight: 500 }}>
+                          🔒 {badge.progressPercentage}% Progress
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
