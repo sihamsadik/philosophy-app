@@ -451,75 +451,205 @@ export class AgoraPhilosophyClient {
   /**
    * Philosophical Spaces & Community Circles
    */
+  /**
+   * Philosophical Spaces & Community Circles
+   */
   async getSpaces(category?: string): Promise<{ spaces: PhilosophicalSpace[] }> {
-    try {
-      const query = category ? `?category=${encodeURIComponent(category)}` : "";
-      const res = await this.request<any>(`/spaces${query}`);
-      const list = res?.spaces || res?.data || (Array.isArray(res) ? res : []);
-      if (Array.isArray(list) && list.length > 0) {
-        const mapped = list.map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          slug: s.slug || s.shortId || s.id,
-          description: s.description || "",
-          category: s.category || s.metadata?.category || "school",
-          primarySchool: s.primarySchool || s.metadata?.primarySchool || s.name,
-          keyThinkers: s.keyThinkers || s.metadata?.keyThinkers || [],
-          avatarImage: s.avatarImage || s.avatar || "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=200&q=80",
-          membersCount: s.membersCount || s.members_count || 0,
-          postsCount: s.postsCount || 0,
-          isJoined: Boolean(s.isJoined),
-          createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "Established",
-        }));
-        return { spaces: mapped };
-      }
-    } catch {}
+    let savedJoinedIds: string[] = [];
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("philosophy_joined_space_ids");
+        if (stored) savedJoinedIds = JSON.parse(stored);
+      } catch {}
+    }
 
-    const filtered = category ? DEMO_SPACES.filter((s) => s.category === category || category === "all") : DEMO_SPACES;
+    try {
+      const query = category && category !== "all" ? `?category=${encodeURIComponent(category)}` : "";
+      const res = await this.request<any>(`/spaces${query}`);
+      const list = res?.spaces || res?.data || (Array.isArray(res) ? res : null);
+      if (Array.isArray(list)) {
+        const mapped = list.map((s: any) => {
+          const meta = s.metadata || {};
+          const philMeta = s.philosophyMetadata || meta.philosophyMetadata || meta.philosophy || {};
+          const isJoined = Boolean(
+            s.isJoined ||
+            s.isMember ||
+            (s.id && savedJoinedIds.includes(s.id)) ||
+            (s.slug && savedJoinedIds.includes(s.slug))
+          );
+          return {
+            id: s.id,
+            name: s.name,
+            slug: s.slug || s.shortId || s.id,
+            description: s.description || "",
+            category: s.category || meta.category || philMeta.categoryType || "school",
+            primarySchool: s.primarySchool || meta.primarySchool || philMeta.canonicalName || s.name,
+            keyThinkers: s.keyThinkers || meta.keyThinkers || philMeta.keyThinkers || [],
+            avatarImage: s.avatarImage || s.avatar || meta.avatarImage || getAvatarUrl(null, s.name),
+            bannerImage: s.bannerImage || s.banner || meta.bannerImage,
+            membersCount: s.membersCount || s.members_count || 0,
+            postsCount: s.postsCount || 0,
+            isJoined,
+            createdAt: s.createdAt ? (typeof s.createdAt === "string" && s.createdAt.includes("Established") ? s.createdAt : new Date(s.createdAt).toLocaleDateString()) : "Established",
+          };
+        });
+
+        // Filter by category if requested
+        const filtered = category && category !== "all"
+          ? mapped.filter((s: PhilosophicalSpace) => s.category?.toLowerCase() === category.toLowerCase())
+          : mapped;
+
+        if (filtered.length > 0 || this.isAuthenticated()) {
+          return { spaces: filtered };
+        }
+      }
+    } catch (err) {
+      console.warn("API getSpaces failed, using fallback spaces:", err);
+    }
+
+    const filtered = (category && category !== "all" ? DEMO_SPACES.filter((s) => s.category === category) : DEMO_SPACES)
+      .map((s) => ({ ...s, isJoined: s.isJoined || savedJoinedIds.includes(s.id) || savedJoinedIds.includes(s.slug) }));
     return { spaces: filtered.length > 0 ? filtered : DEMO_SPACES };
   }
 
   async getSpace(spaceId: string): Promise<{ space: PhilosophicalSpace }> {
-    try {
-      return await this.request<{ space: PhilosophicalSpace }>(`/spaces/${spaceId}`);
-    } catch {
-      const space = DEMO_SPACES.find((s) => s.id === spaceId) || DEMO_SPACES[0]!;
-      return { space };
+    let savedJoinedIds: string[] = [];
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("philosophy_joined_space_ids");
+        if (stored) savedJoinedIds = JSON.parse(stored);
+      } catch {}
     }
+
+    try {
+      const res = await this.request<any>(`/spaces/${spaceId}`);
+      const s = res.space || res.data || res;
+      if (s && s.id) {
+        const meta = s.metadata || {};
+        const philMeta = s.philosophyMetadata || meta.philosophyMetadata || meta.philosophy || {};
+        const isJoined = Boolean(
+          s.isJoined ||
+          s.isMember ||
+          (s.id && savedJoinedIds.includes(s.id)) ||
+          (s.slug && savedJoinedIds.includes(s.slug))
+        );
+        return {
+          space: {
+            id: s.id,
+            name: s.name,
+            slug: s.slug || s.shortId || s.id,
+            description: s.description || "",
+            category: s.category || meta.category || philMeta.categoryType || "school",
+            primarySchool: s.primarySchool || meta.primarySchool || philMeta.canonicalName || s.name,
+            keyThinkers: s.keyThinkers || meta.keyThinkers || philMeta.keyThinkers || [],
+            avatarImage: s.avatarImage || s.avatar || meta.avatarImage || getAvatarUrl(null, s.name),
+            bannerImage: s.bannerImage || s.banner || meta.bannerImage,
+            membersCount: s.membersCount || s.members_count || 0,
+            postsCount: s.postsCount || 0,
+            isJoined,
+            createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "Established",
+          },
+        };
+      }
+    } catch {}
+
+    const space = DEMO_SPACES.find((s) => s.id === spaceId || s.slug === spaceId) || DEMO_SPACES[0]!;
+    return { space: { ...space, isJoined: space.isJoined || savedJoinedIds.includes(space.id) || savedJoinedIds.includes(space.slug) } };
   }
 
   async joinSpace(spaceId: string): Promise<{ success: boolean; space: PhilosophicalSpace }> {
-    if (!this.authToken || this.authToken === "mock-auth-token") {
-      const space = DEMO_SPACES.find((s) => s.id === spaceId);
-      if (space) {
-        if (!space.isJoined) {
-          space.isJoined = true;
-          space.membersCount += 1;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("philosophy_joined_space_ids");
+        const list: string[] = stored ? JSON.parse(stored) : [];
+        if (!list.includes(spaceId)) {
+          list.push(spaceId);
+          localStorage.setItem("philosophy_joined_space_ids", JSON.stringify(list));
         }
-        return { success: true, space };
-      }
-      return { success: false, space: DEMO_SPACES[0]! };
+      } catch {}
     }
-    return await this.request<{ success: boolean; space: PhilosophicalSpace }>(`/spaces/${spaceId}/join`, {
-      method: "POST",
-    });
+
+    const demoItem = DEMO_SPACES.find((s) => s.id === spaceId || s.slug === spaceId);
+    if (demoItem) demoItem.isJoined = true;
+
+    if (this.authToken && this.authToken !== "mock-auth-token") {
+      try {
+        await this.request<{ message: string }>(`/spaces/${spaceId}/join`, {
+          method: "POST",
+        });
+      } catch (err) {
+        console.warn("Server join request issue:", err);
+      }
+    }
+
+    const { space } = await this.getSpace(spaceId);
+    if (space.slug && typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("philosophy_joined_space_ids");
+        const list: string[] = stored ? JSON.parse(stored) : [];
+        if (!list.includes(space.slug)) {
+          list.push(space.slug);
+        }
+        if (!list.includes(space.id)) {
+          list.push(space.id);
+        }
+        localStorage.setItem("philosophy_joined_space_ids", JSON.stringify(list));
+      } catch {}
+    }
+
+    space.isJoined = true;
+    return { success: true, space };
   }
 
   async leaveSpace(spaceId: string): Promise<{ success: boolean; space: PhilosophicalSpace }> {
-    if (!this.authToken || this.authToken === "mock-auth-token") {
-      const space = DEMO_SPACES.find((s) => s.id === spaceId);
-      if (space) {
-        if (space.isJoined) {
-          space.isJoined = false;
-          space.membersCount = Math.max(0, space.membersCount - 1);
-        }
-        return { success: true, space };
-      }
-      return { success: false, space: DEMO_SPACES[0]! };
+    const { space } = await this.getSpace(spaceId);
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("philosophy_joined_space_ids");
+        const list: string[] = stored ? JSON.parse(stored) : [];
+        const next = list.filter((id) => id !== spaceId && id !== space.id && id !== space.slug);
+        localStorage.setItem("philosophy_joined_space_ids", JSON.stringify(next));
+      } catch {}
     }
-    return await this.request<{ success: boolean; space: PhilosophicalSpace }>(`/spaces/${spaceId}/leave`, {
-      method: "POST",
-    });
+
+    const demoItem = DEMO_SPACES.find((s) => s.id === spaceId || s.slug === spaceId);
+    if (demoItem) demoItem.isJoined = false;
+
+    if (this.authToken && this.authToken !== "mock-auth-token") {
+      try {
+        await this.request<{ message: string }>(`/spaces/${spaceId}/leave`, {
+          method: "DELETE",
+        });
+      } catch (err) {
+        console.warn("Server leave request issue:", err);
+      }
+    }
+
+    space.isJoined = false;
+    return { success: true, space };
+  }
+
+  async getSpaceMembers(spaceId: string): Promise<{ members: Array<{ id: string; role: string; status: string; joinedAt: string; user: User }> }> {
+    try {
+      const res = await this.request<any>(`/spaces/${spaceId}/members`);
+      const list = res?.data || res?.members || (Array.isArray(res) ? res : []);
+      const mapped = list.map((item: any) => ({
+        id: item.membershipId || item.id || `m-${Date.now()}`,
+        role: item.role || "member",
+        status: item.status || "active",
+        joinedAt: item.joinedAt ? new Date(item.joinedAt).toLocaleDateString() : "Recently",
+        user: normalizeUser(item.user || { id: item.userId || "usr-anon", name: "Circle Member" }),
+      }));
+      return { members: mapped };
+    } catch {
+      return {
+        members: [
+          { id: "m-1", role: "admin", status: "active", joinedAt: "Established", user: normalizeUser({ id: "usr-spinoza", name: "Baruch Spinoza", username: "spinoza" } as User) },
+          { id: "m-2", role: "moderator", status: "active", joinedAt: "Recently", user: normalizeUser({ id: "usr-sartre", name: "Jean-Paul Sartre", username: "sartre" } as User) },
+          { id: "m-3", role: "member", status: "active", joinedAt: "Recently", user: normalizeUser({ id: "usr-camus", name: "Albert Camus", username: "camus" } as User) },
+        ],
+      };
+    }
   }
 
   async createSpace(spaceData: {
@@ -547,10 +677,35 @@ export class AgoraPhilosophyClient {
       DEMO_SPACES.unshift(newSpace);
       return newSpace;
     }
-    return await this.request<PhilosophicalSpace>("/spaces", {
+    const slug = spaceData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const created = await this.request<any>("/spaces", {
       method: "POST",
-      body: JSON.stringify(spaceData),
+      body: JSON.stringify({
+        name: spaceData.name,
+        slug,
+        description: spaceData.description,
+        visibility: "public",
+        philosophyMetadata: {
+          categoryType: spaceData.category || "school",
+          canonicalName: spaceData.primarySchool || spaceData.name,
+          keyThinkers: spaceData.keyThinkers || [],
+        },
+      }),
     });
+    return {
+      id: created.id,
+      name: created.name,
+      slug: created.slug || slug,
+      description: created.description || "",
+      category: spaceData.category || "school",
+      primarySchool: spaceData.primarySchool || spaceData.name,
+      keyThinkers: spaceData.keyThinkers || [],
+      avatarImage: getAvatarUrl(null, created.name),
+      membersCount: 1,
+      postsCount: 0,
+      isJoined: true,
+      createdAt: "Just now",
+    };
   }
 
   /**
@@ -558,9 +713,11 @@ export class AgoraPhilosophyClient {
    */
   async seedPhilosophySpaces(): Promise<{ count: number; created: PhilosophicalSpace[] }> {
     try {
-      return await this.request<{ count: number; created: PhilosophicalSpace[] }>("/spaces/seed-philosophy", {
+      const res = await this.request<any>("/spaces/seed-philosophy", {
         method: "POST",
       });
+      const list = res.spaces || res.created || [];
+      return { count: res.seeded || list.length, created: list };
     } catch {
       return { count: DEMO_SPACES.length, created: DEMO_SPACES };
     }
@@ -1731,14 +1888,24 @@ export class AgoraPhilosophyClient {
   /**
    * Philosophical Posts & Feed
    */
-  async getPosts(authorUserId?: string): Promise<{ posts: PhilosophicalPost[] }> {
-    const url = authorUserId ? `/entities?userId=${encodeURIComponent(authorUserId)}` : "/entities";
+  async getPosts(options?: string | { authorUserId?: string; spaceId?: string }): Promise<{ posts: PhilosophicalPost[] }> {
+    let url = "/entities";
+    if (typeof options === "string") {
+      url = `/entities?userId=${encodeURIComponent(options)}`;
+    } else if (options && typeof options === "object") {
+      const params = new URLSearchParams();
+      if (options.authorUserId) params.set("userId", options.authorUserId);
+      if (options.spaceId) params.set("spaceId", options.spaceId);
+      const str = params.toString();
+      if (str) url = `/entities?${str}`;
+    }
     const res = await this.request<any>(url);
     const list = res?.posts || res?.data || (Array.isArray(res) ? res : []);
     const mapped = (Array.isArray(list) ? list : []).map((p: any) => {
       const meta = p.metadata || {};
       return {
         id: p.id,
+        spaceId: p.spaceId || meta.spaceId,
         title: p.title || "Untitled Debate",
         content: p.content || "",
         authorId: p.userId || "usr-001",
@@ -2470,8 +2637,8 @@ export const DEMO_SPACES: PhilosophicalSpace[] = [
     keyThinkers: ["Jean-Paul Sartre", "Simone de Beauvoir", "Albert Camus", "Friedrich Nietzsche"],
     avatarImage: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
     bannerImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80",
-    membersCount: 1420,
-    postsCount: 89,
+    membersCount: 4,
+    postsCount: 5,
     isJoined: true,
     createdAt: "1 month ago",
   },
@@ -2485,8 +2652,8 @@ export const DEMO_SPACES: PhilosophicalSpace[] = [
     keyThinkers: ["Marcus Aurelius", "Epictetus", "Seneca"],
     avatarImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
     bannerImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1000&q=80",
-    membersCount: 2150,
-    postsCount: 134,
+    membersCount: 3,
+    postsCount: 4,
     isJoined: false,
     createdAt: "2 months ago",
   },
@@ -2500,8 +2667,8 @@ export const DEMO_SPACES: PhilosophicalSpace[] = [
     keyThinkers: ["Baruch Spinoza", "René Descartes", "G.W. Leibniz"],
     avatarImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
     bannerImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80",
-    membersCount: 870,
-    postsCount: 45,
+    membersCount: 3,
+    postsCount: 3,
     isJoined: false,
     createdAt: "3 weeks ago",
   },
@@ -2515,8 +2682,8 @@ export const DEMO_SPACES: PhilosophicalSpace[] = [
     keyThinkers: ["Thomas Nagel", "David Chalmers", "Daniel Dennett"],
     avatarImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
     bannerImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80",
-    membersCount: 1120,
-    postsCount: 62,
+    membersCount: 3,
+    postsCount: 3,
     isJoined: true,
     createdAt: "1 month ago",
   },
@@ -2530,8 +2697,8 @@ export const DEMO_SPACES: PhilosophicalSpace[] = [
     keyThinkers: ["Albert Camus", "Søren Kierkegaard"],
     avatarImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
     bannerImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80",
-    membersCount: 960,
-    postsCount: 53,
+    membersCount: 2,
+    postsCount: 2,
     isJoined: false,
     createdAt: "2 weeks ago",
   },

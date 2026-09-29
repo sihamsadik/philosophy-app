@@ -427,11 +427,11 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                       <span className={`badge-category-chip cat-${badge.category}`}>
                         {badge.category.toUpperCase()}
                       </span>
-                      {badge.progressPercentage >= 100 ? (
+                      {(badge.progressPercentage ?? 0) >= 100 ? (
                         <span className="badge-status-unlocked" style={{ color: "#10b981", fontWeight: 600 }}>✓ Unlocked</span>
                       ) : (
                         <span className="badge-status-locked" style={{ color: "#94a3b8", fontSize: "0.85rem", fontWeight: 500 }}>
-                          🔒 {badge.progressPercentage}% Progress
+                          🔒 {badge.progressPercentage ?? 0}% Progress
                         </span>
                       )}
                     </div>

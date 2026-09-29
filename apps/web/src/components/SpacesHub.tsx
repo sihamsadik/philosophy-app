@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophicalSpace, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
+import { useAuth } from "../context/AuthContext.js";
 
 export interface SpacesHubProps {
   onOpenDM?: (user: User) => void;
@@ -14,10 +15,13 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   onOpenDebateSummary,
   onOpenComposerForSpace,
 }) => {
+  const { user } = useAuth();
   const [spaces, setSpaces] = useState<PhilosophicalSpace[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selectedSpace, setSelectedSpace] = useState<PhilosophicalSpace | null>(null);
   const [spacePosts, setSpacePosts] = useState<PhilosophicalPost[]>([]);
+  const [spaceMembersList, setSpaceMembersList] = useState<Array<{ id: string; role: string; status: string; joinedAt: string; user: User }>>([]);
+  const [isMembersLoading, setIsMembersLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isPostsLoading, setIsPostsLoading] = useState(false);
@@ -27,6 +31,15 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   // Active view tab inside detailed space view
   const [spaceViewTab, setSpaceViewTab] = useState<"feed" | "roster">("feed");
   const [error, setError] = useState<string | null>(null);
+
+  // Create Space Modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newSpaceName, setNewSpaceName] = useState("");
+  const [newSpaceCategory, setNewSpaceCategory] = useState<"school" | "thinker" | "domain" | "general">("school");
+  const [newSpaceDesc, setNewSpaceDesc] = useState("");
+  const [newSpaceSchool, setNewSpaceSchool] = useState("");
+  const [newSpaceThinkers, setNewSpaceThinkers] = useState("");
+  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
 
   const fetchSpaces = async () => {
     setIsLoading(true);
@@ -55,16 +68,22 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     const fetchSpacePosts = async () => {
       setIsPostsLoading(true);
       try {
-        const { posts: allPosts } = await agoraClient.getPosts();
-        // Filter posts matching space primary school or spaceId
-        const matched = allPosts.filter(
-          (p) =>
-            p.spaceId === selectedSpace.id ||
-            p.primarySchool?.toLowerCase().includes(selectedSpace.primarySchool?.toLowerCase() || "")
-        );
-        setSpacePosts(matched.length > 0 ? matched : allPosts);
+        const { posts } = await agoraClient.getPosts({ spaceId: selectedSpace.id });
+        if (posts.length > 0) {
+          setSpacePosts(posts);
+        } else {
+          // Fallback: fetch all posts and match by school or spaceId
+          const { posts: allPosts } = await agoraClient.getPosts();
+          const matched = allPosts.filter(
+            (p) =>
+              p.spaceId === selectedSpace.id ||
+              p.primarySchool?.toLowerCase().includes(selectedSpace.primarySchool?.toLowerCase() || "")
+          );
+          setSpacePosts(matched.length > 0 ? matched : allPosts);
+        }
       } catch (err) {
         console.error("Failed to load space posts:", err);
+        setSpacePosts([]);
       } finally {
         setIsPostsLoading(false);
       }
@@ -72,20 +91,40 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     fetchSpacePosts();
   }, [selectedSpace]);
 
+  // Load member roster for selected space
+  useEffect(() => {
+    if (!selectedSpace) return;
+    const fetchMembers = async () => {
+      setIsMembersLoading(true);
+      try {
+        const { members } = await agoraClient.getSpaceMembers(selectedSpace.id);
+        setSpaceMembersList(members);
+      } catch (err) {
+        console.error("Failed to load space members:", err);
+        setSpaceMembersList([]);
+      } finally {
+        setIsMembersLoading(false);
+      }
+    };
+    fetchMembers();
+  }, [selectedSpace]);
+
   const handleJoinToggle = async (space: PhilosophicalSpace, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     try {
       if (space.isJoined) {
         const res = await agoraClient.leaveSpace(space.id);
-        setSpaces((prev) => prev.map((s) => (s.id === space.id ? res.space : s)));
-        if (selectedSpace?.id === space.id) {
-          setSelectedSpace(res.space);
+        const updatedSpace = { ...res.space, isJoined: false };
+        setSpaces((prev) => prev.map((s) => (s.id === space.id || s.slug === space.slug ? updatedSpace : s)));
+        if (selectedSpace?.id === space.id || selectedSpace?.slug === space.slug) {
+          setSelectedSpace(updatedSpace);
         }
       } else {
         const res = await agoraClient.joinSpace(space.id);
-        setSpaces((prev) => prev.map((s) => (s.id === space.id ? res.space : s)));
-        if (selectedSpace?.id === space.id) {
-          setSelectedSpace(res.space);
+        const updatedSpace = { ...res.space, isJoined: true };
+        setSpaces((prev) => prev.map((s) => (s.id === space.id || s.slug === space.slug ? updatedSpace : s)));
+        if (selectedSpace?.id === space.id || selectedSpace?.slug === space.slug) {
+          setSelectedSpace(updatedSpace);
         }
       }
     } catch (err: any) {
@@ -100,6 +139,42 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
       await fetchSpaces();
     } catch (err) {
       console.error("Failed to seed spaces:", err);
+    }
+  };
+
+  const handleCreateSpaceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSpaceName.trim() || !newSpaceDesc.trim()) {
+      alert("Please provide a name and description for your new circle.");
+      return;
+    }
+    setIsCreatingSpace(true);
+    try {
+      const thinkersArray = newSpaceThinkers
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      const created = await agoraClient.createSpace({
+        name: newSpaceName.trim(),
+        description: newSpaceDesc.trim(),
+        category: newSpaceCategory,
+        primarySchool: newSpaceSchool.trim() || newSpaceName.trim(),
+        keyThinkers: thinkersArray,
+      });
+
+      setSpaces((prev) => [created, ...prev]);
+      setIsCreateModalOpen(false);
+      setNewSpaceName("");
+      setNewSpaceDesc("");
+      setNewSpaceSchool("");
+      setNewSpaceThinkers("");
+      setSelectedSpace(created);
+    } catch (err: any) {
+      console.error("Failed to create circle:", err);
+      alert(`Could not create circle: ${err?.message || "Server error"}`);
+    } finally {
+      setIsCreatingSpace(false);
     }
   };
 
@@ -134,6 +209,44 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     );
   });
 
+  // Calculate user worldview relevance score to prioritize matching circles (e.g. Existentialism first)
+  const userSchools = (user?.philosophyProfile?.primarySchools || []).map((s) => s.toLowerCase());
+  const userThinkers = (user?.philosophyProfile?.keyThinkers || []).map((t) => t.toLowerCase());
+
+  const getRelevanceScore = (space: PhilosophicalSpace) => {
+    let score = 0;
+    const spaceSchool = (space.primarySchool || space.name).toLowerCase();
+
+    // Direct match with user's selected primary schools (e.g. Existentialism)
+    if (userSchools.some((school) => spaceSchool.includes(school) || school.includes(spaceSchool))) {
+      score += 100;
+    }
+
+    // Overlapping key thinkers match
+    if (space.keyThinkers && space.keyThinkers.length > 0) {
+      for (const thinker of space.keyThinkers) {
+        if (userThinkers.some((t) => thinker.toLowerCase().includes(t) || t.includes(thinker.toLowerCase()))) {
+          score += 25;
+        }
+      }
+    }
+
+    return score;
+  };
+
+  // Group into Joined Circles and Suggested Circles (sorted by worldview match)
+  const joinedCircles = filteredSpaces.filter((s) => s.isJoined);
+  const unjoinedCircles = filteredSpaces.filter((s) => !s.isJoined);
+
+  const suggestedCircles = [...unjoinedCircles].sort((a, b) => {
+    const scoreA = getRelevanceScore(a);
+    const scoreB = getRelevanceScore(b);
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA; // Worldview match comes first!
+    }
+    return b.membersCount - a.membersCount;
+  });
+
   const categoryBadge = (cat: string) => {
     switch (cat) {
       case "school":
@@ -147,6 +260,98 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     }
   };
 
+  const renderSpaceCard = (space: PhilosophicalSpace) => {
+    const relevanceScore = getRelevanceScore(space);
+    const isRecommended = relevanceScore > 0 && !space.isJoined;
+
+    return (
+      <div
+        key={space.id}
+        className={`space-card-item ${isRecommended ? "recommended-worldview-card" : ""}`}
+        onClick={() => setSelectedSpace(space)}
+        style={{
+          border: isRecommended ? "1px solid rgba(59, 130, 246, 0.5)" : undefined,
+          boxShadow: isRecommended ? "0 4px 20px rgba(59, 130, 246, 0.15)" : undefined,
+        }}
+      >
+        {/* Space Banner & Avatar */}
+        <div
+          className="space-card-banner"
+          style={{
+            backgroundImage: space.bannerImage ? `url(${space.bannerImage})` : undefined,
+          }}
+        >
+          <div className="space-avatar-wrapper">
+            {space.avatarImage ? (
+              <img src={space.avatarImage} alt="Space" className="space-avatar-img" />
+            ) : (
+              <div className="space-avatar-circle">
+                {space.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-card-content">
+          <div className="space-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              {categoryBadge(space.category)}
+              {isRecommended && (
+                <span
+                  className="recommended-chip"
+                  style={{
+                    background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                    color: "#fff",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 12,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  🎯 Worldview Match
+                </span>
+              )}
+            </div>
+            {space.isJoined && <span className="joined-chip">✓ Member</span>}
+          </div>
+
+          <h3 className="space-title">{space.name}</h3>
+          <p className="space-desc">{space.description}</p>
+
+          {/* Thinkers & School Tags */}
+          {space.keyThinkers && space.keyThinkers.length > 0 && (
+            <div className="space-thinkers-row">
+              {space.keyThinkers.slice(0, 3).map((thinker, i) => (
+                <span key={i} className="chip thinker-chip-sm">
+                  🧠 {thinker}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Footer Stats & Join Button */}
+          <div className="space-card-footer">
+            <div className="space-meta-stats">
+              <span>👥 {space.membersCount.toLocaleString()} {space.membersCount === 1 ? "member" : "members"}</span>
+              <span>📜 {space.postsCount} arguments</span>
+            </div>
+
+            <button
+              type="button"
+              className={`join-btn ${space.isJoined ? "joined" : ""}`}
+              onClick={(e) => handleJoinToggle(space, e)}
+            >
+              {space.isJoined ? "Leave Circle" : "Join Circle"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="spaces-hub-container">
       {selectedSpace === null ? (
@@ -154,7 +359,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
            SPACES DIRECTORY GRID VIEW
            ========================================================= */
         <>
-          <div className="spaces-header-row">
+          <div className="spaces-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
             <div>
               <h2>🏛️ Philosophical Spaces & Circles</h2>
               <p className="spaces-subtitle">
@@ -162,9 +367,20 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
               </p>
             </div>
 
-            <button type="button" className="action-btn seed-btn" onClick={handleSeedSpaces}>
-              🌱 Seed Philosophy Circles
-            </button>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                className="action-btn"
+                style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                ➕ Create Circle
+              </button>
+
+              <button type="button" className="action-btn seed-btn" onClick={handleSeedSpaces}>
+                🌱 Seed Philosophy Circles
+              </button>
+            </div>
           </div>
 
           {/* Search & Category Filter Bar */}
@@ -216,71 +432,63 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
               <p style={{ color: "#94a3b8", maxWidth: 450, margin: "0 auto 16px auto" }}>
                 {searchTerm ? `No circles matched "${searchTerm}".` : "There are no active circles in the database."}
               </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <button
+                  type="button"
+                  className="action-btn"
+                  style={{ background: "#3b82f6", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}
+                  onClick={() => setIsCreateModalOpen(true)}
+                >
+                  ➕ Create First Circle
+                </button>
+                <button
+                  type="button"
+                  className="action-btn seed-btn"
+                  onClick={handleSeedSpaces}
+                >
+                  🌱 Seed Default Circles
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="spaces-grid-list">
-              {filteredSpaces.map((space) => (
-                <div
-                  key={space.id}
-                  className="space-card-item"
-                  onClick={() => setSelectedSpace(space)}
-                >
-                  {/* Space Banner & Avatar */}
-                  <div
-                    className="space-card-banner"
-                    style={{
-                      backgroundImage: space.bannerImage ? `url(${space.bannerImage})` : undefined,
-                    }}
-                  >
-                    <div className="space-avatar-wrapper">
-                      {space.avatarImage ? (
-                        <img src={space.avatarImage} alt="Space" className="space-avatar-img" />
-                      ) : (
-                        <div className="space-avatar-circle">
-                          {space.name.charAt(0).toUpperCase()}
-                        </div>
+            <div className="spaces-directory-sections" style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 16 }}>
+              {/* Joined Circles Section */}
+              {joinedCircles.length > 0 && (
+                <div className="spaces-section">
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
+                      ⭐ Your Joined Circles ({joinedCircles.length})
+                    </h3>
+                    <span style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
+                      Communities you actively belong to
+                    </span>
+                  </div>
+                  <div className="spaces-grid-list">
+                    {joinedCircles.map(renderSpaceCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Suggested Circles Section */}
+              {suggestedCircles.length > 0 && (
+                <div className="spaces-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
+                        💡 Suggested Circles ({suggestedCircles.length})
+                      </h3>
+                      {userSchools.length > 0 && (
+                        <span style={{ fontSize: "0.82rem", color: "#60a5fa", background: "rgba(59, 130, 246, 0.12)", padding: "3px 10px", borderRadius: 12, border: "1px solid rgba(59, 130, 246, 0.3)" }}>
+                          Sorted by relevance to your profile ({userSchools.slice(0, 2).join(", ")})
+                        </span>
                       )}
                     </div>
                   </div>
-
-                  <div className="space-card-content">
-                    <div className="space-card-header">
-                      {categoryBadge(space.category)}
-                      {space.isJoined && <span className="joined-chip">✓ Member</span>}
-                    </div>
-
-                    <h3 className="space-title">{space.name}</h3>
-                    <p className="space-desc">{space.description}</p>
-
-                    {/* Thinkers & School Tags */}
-                    {space.keyThinkers && space.keyThinkers.length > 0 && (
-                      <div className="space-thinkers-row">
-                        {space.keyThinkers.slice(0, 3).map((thinker, i) => (
-                          <span key={i} className="chip thinker-chip-sm">
-                            🧠 {thinker}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Footer Stats & Join Button */}
-                    <div className="space-card-footer">
-                      <div className="space-meta-stats">
-                        <span>👥 {space.membersCount.toLocaleString()} members</span>
-                        <span>📜 {space.postsCount} arguments</span>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={`join-btn ${space.isJoined ? "joined" : ""}`}
-                        onClick={(e) => handleJoinToggle(space, e)}
-                      >
-                        {space.isJoined ? "Leave Circle" : "Join Circle"}
-                      </button>
-                    </div>
+                  <div className="spaces-grid-list">
+                    {suggestedCircles.map(renderSpaceCard)}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </>
@@ -374,7 +582,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
               className={`space-tab-btn ${spaceViewTab === "roster" ? "active" : ""}`}
               onClick={() => setSpaceViewTab("roster")}
             >
-              👥 Key Thinkers & Member Roster
+              👥 Key Thinkers & Member Roster ({spaceMembersList.length})
             </button>
           </div>
 
@@ -488,56 +696,154 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           ) : (
             /* Member Roster Tab */
             <div className="space-roster-view">
-              <div className="roster-section">
-                <h4>🧠 Core Philosophical Figures & Influences</h4>
-                <div className="thinker-roster-grid">
-                  {selectedSpace.keyThinkers?.map((thinker, i) => (
-                    <div key={i} className="thinker-roster-card">
-                      <div className="thinker-avatar-icon">🧠</div>
-                      <div className="thinker-info">
-                        <h5>{thinker}</h5>
-                        <span>Historical Steward of {selectedSpace.primarySchool || selectedSpace.name}</span>
+              {selectedSpace.keyThinkers && selectedSpace.keyThinkers.length > 0 && (
+                <div className="roster-section">
+                  <h4>🧠 Core Philosophical Figures & Influences</h4>
+                  <div className="thinker-roster-grid">
+                    {selectedSpace.keyThinkers.map((thinker, i) => (
+                      <div key={i} className="thinker-roster-card">
+                        <div className="thinker-avatar-icon">🧠</div>
+                        <div className="thinker-info">
+                          <h5>{thinker}</h5>
+                          <span>Historical Steward of {selectedSpace.primarySchool || selectedSpace.name}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="roster-section" style={{ marginTop: 28 }}>
-                <h4>👥 Active Community Stewards</h4>
-                <div className="stewards-list">
-                  {[
-                    { name: "Baruch Spinoza", handle: "spinoza", role: "Space Steward" },
-                    { name: "Jean-Paul Sartre", handle: "sartre", role: "Discussion Leader" },
-                    { name: "Albert Camus", handle: "camus", role: "Contributor" },
-                  ].map((member, i) => (
-                    <div key={i} className="steward-card">
-                      <div className="steward-avatar">{member.name.charAt(0)}</div>
-                      <div className="steward-details">
-                        <span className="steward-name">{member.name}</span>
-                        <span className="steward-handle">@{member.handle} • {member.role}</span>
-                      </div>
-                      {onOpenDM && (
-                        <button
-                          type="button"
-                          className="connect-btn-sm"
-                          onClick={() =>
-                            onOpenDM({
-                              id: `steward-${i}`,
-                              name: member.name,
-                              username: member.handle,
-                            } as User)
-                          }
-                        >
-                          💬 DM
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <h4>👥 Active Community Stewards & Members</h4>
+                {isMembersLoading ? (
+                  <div className="loading-state" style={{ padding: 20 }}>Loading circle members...</div>
+                ) : spaceMembersList.length === 0 ? (
+                  <div className="empty-state" style={{ padding: 20 }}>No active members recorded yet.</div>
+                ) : (
+                  <div className="stewards-list">
+                    {spaceMembersList.map((member) => {
+                      const u = member.user || ({} as User);
+                      const uName = u.name || u.username || "Circle Member";
+                      const uHandle = u.username || "member";
+                      return (
+                        <div key={member.id} className="steward-card">
+                          {u.avatar ? (
+                            <img src={u.avatar} alt={uName} className="steward-avatar" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
+                          ) : (
+                            <div className="steward-avatar">{uName.charAt(0).toUpperCase()}</div>
+                          )}
+                          <div className="steward-details">
+                            <span className="steward-name">{uName}</span>
+                            <span className="steward-handle">@{uHandle} • {member.role.toUpperCase()}</span>
+                          </div>
+                          {onOpenDM && (
+                            <button
+                              type="button"
+                              className="connect-btn-sm"
+                              onClick={() => onOpenDM(u)}
+                            >
+                              💬 DM
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* CREATE NEW CIRCLE MODAL */}
+      {isCreateModalOpen && (
+        <div className="modal-overlay" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div className="modal-card" style={{ background: "var(--bg-card, #111827)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 16, width: "100%", maxWidth: 520, padding: 24, boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: "1.3rem", display: "flex", alignItems: "center", gap: 8 }}>🏛️ Create Philosophical Circle</h3>
+              <button type="button" onClick={() => setIsCreateModalOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.5rem", cursor: "pointer" }}>×</button>
+            </div>
+
+            <form onSubmit={handleCreateSpaceSubmit}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Circle Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Phenomenological Research Group"
+                  value={newSpaceName}
+                  onChange={(e) => setNewSpaceName(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#fff" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Circle Type / Category</label>
+                <select
+                  value={newSpaceCategory}
+                  onChange={(e) => setNewSpaceCategory(e.target.value as any)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "#1f2937", color: "#fff" }}
+                >
+                  <option value="school">🏛️ School of Thought (e.g. Existentialism, Stoicism)</option>
+                  <option value="thinker">🧠 Thinker Guild (e.g. Nietzsche, Kant, Camus)</option>
+                  <option value="domain">🔍 Domain of Inquiry (e.g. Ethics, Mind, Logic)</option>
+                  <option value="general">🌐 General Philosophical Circle</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Description *</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Describe the purpose, topics, and discourse goals of this circle..."
+                  value={newSpaceDesc}
+                  onChange={(e) => setNewSpaceDesc(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#fff" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Primary School / Focus Area</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Phenomenology, Bioethics"
+                  value={newSpaceSchool}
+                  onChange={(e) => setNewSpaceSchool(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#fff" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Key Influential Thinkers (comma-separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Edmund Husserl, Martin Heidegger, Maurice Merleau-Ponty"
+                  value={newSpaceThinkers}
+                  onChange={(e) => setNewSpaceThinkers(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#fff" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  style={{ padding: "10px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "#cbd5e1", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingSpace}
+                  style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: isCreatingSpace ? 0.7 : 1 }}
+                >
+                  {isCreatingSpace ? "Creating..." : "Create Circle"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

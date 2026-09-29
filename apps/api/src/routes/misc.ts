@@ -49,7 +49,11 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
         .from(entities)
         .where(and(eq(entities.projectId, c.var.projectId), inArray(entities.userId, userIds), isNull(entities.deletedAt)))
         .groupBy(entities.userId);
-      argMap = new Map(argCounts.map((r) => [r.userId, Number(r.n)]));
+      argMap = new Map(
+        argCounts
+          .filter((r): r is typeof r & { userId: string } => !!r.userId)
+          .map((r) => [r.userId, Number(r.n)])
+      );
 
       const hostCounts = await getDb()
         .select({ userId: eventHosts.userId, n: count() })

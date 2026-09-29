@@ -33,7 +33,7 @@ type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | 
 
 export const App: React.FC = () => {
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<NavTab>("debates");
+  const [activeTab, setActiveTab] = useState<NavTab>("spaces");
   const [activeDrawerEntityId, setActiveDrawerEntityId] = useState<string | null>(null);
   const [activeThreadPostId, setActiveThreadPostId] = useState<string | null>(null);
   const [activeThreadTargetCommentId, setActiveThreadTargetCommentId] = useState<string | null>(null);

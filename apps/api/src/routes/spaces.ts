@@ -31,8 +31,13 @@ type Membership = typeof spaceMembers.$inferSelect;
 const MAX_SPACE_DEPTH = 5;
 
 async function getSpace(c: any): Promise<SpaceRow> {
+  const param = c.req.param("id");
   const [row] = await getDb().select().from(spaces)
-    .where(and(eq(spaces.projectId, c.var.projectId), eq(spaces.id, c.req.param("id")), isNull(spaces.deletedAt))).limit(1);
+    .where(and(
+      eq(spaces.projectId, c.var.projectId),
+      or(eq(spaces.id, param), eq(spaces.slug, param), eq(spaces.shortId, param)),
+      isNull(spaces.deletedAt)
+    )).limit(1);
   if (!row) throw Errors.notFound("spaces/not-found", "Space not found");
   return row;
 }
@@ -116,10 +121,47 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     const rows = await getDb().select().from(spaces).where(where).orderBy(orderBy).limit(limit).offset(offset);
     const include = parseInclude(c);
     const fileMap = include.has("files") ? await loadSpaceFiles(c.var.projectId, rows.map((r) => r.id)) : null;
-    return c.json(paginate(
-      rows.map((r) => shapeSpace(r, fileMap ? { files: fileMap.get(r.id) ?? [] } : {})),
-      n, page, limit,
-    ));
+
+    // Calculate exact count of active registered user accounts for each space
+    const spaceIds = rows.map((r) => r.id);
+    const memberCountsMap = new Map<string, number>();
+    const userJoinedSpaceIds = new Set<string>();
+
+    if (spaceIds.length > 0) {
+      const activeMemberCounts = await getDb()
+        .select({ spaceId: spaceMembers.spaceId, realCount: count() })
+        .from(spaceMembers)
+        .innerJoin(profiles, eq(profiles.id, spaceMembers.userId))
+        .where(and(eq(spaceMembers.projectId, c.var.projectId), inArray(spaceMembers.spaceId, spaceIds), eq(spaceMembers.status, "active")))
+        .groupBy(spaceMembers.spaceId);
+      for (const mc of activeMemberCounts) {
+        memberCountsMap.set(mc.spaceId, mc.realCount);
+      }
+
+      if (uid) {
+        const userMemberships = await getDb()
+          .select({ spaceId: spaceMembers.spaceId })
+          .from(spaceMembers)
+          .where(and(
+            eq(spaceMembers.projectId, c.var.projectId),
+            eq(spaceMembers.userId, uid),
+            inArray(spaceMembers.spaceId, spaceIds),
+            eq(spaceMembers.status, "active")
+          ));
+        for (const m of userMemberships) {
+          userJoinedSpaceIds.add(m.spaceId);
+        }
+      }
+    }
+
+    const shapedRows = rows.map((r) => {
+      const realMemberCount = memberCountsMap.get(r.id) ?? (r.userId ? 1 : 0);
+      const isMember = uid ? (userJoinedSpaceIds.has(r.id) || r.userId === uid) : false;
+      const spaceWithRealCount = { ...r, membersCount: realMemberCount };
+      return shapeSpace(spaceWithRealCount, { isMember, files: fileMap ? (fileMap.get(r.id) ?? []) : undefined });
+    });
+
+    return c.json(paginate(shapedRows, n, page, limit));
   })
   .post("/", requireAuth, async (c) => {
     const body = parseBody(createSpaceSchema, await c.req.json().catch(() => ({})), "spaces");
@@ -325,7 +367,15 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     await assertSpaceVisible(c, space);
     const uid = c.var.auth?.userId;
     const isMember = uid ? !!(await membershipOf(c.var.projectId, space.id, uid)) : undefined;
-    return c.json(shapeSpace(space, { isMember }));
+
+    const [{ realCount = 0 } = {}] = await getDb()
+      .select({ realCount: count() })
+      .from(spaceMembers)
+      .innerJoin(profiles, eq(profiles.id, spaceMembers.userId))
+      .where(and(eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.spaceId, space.id), eq(spaceMembers.status, "active")));
+
+    const spaceWithRealCount = { ...space, membersCount: Number(realCount) };
+    return c.json(shapeSpace(spaceWithRealCount, { isMember }));
   })
   .patch("/:id", requireAuth, async (c) => {
     const space = await getSpace(c);
@@ -417,14 +467,38 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     const status = space.requireJoinApproval ? "pending" : "active";
     const [row] = await getDb().insert(spaceMembers)
       .values({ projectId: c.var.projectId, spaceId: space.id, userId: uid, role: "member", status })
-      .onConflictDoNothing().returning();
+      .onConflictDoUpdate({
+        target: [spaceMembers.spaceId, spaceMembers.userId],
+        set: { status, role: "member" },
+      })
+      .returning();
     const m = row ?? (await membershipOf(c.var.projectId, space.id, uid))!;
+
+    // Recalculate real member count from verified user accounts
+    const [{ realCount = 0 } = {}] = await getDb()
+      .select({ realCount: count() })
+      .from(spaceMembers)
+      .innerJoin(profiles, eq(profiles.id, spaceMembers.userId))
+      .where(and(eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.spaceId, space.id), eq(spaceMembers.status, "active")));
+    await getDb().update(spaces).set({ membersCount: Number(realCount) }).where(eq(spaces.id, space.id));
+
     return c.json({ message: "ok", membership: { id: m.id, spaceId: space.id, userId: uid, role: m.role, status: m.status, joinedAt: m.joinedAt } });
   })
   .delete("/:id/leave", requireAuth, async (c) => {
+    const space = await getSpace(c);
+    const spaceId = space.id;
     await getDb().delete(spaceMembers).where(and(
-      eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.spaceId, c.req.param("id")), eq(spaceMembers.userId, c.var.auth!.userId)
+      eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, c.var.auth!.userId)
     ));
+
+    // Recalculate real member count from verified user accounts
+    const [{ realCount = 0 } = {}] = await getDb()
+      .select({ realCount: count() })
+      .from(spaceMembers)
+      .innerJoin(profiles, eq(profiles.id, spaceMembers.userId))
+      .where(and(eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.status, "active")));
+    await getDb().update(spaces).set({ membersCount: Number(realCount) }).where(eq(spaces.id, spaceId));
+
     return c.json({ message: "left" });
   })
   .get("/:id/membership/me", requireAuth, async (c) => {
