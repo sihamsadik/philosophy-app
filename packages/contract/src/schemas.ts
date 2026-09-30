@@ -202,15 +202,17 @@ export const peopleRecommendationQuerySchema = z.object({
 // ─── spaces ────────────────────────────────────────────────────────────────
 const readingPerm = z.enum(["anyone", "members"]);
 const postingPerm = z.enum(["anyone", "members", "admins"]);
-export const spaceSortByEnum = z.enum(["newest", "members", "alphabetical"]);
+export const spaceSortByEnum = z.enum(["newest", "members", "posts", "alphabetical"]);
 export const spaceVisibility = z.enum(["public", "unlisted", "private"]);
 export type SpaceVisibility = z.infer<typeof spaceVisibility>;
 
-export const philosophySpaceCategoryEnum = z.enum(["school", "thinker", "area"]);
+export const philosophySpaceCategoryEnum = z.enum(["school", "thinker", "area", "domain", "general"]);
 
 export const philosophySpaceMetadataSchema = z.object({
   categoryType: philosophySpaceCategoryEnum.nullable().optional().default(null),
   canonicalName: z.string().max(120).nullable().optional().default(null),
+  primarySchool: z.string().max(120).nullable().optional().default(null),
+  keyThinkers: z.array(z.string().max(120)).optional().default([]),
   discourseRules: z.array(z.string().max(500)).max(20).optional().default([]),
 });
 

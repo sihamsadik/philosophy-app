@@ -62,11 +62,13 @@ export interface PhilosophicalTaxonomy {
   thinkers: string[];
 }
 
-export type PhilosophySpaceCategory = "school" | "thinker" | "area";
+export type PhilosophySpaceCategory = "school" | "thinker" | "area" | "domain" | "general";
 
 export interface PhilosophySpaceMetadata {
   categoryType: PhilosophySpaceCategory | null;
   canonicalName: string | null;
+  primarySchool?: string | null;
+  keyThinkers?: string[];
   discourseRules?: string[];
 }
 

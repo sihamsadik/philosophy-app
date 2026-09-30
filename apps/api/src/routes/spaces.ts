@@ -97,6 +97,17 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     if (q("searchSlug")) conds.push(ilike(spaces.slug, `%${q("searchSlug")}%`));
     if (q("searchDescription")) conds.push(ilike(spaces.description, `%${q("searchDescription")}%`));
 
+    // Category / taxonomy filter (e.g. category=school, thinker, area, domain, general)
+    const categoryQ = q("category") || q("categoryType");
+    if (categoryQ && categoryQ !== "all") {
+      conds.push(
+        or(
+          sql`${spaces.metadata}->'philosophyMetadata'->>'categoryType' ILIKE ${categoryQ}`,
+          sql`${spaces.metadata}->>'category' ILIKE ${categoryQ}`
+        )!
+      );
+    }
+
     // memberOf=true → restrict to spaces the caller is an ACTIVE member of (literal "true" only).
     const uid = c.var.auth?.userId;
     if (q("memberOf") === "true") {
@@ -122,9 +133,10 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     const include = parseInclude(c);
     const fileMap = include.has("files") ? await loadSpaceFiles(c.var.projectId, rows.map((r) => r.id)) : null;
 
-    // Calculate exact count of active registered user accounts for each space
+    // Calculate exact count of active registered user accounts and post count for each space
     const spaceIds = rows.map((r) => r.id);
     const memberCountsMap = new Map<string, number>();
+    const postCountsMap = new Map<string, number>();
     const userJoinedSpaceIds = new Set<string>();
 
     if (spaceIds.length > 0) {
@@ -135,7 +147,16 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
         .where(and(eq(spaceMembers.projectId, c.var.projectId), inArray(spaceMembers.spaceId, spaceIds), eq(spaceMembers.status, "active")))
         .groupBy(spaceMembers.spaceId);
       for (const mc of activeMemberCounts) {
-        memberCountsMap.set(mc.spaceId, mc.realCount);
+        memberCountsMap.set(mc.spaceId, Number(mc.realCount));
+      }
+
+      const activePostCounts = await getDb()
+        .select({ spaceId: entities.spaceId, realCount: count() })
+        .from(entities)
+        .where(and(eq(entities.projectId, c.var.projectId), inArray(entities.spaceId, spaceIds), isNull(entities.deletedAt)))
+        .groupBy(entities.spaceId);
+      for (const pc of activePostCounts) {
+        if (pc.spaceId) postCountsMap.set(pc.spaceId, Number(pc.realCount));
       }
 
       if (uid) {
@@ -156,9 +177,11 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
 
     const shapedRows = rows.map((r) => {
       const realMemberCount = memberCountsMap.get(r.id) ?? (r.userId ? 1 : 0);
+      const realPostCount = postCountsMap.get(r.id) ?? 0;
       const isMember = uid ? (userJoinedSpaceIds.has(r.id) || r.userId === uid) : false;
-      const spaceWithRealCount = { ...r, membersCount: realMemberCount };
-      return shapeSpace(spaceWithRealCount, { isMember, files: fileMap ? (fileMap.get(r.id) ?? []) : undefined });
+      const spaceWithCounts = { ...r, membersCount: realMemberCount, postsCount: realPostCount };
+      const shaped = shapeSpace(spaceWithCounts, { isMember, files: fileMap ? (fileMap.get(r.id) ?? []) : undefined });
+      return { ...shaped, postsCount: realPostCount };
     });
 
     return c.json(paginate(shapedRows, n, page, limit));
@@ -202,13 +225,21 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     return c.json(shaped, 201);
   })
   .post("/seed-philosophy", requireAuth, async (c) => {
-    requireProjectAdmin(c);
+    const [{ existingTotal = 0 } = {}] = await getDb()
+      .select({ existingTotal: count() })
+      .from(spaces)
+      .where(and(eq(spaces.projectId, c.var.projectId), isNull(spaces.deletedAt)));
+
+    if (Number(existingTotal) > 0) {
+      requireProjectAdmin(c);
+    }
+
     const defaultSpaces = [
       {
         name: "Existentialism",
         slug: "existentialism",
-        description: "Discussions on freedom, anguish, absurdity, and the creation of meaning.",
-        philosophyMetadata: { categoryType: "school", canonicalName: "Existentialism" },
+        description: "Discussions on freedom, anguish, absurdity, authentic existence, and the creation of personal meaning.",
+        philosophyMetadata: { categoryType: "school", canonicalName: "Existentialism", primarySchool: "Existentialism", keyThinkers: ["Sartre", "Camus", "Nietzsche", "De Beauvoir"] },
         rules: [
           { title: "Charitable Interpretation", description: "Engage with the strongest version of an argument." },
           { title: "No Ad Hominem", description: "Attack arguments and ideas, not the character of participants." },
@@ -217,26 +248,26 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
       {
         name: "Stoicism",
         slug: "stoicism",
-        description: "Practical virtue ethics, virtue, tranquility, and what lies within our control.",
-        philosophyMetadata: { categoryType: "school", canonicalName: "Stoicism" },
+        description: "Practical virtue ethics, emotional regulation, tranquility, and focusing on what lies within our control.",
+        philosophyMetadata: { categoryType: "school", canonicalName: "Stoicism", primarySchool: "Stoicism", keyThinkers: ["Marcus Aurelius", "Seneca", "Epictetus"] },
         rules: [
-          { title: "Focus on Virtue & Action", description: "Keep discussions grounded in ethical reasoning." },
+          { title: "Focus on Virtue & Action", description: "Keep discussions grounded in ethical reasoning and practical living." },
         ],
       },
       {
         name: "Ethics & Moral Philosophy",
         slug: "ethics",
-        description: "Meta-ethics, normative ethics (consequentialism, deontology), and applied ethics.",
-        philosophyMetadata: { categoryType: "area", canonicalName: "Ethics" },
+        description: "Meta-ethics, normative frameworks (consequentialism, deontology, virtue ethics), and applied ethical dilemmas.",
+        philosophyMetadata: { categoryType: "area", canonicalName: "Ethics", primarySchool: "Moral Philosophy", keyThinkers: ["Kant", "Mill", "Aristotle"] },
         rules: [
-          { title: "Define Key Terms", description: "Clarify definitions (e.g. utility, duty, right) when constructing arguments." },
+          { title: "Define Key Terms", description: "Clarify definitions (e.g. utility, duty, rights) when constructing moral arguments." },
         ],
       },
       {
         name: "Philosophy of Mind",
         slug: "philosophy-of-mind",
-        description: "Consciousness, dualism, physicalism, personal identity, and free will vs determinism.",
-        philosophyMetadata: { categoryType: "area", canonicalName: "Philosophy of Mind" },
+        description: "Consciousness, dualism, physicalism, artificial intelligence, personal identity, and free will.",
+        philosophyMetadata: { categoryType: "area", canonicalName: "Philosophy of Mind", primarySchool: "Metaphysics & Mind", keyThinkers: ["Descartes", "Nagel", "Chalmers", "Dennett"] },
         rules: [
           { title: "Rigorous Thought Experiments", description: "Provide explicit premises when offering thought experiments." },
         ],
@@ -244,10 +275,37 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
       {
         name: "Friedrich Nietzsche",
         slug: "nietzsche",
-        description: "Will to power, master-slave morality, eternal recurrence, and perspectivism.",
-        philosophyMetadata: { categoryType: "thinker", canonicalName: "Friedrich Nietzsche" },
+        description: "Will to power, master-slave morality, eternal recurrence, critique of metaphysics, and perspectivism.",
+        philosophyMetadata: { categoryType: "thinker", canonicalName: "Friedrich Nietzsche", primarySchool: "Continental Philosophy", keyThinkers: ["Friedrich Nietzsche"] },
         rules: [
           { title: "Textual Grounding", description: "Cite relevant passages when offering interpretations of Nietzsche's texts." },
+        ],
+      },
+      {
+        name: "Epistemology & Rationalism",
+        slug: "epistemology",
+        description: "Theory of knowledge, justification, skepticism, rationalism, empiricism, and truth criteria.",
+        philosophyMetadata: { categoryType: "area", canonicalName: "Epistemology", primarySchool: "Epistemology", keyThinkers: ["Descartes", "Locke", "Hume", "Popper"] },
+        rules: [
+          { title: "Epistemic Humility", description: "Acknowledge assumptions and clarify justification standards." },
+        ],
+      },
+      {
+        name: "Eastern Philosophy & Taoism",
+        slug: "eastern-philosophy",
+        description: "Taoism, Zen, Buddhist philosophy, non-duality, mindfulness, and Eastern metaphysics.",
+        philosophyMetadata: { categoryType: "school", canonicalName: "Taoism & Eastern Philosophy", primarySchool: "Eastern Philosophy", keyThinkers: ["Laozi", "Zhuangzi", "Nagarjuna"] },
+        rules: [
+          { title: "Open Synthesis", description: "Respect contemplative traditions alongside analytic inquiry." },
+        ],
+      },
+      {
+        name: "Political Philosophy",
+        slug: "political-philosophy",
+        description: "Justice, liberty, authority, social contracts, rights, and ideal societal structures.",
+        philosophyMetadata: { categoryType: "area", canonicalName: "Political Philosophy", primarySchool: "Political Theory", keyThinkers: ["Hobbes", "Rousseau", "Rawls", "Nozick"] },
+        rules: [
+          { title: "Civil Debate", description: "Focus on foundational political principles rather than partisan commentary." },
         ],
       },
     ];
@@ -482,7 +540,8 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
       .where(and(eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.spaceId, space.id), eq(spaceMembers.status, "active")));
     await getDb().update(spaces).set({ membersCount: Number(realCount) }).where(eq(spaces.id, space.id));
 
-    return c.json({ message: "ok", membership: { id: m.id, spaceId: space.id, userId: uid, role: m.role, status: m.status, joinedAt: m.joinedAt } });
+    const shapedSpace = shapeSpace({ ...space, membersCount: Number(realCount) }, { isMember: status === "active" });
+    return c.json({ success: true, message: "ok", membership: { id: m.id, spaceId: space.id, userId: uid, role: m.role, status: m.status, joinedAt: m.joinedAt }, space: shapedSpace });
   })
   .delete("/:id/leave", requireAuth, async (c) => {
     const space = await getSpace(c);
@@ -499,7 +558,8 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
       .where(and(eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.status, "active")));
     await getDb().update(spaces).set({ membersCount: Number(realCount) }).where(eq(spaces.id, spaceId));
 
-    return c.json({ message: "left" });
+    const shapedSpace = shapeSpace({ ...space, membersCount: Number(realCount) }, { isMember: false });
+    return c.json({ success: true, message: "left", space: shapedSpace });
   })
   .get("/:id/membership/me", requireAuth, async (c) => {
     const space = await getSpace(c);
