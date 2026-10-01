@@ -2285,6 +2285,8 @@ export interface PhilosophicalSpace {
   membersCount: number;
   postsCount: number;
   isJoined?: boolean;
+  hasUnreadMessages?: boolean;
+  unreadCount?: number;
   createdAt: string;
 }
 
@@ -2640,6 +2642,8 @@ export const DEMO_SPACES: PhilosophicalSpace[] = [
     membersCount: 4,
     postsCount: 5,
     isJoined: true,
+    hasUnreadMessages: true,
+    unreadCount: 3,
     createdAt: "1 month ago",
   },
   {

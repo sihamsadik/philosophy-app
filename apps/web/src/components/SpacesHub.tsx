@@ -8,12 +8,14 @@ export interface SpacesHubProps {
   onOpenDM?: (user: User) => void;
   onOpenDebateSummary?: (postId: string) => void;
   onOpenComposerForSpace?: (space: PhilosophicalSpace) => void;
+  onUnreadCircleStatusChange?: (hasUnread: boolean) => void;
 }
 
 export const SpacesHub: React.FC<SpacesHubProps> = ({
   onOpenDM,
   onOpenDebateSummary,
   onOpenComposerForSpace,
+  onUnreadCircleStatusChange,
 }) => {
   const { user } = useAuth();
   const [spaces, setSpaces] = useState<PhilosophicalSpace[]>([]);
@@ -61,6 +63,23 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   useEffect(() => {
     fetchSpaces();
   }, [activeCategory]);
+
+  useEffect(() => {
+    if (onUnreadCircleStatusChange) {
+      const hasUnread = spaces.some((s) => s.isJoined && s.hasUnreadMessages);
+      onUnreadCircleStatusChange(hasUnread);
+    }
+  }, [spaces, onUnreadCircleStatusChange]);
+
+  const handleSelectSpace = (space: PhilosophicalSpace) => {
+    if (space.isJoined && space.hasUnreadMessages) {
+      const updated = { ...space, hasUnreadMessages: false, unreadCount: 0 };
+      setSpaces((prev) => prev.map((s) => (s.id === space.id || s.slug === space.slug ? updated : s)));
+      setSelectedSpace(updated);
+    } else {
+      setSelectedSpace(space);
+    }
+  };
 
   // Load posts for selected space
   useEffect(() => {
@@ -267,11 +286,11 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     return (
       <div
         key={space.id}
-        className={`space-card-item ${isRecommended ? "recommended-worldview-card" : ""}`}
-        onClick={() => setSelectedSpace(space)}
+        className={`space-card-item ${isRecommended ? "recommended-worldview-card" : ""} ${space.isJoined ? "joined-space-card" : ""}`}
+        onClick={() => handleSelectSpace(space)}
         style={{
-          border: isRecommended ? "1px solid rgba(59, 130, 246, 0.5)" : undefined,
-          boxShadow: isRecommended ? "0 4px 20px rgba(59, 130, 246, 0.15)" : undefined,
+          border: isRecommended ? "1px solid rgba(59, 130, 246, 0.5)" : space.isJoined ? "1px solid rgba(99, 102, 241, 0.4)" : undefined,
+          boxShadow: isRecommended ? "0 4px 20px rgba(59, 130, 246, 0.15)" : space.isJoined ? "0 4px 20px rgba(99, 102, 241, 0.1)" : undefined,
         }}
       >
         {/* Space Banner & Avatar */}
@@ -281,13 +300,30 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
             backgroundImage: space.bannerImage ? `url(${space.bannerImage})` : undefined,
           }}
         >
-          <div className="space-avatar-wrapper">
+          <div className="space-avatar-wrapper" style={{ position: "relative" }}>
             {space.avatarImage ? (
               <img src={space.avatarImage} alt="Space" className="space-avatar-img" />
             ) : (
               <div className="space-avatar-circle">
                 {space.name.charAt(0).toUpperCase()}
               </div>
+            )}
+            {space.isJoined && space.hasUnreadMessages && (
+              <span
+                className="dock-badge-dot circle-avatar-dot"
+                title="New message/discussion in circle"
+                style={{
+                  position: "absolute",
+                  top: -2,
+                  right: -2,
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  backgroundColor: "#ef4444",
+                  border: "2px solid #0f172a",
+                  boxShadow: "0 0 8px #ef4444",
+                }}
+              />
             )}
           </div>
         </div>
@@ -312,6 +348,25 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   }}
                 >
                   🎯 Worldview Match
+                </span>
+              )}
+              {space.isJoined && space.hasUnreadMessages && (
+                <span
+                  className="unread-msg-chip"
+                  style={{
+                    background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                    color: "#ffffff",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 12,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    boxShadow: "0 0 10px rgba(239, 68, 68, 0.5)",
+                  }}
+                >
+                  🔴 New Message {space.unreadCount ? `(${space.unreadCount})` : ""}
                 </span>
               )}
             </div>
@@ -452,13 +507,53 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
             </div>
           ) : (
             <div className="spaces-directory-sections" style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 16 }}>
-              {/* Joined Circles Section */}
+              {/* Joined Circles Section - Positioned Prominently at Top */}
               {joinedCircles.length > 0 && (
-                <div className="spaces-section">
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                    <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
-                      ⭐ Your Joined Circles ({joinedCircles.length})
-                    </h3>
+                <div
+                  className="spaces-section joined-circles-top-section"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95))",
+                    border: "1px solid rgba(99, 102, 241, 0.4)",
+                    borderRadius: 16,
+                    padding: 20,
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.35)",
+                    backdropFilter: "blur(10px)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <h3 style={{ fontSize: "1.25rem", fontWeight: 800, margin: 0, color: "#f8fafc", display: "flex", alignItems: "center", gap: 8 }}>
+                        ⭐ Your Joined Circles ({joinedCircles.length})
+                      </h3>
+                      {joinedCircles.some((s) => s.hasUnreadMessages) && (
+                        <span
+                          style={{
+                            background: "rgba(239, 68, 68, 0.15)",
+                            color: "#f87171",
+                            border: "1px solid rgba(239, 68, 68, 0.4)",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            padding: "3px 10px",
+                            borderRadius: 20,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              backgroundColor: "#ef4444",
+                              boxShadow: "0 0 8px #ef4444",
+                              display: "inline-block",
+                            }}
+                          />
+                          New Messages
+                        </span>
+                      )}
+                    </div>
                     <span style={{ fontSize: "0.82rem", color: "#94a3b8" }}>
                       Communities you actively belong to
                     </span>

@@ -6,12 +6,14 @@ export interface BottomNavDockProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
   unreadNotifCount?: number;
+  hasCircleMessages?: boolean;
 }
 
 export const BottomNavDock: React.FC<BottomNavDockProps> = ({
   activeTab,
   onTabChange,
   unreadNotifCount = 0,
+  hasCircleMessages = false,
 }) => {
   const tabs: { id: NavTab; label: string; icon: string }[] = [
     { id: "debates", label: "Home", icon: "🏠" },
@@ -37,7 +39,10 @@ export const BottomNavDock: React.FC<BottomNavDockProps> = ({
               <div className="dock-icon-wrapper">
                 <span className="dock-icon">{tab.icon}</span>
                 {tab.id === "recommendations" && unreadNotifCount > 0 && (
-                  <span className="dock-badge-dot" />
+                  <span className="dock-badge-dot" title="New peer connection requests" />
+                )}
+                {tab.id === "spaces" && hasCircleMessages && (
+                  <span className="dock-badge-dot" title="New activity in your joined circles" />
                 )}
               </div>
               <span className="dock-label">{tab.label}</span>

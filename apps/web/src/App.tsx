@@ -60,6 +60,7 @@ export const App: React.FC = () => {
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [unreadDmCount, setUnreadDmCount] = useState(0);
+  const [hasCircleMessages, setHasCircleMessages] = useState<boolean>(true);
   const [realtimeSocket, setRealtimeSocket] = useState<Socket | null>(null);
   const [connectTargetUser, setConnectTargetUser] = useState<User | null>(null);
 
@@ -355,6 +356,7 @@ export const App: React.FC = () => {
                     setComposerSpaceId(space.id);
                     setIsPostComposerOpen(true);
                   }}
+                  onUnreadCircleStatusChange={(hasUnread) => setHasCircleMessages(hasUnread)}
                 />
               )}
 
@@ -414,6 +416,7 @@ export const App: React.FC = () => {
           activeTab={activeTab as BottomNavTab}
           onTabChange={(tab) => setActiveTab(tab as NavTab)}
           unreadNotifCount={unreadNotifCount}
+          hasCircleMessages={hasCircleMessages}
         />
       )}
 
