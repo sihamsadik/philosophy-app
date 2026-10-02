@@ -43,6 +43,93 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   const [newSpaceThinkers, setNewSpaceThinkers] = useState("");
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
 
+  // Share Circle Modal state
+  const [shareTargetSpace, setShareTargetSpace] = useState<PhilosophicalSpace | null>(null);
+  const [recentFriends, setRecentFriends] = useState<User[]>([]);
+  const [copiedToast, setCopiedToast] = useState(false);
+
+  useEffect(() => {
+    const handleSelectSpaceEvent = (e: any) => {
+      const targetId = e.detail?.spaceId;
+      if (targetId) {
+        const match = spaces.find((s) => s.id === targetId || s.slug === targetId);
+        if (match) {
+          setSelectedSpace(match);
+        } else {
+          agoraClient
+            .getSpace(targetId)
+            .then(({ space }) => {
+              if (space) setSelectedSpace(space);
+            })
+            .catch(() => {});
+        }
+      }
+    };
+    window.addEventListener("agora_select_space", handleSelectSpaceEvent);
+    return () => window.removeEventListener("agora_select_space", handleSelectSpaceEvent);
+  }, [spaces]);
+
+  const handleOpenShareModal = async (space: PhilosophicalSpace) => {
+    setShareTargetSpace(space);
+    try {
+      const { conversations: list } = await agoraClient.getConversations();
+      const friends = list.map((c) => c.participant).filter(Boolean) as User[];
+      setRecentFriends(
+        friends.length > 0
+          ? friends
+          : [
+              {
+                id: "00000000-0000-0000-0000-000000000004",
+                name: "Immanuel Kant",
+                username: "kant",
+                avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+              } as User,
+              {
+                id: "00000000-0000-0000-0000-000000000005",
+                name: "Friedrich Nietzsche",
+                username: "nietzsche",
+                avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+              } as User,
+            ]
+      );
+    } catch {
+      setRecentFriends([]);
+    }
+  };
+
+  const handleCopyCircleLink = (space: PhilosophicalSpace) => {
+    const link = `https://agora.app/spaces/${space.slug || space.id}`;
+    if (navigator.clipboard) {
+      void navigator.clipboard.writeText(link);
+    }
+    setCopiedToast(true);
+    setTimeout(() => setCopiedToast(false), 2500);
+  };
+
+  const handleSendCircleToFriend = async (space: PhilosophicalSpace, friend: User) => {
+    try {
+      const conv = await agoraClient.createDirectConversation(friend.id, friend);
+      const content = `Hey! Check out this circle: 🏛️ ${space.name} - ${space.description.slice(0, 80)}... https://agora.app/spaces/${space.slug || space.id}`;
+      const metadata = {
+        spaceId: space.id,
+        spaceSlug: space.slug,
+        spaceName: space.name,
+        spaceDesc: space.description,
+        bannerImage: space.bannerImage,
+        avatarImage: space.avatarImage,
+        membersCount: space.membersCount,
+        postsCount: space.postsCount,
+      };
+      await agoraClient.sendMessage(conv.id, content, metadata);
+      setShareTargetSpace(null);
+      if (onOpenDM) {
+        onOpenDM(friend);
+      }
+    } catch (err) {
+      console.error("Failed to share circle to DM:", err);
+    }
+  };
+
   const fetchSpaces = async () => {
     setIsLoading(true);
     setError(null);
@@ -387,20 +474,48 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
             </div>
           )}
 
-          {/* Footer Stats & Join Button */}
+          {/* Footer Stats & Action Buttons */}
           <div className="space-card-footer">
             <div className="space-meta-stats">
               <span>👥 {space.membersCount.toLocaleString()} {space.membersCount === 1 ? "member" : "members"}</span>
               <span>📜 {space.postsCount} arguments</span>
             </div>
 
-            <button
-              type="button"
-              className={`join-btn ${space.isJoined ? "joined" : ""}`}
-              onClick={(e) => handleJoinToggle(space, e)}
-            >
-              {space.isJoined ? "Leave Circle" : "Join Circle"}
-            </button>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <button
+                type="button"
+                className="share-circle-btn-sm"
+                style={{
+                  background: "rgba(255, 255, 255, 0.08)",
+                  color: "#cbd5e1",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  transition: "all 0.2s ease",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenShareModal(space);
+                }}
+                title="Share circle link or send directly to a friend in DM"
+              >
+                🔗 Share
+              </button>
+
+              <button
+                type="button"
+                className={`join-btn ${space.isJoined ? "joined" : ""}`}
+                onClick={(e) => handleJoinToggle(space, e)}
+              >
+                {space.isJoined ? "Leave Circle" : "Join Circle"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -641,6 +756,26 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 </div>
 
                 <div className="hero-buttons">
+                  <button
+                    type="button"
+                    className="action-btn share-hero-btn"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.12)",
+                      color: "#f8fafc",
+                      border: "1px solid rgba(255, 255, 255, 0.25)",
+                      padding: "10px 18px",
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                    onClick={() => handleOpenShareModal(selectedSpace)}
+                  >
+                    🔗 Share Circle
+                  </button>
+
                   <button
                     type="button"
                     className={`join-btn-lg ${selectedSpace.isJoined ? "joined" : ""}`}
@@ -938,6 +1073,88 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Share Circle Modal */}
+      {shareTargetSpace && (
+        <div className="share-modal-overlay" onClick={() => setShareTargetSpace(null)}>
+          <div className="share-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+                🔗 Share Circle Link
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShareTargetSpace(null)}
+                style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: 14, borderRadius: 12, marginBottom: 18, border: "1px solid rgba(255, 255, 255, 0.1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: "1.5rem" }}>🏛️</span>
+                <strong style={{ fontSize: "1rem", color: "#f8fafc" }}>{shareTargetSpace.name}</strong>
+              </div>
+              <p style={{ margin: 0, fontSize: "0.82rem", color: "#cbd5e1", lineHeight: 1.4 }}>{shareTargetSpace.description}</p>
+            </div>
+
+            {/* Copy Link Section */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, marginBottom: 6, color: "#94a3b8" }}>
+                DIRECT CIRCLE LINK
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={`https://agora.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`}
+                  style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#60a5fa", fontSize: "0.85rem" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleCopyCircleLink(shareTargetSpace)}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}
+                >
+                  {copiedToast ? "✓ Copied!" : "📋 Copy"}
+                </button>
+              </div>
+            </div>
+
+            {/* Share to Direct Message Friends */}
+            <div>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, marginBottom: 8, color: "#94a3b8" }}>
+                SEND TO FRIEND IN DIRECT MESSAGE
+              </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflowY: "auto" }}>
+                {recentFriends.map((friend) => (
+                  <button
+                    key={friend.id}
+                    type="button"
+                    onClick={() => handleSendCircleToFriend(shareTargetSpace, friend)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(255, 255, 255, 0.03)", color: "#f8fafc", cursor: "pointer", transition: "background 0.2s ease" }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {friend.avatar ? (
+                        <img src={friend.avatar} alt="Avatar" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#6366f1", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.85rem" }}>
+                          {(friend.name || friend.username || "U").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div style={{ textAlign: "left" }}>
+                        <div style={{ fontSize: "0.88rem", fontWeight: 600 }}>{friend.name || friend.username}</div>
+                        <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>@{friend.username || "philosopher"}</div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: "0.8rem", color: "#3b82f6", fontWeight: 700 }}>Send 💬</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -1829,12 +1829,12 @@ export class AgoraPhilosophyClient {
     }
   }
 
-  async sendMessage(conversationId: string, content: string): Promise<ChatMessage> {
+  async sendMessage(conversationId: string, content: string, metadata?: Record<string, any>): Promise<ChatMessage> {
     const activeUserId = this.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
     if (!conversationId.startsWith("conv-")) {
       const response = await this.request<any>(`/chat/conversations/${conversationId}/messages`, {
         method: "POST",
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, metadata }),
       });
       const serverMsg = response?.message || response;
       return {
@@ -1845,7 +1845,7 @@ export class AgoraPhilosophyClient {
         senderAvatar: serverMsg.user?.avatar,
         content: serverMsg.content || content,
         createdAt: serverMsg.createdAt || new Date().toISOString(),
-        metadata: serverMsg.metadata,
+        metadata: serverMsg.metadata || metadata,
       };
     }
 
@@ -1856,6 +1856,7 @@ export class AgoraPhilosophyClient {
       senderName: "You",
       content,
       createdAt: new Date().toISOString(),
+      metadata,
     };
 
     if (!DEMO_MESSAGES[conversationId]) DEMO_MESSAGES[conversationId] = [];
@@ -2227,6 +2228,15 @@ export interface ChatMessage {
     authorHandle?: string;
     authorName?: string;
     localId?: string;
+    spaceId?: string;
+    spaceSlug?: string;
+    spaceName?: string;
+    spaceDesc?: string;
+    avatarImage?: string;
+    bannerImage?: string;
+    membersCount?: number;
+    postsCount?: number;
+    [key: string]: any;
   };
   localId?: string;
 }

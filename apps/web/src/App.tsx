@@ -103,11 +103,18 @@ export const App: React.FC = () => {
       }
     };
 
+    const handleOpenSpaceEvent = (e: any) => {
+      if (e.detail?.spaceId || e.detail?.space) {
+        setActiveTab("spaces");
+      }
+    };
+
     window.addEventListener("agora_notification_updated", handleNotifUpdate);
     window.addEventListener("agora_comment_added", handleNotifUpdate);
     window.addEventListener("agora_message_sent", handleDmUpdate);
     window.addEventListener("agora_dm_unread_updated", handleDmUpdate);
     window.addEventListener("agora_open_profile", handleOpenProfileEvent);
+    window.addEventListener("agora_select_space", handleOpenSpaceEvent);
 
     // Poll every 15s to update unread badges when background activity occurs
     const interval = setInterval(() => {
@@ -120,6 +127,7 @@ export const App: React.FC = () => {
       window.removeEventListener("agora_message_sent", handleDmUpdate);
       window.removeEventListener("agora_dm_unread_updated", handleDmUpdate);
       window.removeEventListener("agora_open_profile", handleOpenProfileEvent);
+      window.removeEventListener("agora_select_space", handleOpenSpaceEvent);
       clearInterval(interval);
     };
   }, [refreshNotifCount, refreshDmUnreadCount, user?.id, isAuthenticated]);

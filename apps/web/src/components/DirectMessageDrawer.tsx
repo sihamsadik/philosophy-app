@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import type { Socket } from "socket.io-client";
-import type { DirectConversation, ChatMessage } from "../lib/api-client.js";
+import type { DirectConversation, ChatMessage, PhilosophicalSpace } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
 
@@ -127,6 +127,43 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
   const [messageSection, setMessageSection] = useState<"chats" | "requests" | "replies">("chats");
   const [replyActivities, setReplyActivities] = useState<Awaited<ReturnType<typeof agoraClient.getReplyActivities>>["activities"]>([]);
   const [replyUnreadCount, setReplyUnreadCount] = useState(0);
+
+  // Circle Sharing state
+  const [isCirclePickerOpen, setIsCirclePickerOpen] = useState(false);
+  const [availableCircles, setAvailableCircles] = useState<PhilosophicalSpace[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      agoraClient.getSpaces().then(({ spaces }) => setAvailableCircles(spaces)).catch(() => {});
+    }
+  }, [isOpen]);
+
+  const handleSendCircleMessage = async (circle: PhilosophicalSpace) => {
+    if (!selectedConv) return;
+    const content = `Hey! Check out this circle: 🏛️ ${circle.name} - ${circle.description.slice(0, 80)}... https://agora.app/spaces/${circle.slug || circle.id}`;
+    const metadata = {
+      spaceId: circle.id,
+      spaceSlug: circle.slug,
+      spaceName: circle.name,
+      spaceDesc: circle.description,
+      avatarImage: circle.avatarImage,
+      membersCount: circle.membersCount,
+      postsCount: circle.postsCount,
+    };
+    try {
+      const newMsg = await agoraClient.sendMessage(selectedConv.id, content, metadata);
+      setMessages((prev) => upsertChatMessage(prev, newMsg));
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selectedConv.id
+            ? { ...c, lastMessage: content, lastMessageTime: "Just now", unreadCount: 0 }
+            : c
+        )
+      );
+    } catch (err) {
+      console.error("Failed to share circle in DM:", err);
+    }
+  };
 
   const activeUserId = currentUser?.id || agoraClient.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
@@ -615,6 +652,66 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                                   {msg.content}
                                 </p>
 
+                                {/* Shared Circle Attachment Card */}
+                                {(() => {
+                                  const spaceId = msg.metadata?.spaceId;
+                                  const spaceSlug = msg.metadata?.spaceSlug;
+                                  const spaceName =
+                                    msg.metadata?.spaceName ||
+                                    (msg.content.includes("Existentialist")
+                                      ? "Existentialist Guild & Freedom Forum"
+                                      : msg.content.includes("Stoicism")
+                                      ? "Stoicism & Virtue Ethics Guild"
+                                      : msg.content.includes("Mind")
+                                      ? "Philosophy of Mind & Consciousness Circle"
+                                      : null);
+
+                                  if (spaceId || spaceSlug || spaceName) {
+                                    const spaceTitle = spaceName || "Philosophical Circle";
+                                    const spaceDesc =
+                                      msg.metadata?.spaceDesc ||
+                                      "Explore arguments, structured debates, and authentic choices in this community.";
+                                    const avatar = msg.metadata?.avatarImage;
+                                    const targetId = spaceId || spaceSlug || "space-existentialism";
+
+                                    return (
+                                      <div className="message-shared-circle-card">
+                                        <div className="shared-card-header">
+                                          {avatar ? (
+                                            <img src={avatar} alt="Circle" className="shared-avatar-img" />
+                                          ) : (
+                                            <div className="shared-avatar-circle">
+                                              {spaceTitle.charAt(0).toUpperCase()}
+                                            </div>
+                                          )}
+                                          <div className="shared-card-titles">
+                                            <h4 className="shared-card-name">🏛️ {spaceTitle}</h4>
+                                            <span className="shared-card-sub">
+                                              👥 {msg.metadata?.membersCount || 4} members · 📜 {msg.metadata?.postsCount || 5} arguments
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <p className="shared-card-desc">{spaceDesc}</p>
+                                        <button
+                                          type="button"
+                                          className="open-shared-circle-btn"
+                                          onClick={() => {
+                                            onClose();
+                                            window.dispatchEvent(
+                                              new CustomEvent("agora_select_space", {
+                                                detail: { spaceId: targetId },
+                                              })
+                                            );
+                                          }}
+                                        >
+                                          🏛️ Open & Join Circle →
+                                        </button>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+
                                 {entityId && (
                                   <button
                                     type="button"
@@ -653,7 +750,62 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                   const canSend = !isDeclined && !(isPending && isRequester);
 
                   return (
-                    <form onSubmit={handleSendMessage} className="chat-input-bar">
+                    <form onSubmit={handleSendMessage} className="chat-input-bar" style={{ position: "relative" }}>
+                      <div className="dm-circle-share-wrapper">
+                        <button
+                          type="button"
+                          className="dm-circle-picker-btn"
+                          onClick={() => setIsCirclePickerOpen(!isCirclePickerOpen)}
+                          title="Share a circle link with your friend"
+                          disabled={!canSend}
+                          style={{
+                            background: "rgba(99, 102, 241, 0.15)",
+                            border: "1px solid rgba(99, 102, 241, 0.35)",
+                            borderRadius: "50%",
+                            width: 38,
+                            height: 38,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            fontSize: "1.1rem",
+                            transition: "all 0.2s ease",
+                          }}
+                        >
+                          🏛️
+                        </button>
+
+                        {isCirclePickerOpen && (
+                          <div className="dm-circle-picker-popover">
+                            <div className="picker-header">
+                              <strong>Share Circle Link</strong>
+                              <button type="button" onClick={() => setIsCirclePickerOpen(false)}>
+                                ✕
+                              </button>
+                            </div>
+                            <div className="picker-list">
+                              {availableCircles.map((circle) => (
+                                <button
+                                  key={circle.id}
+                                  type="button"
+                                  className="picker-circle-item"
+                                  onClick={() => {
+                                    void handleSendCircleMessage(circle);
+                                    setIsCirclePickerOpen(false);
+                                  }}
+                                >
+                                  <span className="picker-icon">🏛️</span>
+                                  <div className="picker-info">
+                                    <span className="picker-name">{circle.name}</span>
+                                    <span className="picker-sub">{circle.primarySchool || circle.category}</span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       <input
                         type="text"
                         className="input-text"

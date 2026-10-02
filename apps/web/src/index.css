@@ -4815,3 +4815,196 @@ html.modal-open {
   }
 }
 
+/* Circle Link Sharing & Attachment Popover */
+.dm-circle-share-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dm-circle-picker-popover {
+  position: absolute;
+  bottom: 50px;
+  left: 0;
+  width: 280px;
+  max-height: 320px;
+  background: #1e293b;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dm-circle-picker-popover .picker-header {
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #f8fafc;
+}
+
+.dm-circle-picker-popover .picker-header button {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.dm-circle-picker-popover .picker-list {
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.picker-circle-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.picker-circle-item:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.picker-circle-item .picker-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.picker-circle-item .picker-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.picker-circle-item .picker-sub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+/* Rich Shared Circle Card in Chat Bubble */
+.message-shared-circle-card {
+  margin-top: 8px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.message-shared-circle-card .shared-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.message-shared-circle-card .shared-avatar-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.message-shared-circle-card .shared-avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.message-shared-circle-card .shared-card-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.message-shared-circle-card .shared-card-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: block;
+}
+
+.message-shared-circle-card .shared-card-desc {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.message-shared-circle-card .open-shared-circle-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.message-shared-circle-card .open-shared-circle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+}
+
+/* Modal Overlay for Share Circle */
+.share-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.share-modal-card {
+  background: #0f172a;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 440px;
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  color: #f8fafc;
+  animation: fadeIn 0.2s ease;
+}
+
+
