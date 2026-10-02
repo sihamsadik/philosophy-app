@@ -652,6 +652,94 @@ export class AgoraPhilosophyClient {
     }
   }
 
+  private spaceConvoCache: Record<string, string> = {};
+
+  async getSpaceConversationId(spaceId: string): Promise<string | null> {
+    if (this.spaceConvoCache[spaceId]) return this.spaceConvoCache[spaceId];
+    if (!spaceId || spaceId.startsWith("sp-") || spaceId.startsWith("space-")) return null;
+    try {
+      const convo = await this.request<any>(`/chat/spaces/${spaceId}/conversation`);
+      if (convo?.id) {
+        this.spaceConvoCache[spaceId] = convo.id;
+        return convo.id;
+      }
+    } catch {}
+    return null;
+  }
+
+  async getSpaceChatMessages(spaceId: string): Promise<{ messages: ChatMessage[] }> {
+    try {
+      const convoId = await this.getSpaceConversationId(spaceId);
+      if (convoId) {
+        const res = await this.getMessages(convoId);
+        if (res?.messages && res.messages.length > 0) {
+          return res;
+        }
+      }
+    } catch {}
+
+    const stored = typeof window !== "undefined" ? localStorage.getItem(`agora_space_chat_${spaceId}`) : null;
+    const localList: ChatMessage[] = stored ? JSON.parse(stored) : [];
+    const demoList = DEMO_SPACE_CHAT_MESSAGES[spaceId] || [
+      {
+        id: `sc-default-1`,
+        conversationId: spaceId,
+        senderId: "usr-thinker",
+        senderName: "Community Steward",
+        content: "Welcome to the group chat room! Discuss ideas freely with circle members here.",
+        createdAt: "Just now",
+      },
+    ];
+    return { messages: localList.length > 0 ? localList : demoList };
+  }
+
+  async sendSpaceChatMessage(spaceId: string, content: string): Promise<ChatMessage> {
+    const activeUserId = this.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
+    const user = this.getCurrentUser() as any;
+
+    try {
+      const convoId = await this.getSpaceConversationId(spaceId);
+      if (convoId) {
+        const sent = await this.sendMessage(convoId, content, {
+          senderName: user?.name || user?.username || "You",
+          senderAvatar: user?.avatar,
+        });
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("agora_group_chat_message_created", { detail: sent }));
+        }
+        return sent;
+      }
+    } catch {}
+
+    const newMsg: ChatMessage = {
+      id: `msg-sc-${Date.now()}`,
+      conversationId: spaceId,
+      senderId: activeUserId,
+      senderName: user?.name || user?.username || "You",
+      senderAvatar: user?.avatar,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (!DEMO_SPACE_CHAT_MESSAGES[spaceId]) DEMO_SPACE_CHAT_MESSAGES[spaceId] = [];
+    DEMO_SPACE_CHAT_MESSAGES[spaceId].push(newMsg);
+
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`agora_space_chat_${spaceId}`);
+        const list: ChatMessage[] = stored ? JSON.parse(stored) : [...(DEMO_SPACE_CHAT_MESSAGES[spaceId] || [])];
+        list.push(newMsg);
+        localStorage.setItem(`agora_space_chat_${spaceId}`, JSON.stringify(list));
+      } catch {}
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("agora_group_chat_message_created", { detail: newMsg }));
+    }
+
+    return newMsg;
+  }
+
   async createSpace(spaceData: {
     name: string;
     description: string;
@@ -1808,7 +1896,7 @@ export class AgoraPhilosophyClient {
         id: m.id || `msg-${Date.now()}`,
         conversationId: m.conversationId || conversationId,
         senderId: m.senderId || m.userId || "usr-current",
-        senderName: m.senderName || m.user?.name || m.user?.username || "Philosopher",
+        senderName: m.senderName || m.user?.name || m.user?.username || m.metadata?.senderName || m.metadata?.authorName || (m.userId ? `@${m.userId.slice(0, 8)}` : "Group Member"),
         senderAvatar: m.senderAvatar || m.user?.avatar,
         content: m.content || "",
         createdAt: m.createdAt ? (typeof m.createdAt === "string" ? m.createdAt : new Date(m.createdAt).toISOString()) : new Date().toISOString(),
@@ -1831,6 +1919,7 @@ export class AgoraPhilosophyClient {
 
   async sendMessage(conversationId: string, content: string, metadata?: Record<string, any>): Promise<ChatMessage> {
     const activeUserId = this.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
+    const user = this.getCurrentUser() as any;
     if (!conversationId.startsWith("conv-")) {
       const response = await this.request<any>(`/chat/conversations/${conversationId}/messages`, {
         method: "POST",
@@ -1841,7 +1930,7 @@ export class AgoraPhilosophyClient {
         id: serverMsg.id,
         conversationId: serverMsg.conversationId || conversationId,
         senderId: serverMsg.userId || serverMsg.senderId || activeUserId,
-        senderName: serverMsg.user?.name || "You",
+        senderName: serverMsg.senderName || serverMsg.user?.name || serverMsg.user?.username || user?.name || user?.username || "You",
         senderAvatar: serverMsg.user?.avatar,
         content: serverMsg.content || content,
         createdAt: serverMsg.createdAt || new Date().toISOString(),
@@ -2222,6 +2311,8 @@ export interface ChatMessage {
   senderAvatar?: string;
   content: string;
   createdAt: string;
+  isRead?: boolean;
+  readCount?: number;
   metadata?: {
     entityId?: string;
     postTitle?: string;
@@ -2406,6 +2497,58 @@ export const DEMO_CONVERSATIONS: DirectConversation[] = [
   },
 ];
 
+
+const DEMO_SPACE_CHAT_MESSAGES: Record<string, ChatMessage[]> = {
+  "space-existentialism": [
+    {
+      id: "sc-1",
+      conversationId: "space-existentialism",
+      senderId: "00000000-0000-0000-0000-000000000003",
+      senderName: "Simone de Beauvoir",
+      senderAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+      content: "Welcome everyone to our Existentialist Group Chat! Existence precedes essence — how are you defining your choices today?",
+      createdAt: "2h ago",
+    },
+    {
+      id: "sc-2",
+      conversationId: "space-existentialism",
+      senderId: "00000000-0000-0000-0000-000000000005",
+      senderName: "Friedrich Nietzsche",
+      senderAvatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+      content: "Do not let social pressure dictate your values. A circle of free spirits creates its own law!",
+      createdAt: "1h ago",
+    },
+    {
+      id: "sc-3",
+      conversationId: "space-existentialism",
+      senderId: "00000000-0000-0000-0000-000000000004",
+      senderName: "Jean-Paul Sartre",
+      senderAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+      content: "We are condemned to be free. When we group chat, we share radical responsibility for the community we build.",
+      createdAt: "15m ago",
+    },
+  ],
+  "space-stoicism": [
+    {
+      id: "sc-stoic-1",
+      conversationId: "space-stoicism",
+      senderId: "00000000-0000-0000-0000-000000000002",
+      senderName: "Marcus Aurelius",
+      senderAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      content: "Welcome to the Stoicism group chat room. Let us focus our mind only on what is within our direct control.",
+      createdAt: "3h ago",
+    },
+    {
+      id: "sc-stoic-2",
+      conversationId: "space-stoicism",
+      senderId: "00000000-0000-0000-0000-000000000006",
+      senderName: "Epictetus",
+      senderAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+      content: "It is not external things that disturb us, but our judgment about them.",
+      createdAt: "1h ago",
+    },
+  ],
+};
 
 const DEMO_MESSAGES: Record<string, ChatMessage[]> = {
   "conv-1": [
@@ -2652,8 +2795,8 @@ export const DEMO_SPACES: PhilosophicalSpace[] = [
     membersCount: 4,
     postsCount: 5,
     isJoined: true,
-    hasUnreadMessages: true,
-    unreadCount: 3,
+    hasUnreadMessages: false,
+    unreadCount: 0,
     createdAt: "1 month ago",
   },
   {

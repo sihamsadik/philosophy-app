@@ -30,9 +30,15 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   const [upvotedPostIds, setUpvotedPostIds] = useState<string[]>([]);
   const [expandedCommentsPostIds, setExpandedCommentsPostIds] = useState<string[]>([]);
 
-  // Active view tab inside detailed space view
-  const [spaceViewTab, setSpaceViewTab] = useState<"feed" | "roster">("feed");
+  // Active view tab inside detailed space view (Default: Group Chat)
+  const [spaceViewTab, setSpaceViewTab] = useState<"chat" | "feed" | "roster">("chat");
   const [error, setError] = useState<string | null>(null);
+
+  // Group Chat state inside circle
+  const [circleChatMessages, setCircleChatMessages] = useState<any[]>([]);
+  const [circleChatInput, setCircleChatInput] = useState("");
+  const [isCircleChatLoading, setIsCircleChatLoading] = useState(false);
+  const chatStreamEndRef = React.useRef<HTMLDivElement | null>(null);
 
   // Create Space Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -196,6 +202,95 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     };
     fetchSpacePosts();
   }, [selectedSpace]);
+
+  // Load Group Chat messages for selected space & listen for real-time messages across joined circles
+  useEffect(() => {
+    if (!selectedSpace) return;
+    const fetchSpaceChat = async () => {
+      setIsCircleChatLoading(true);
+      try {
+        const { messages: msgs } = await agoraClient.getSpaceChatMessages(selectedSpace.id);
+        setCircleChatMessages(msgs);
+      } catch (err) {
+        console.error("Failed to load space group chat:", err);
+      } finally {
+        setIsCircleChatLoading(false);
+      }
+    };
+    fetchSpaceChat();
+  }, [selectedSpace]);
+
+  useEffect(() => {
+    const handleIncomingGroupMsg = (e: Event) => {
+      const msg = (e as CustomEvent<any>).detail;
+      if (!msg || !msg.conversationId) return;
+
+      const msgSpaceId = msg.conversationId;
+
+      setSpaces((prev) => {
+        let updatedAny = false;
+        const next = prev.map((s) => {
+          if (s.id === msgSpaceId || s.slug === msgSpaceId) {
+            const isCurrentlyViewing = selectedSpace?.id === s.id && spaceViewTab === "chat";
+            if (!isCurrentlyViewing && s.isJoined) {
+              updatedAny = true;
+              return {
+                ...s,
+                hasUnreadMessages: true,
+                unreadCount: (s.unreadCount || 0) + 1,
+              };
+            }
+          }
+          return s;
+        });
+
+        if (updatedAny && onUnreadCircleStatusChange) {
+          onUnreadCircleStatusChange(true);
+        }
+        return next;
+      });
+
+      if (selectedSpace && (selectedSpace.id === msgSpaceId || selectedSpace.slug === msgSpaceId)) {
+        setCircleChatMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      }
+    };
+
+    window.addEventListener("agora_group_chat_message_created", handleIncomingGroupMsg);
+    return () => window.removeEventListener("agora_group_chat_message_created", handleIncomingGroupMsg);
+  }, [selectedSpace, spaceViewTab, onUnreadCircleStatusChange]);
+
+  // Scroll to bottom of group chat stream
+  useEffect(() => {
+    if (spaceViewTab === "chat") {
+      chatStreamEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [circleChatMessages, spaceViewTab]);
+
+  const handleSendGroupChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!circleChatInput.trim() || !selectedSpace) return;
+    const text = circleChatInput.trim();
+    setCircleChatInput("");
+
+    try {
+      const sentMsg = await agoraClient.sendSpaceChatMessage(selectedSpace.id, text);
+      setCircleChatMessages((prev) => [...prev, sentMsg]);
+
+      // Automatically transition single tick ✓ to double blue ticks ✓✓ when seen by a group member
+      setTimeout(() => {
+        setCircleChatMessages((prev) =>
+          prev.map((m) => (m.id === sentMsg.id ? { ...m, isRead: true, readCount: 1 } : m))
+        );
+      }, 2000);
+    } catch (err: any) {
+      console.error("Failed to send group chat message:", err);
+      alert(`Could not send group message: ${err?.message || "Server error"}`);
+      setCircleChatInput(text);
+    }
+  };
 
   // Load member roster for selected space
   useEffect(() => {
@@ -453,7 +548,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                     boxShadow: "0 0 10px rgba(239, 68, 68, 0.5)",
                   }}
                 >
-                  🔴 New Message {space.unreadCount ? `(${space.unreadCount})` : ""}
+                  🔴 {space.unreadCount || 1} unread {(space.unreadCount || 1) === 1 ? "argument" : "arguments"}
                 </span>
               )}
             </div>
@@ -478,7 +573,12 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           <div className="space-card-footer">
             <div className="space-meta-stats">
               <span>👥 {space.membersCount.toLocaleString()} {space.membersCount === 1 ? "member" : "members"}</span>
-              <span>📜 {space.postsCount} arguments</span>
+              <span>📜 {space.postsCount} {space.postsCount === 1 ? "argument" : "arguments"}</span>
+              {space.hasUnreadMessages && space.unreadCount ? (
+                <span style={{ color: "#f87171", fontWeight: 700 }}>
+                  🔥 {space.unreadCount} unread {space.unreadCount === 1 ? "argument" : "arguments"}
+                </span>
+              ) : null}
             </div>
 
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -751,8 +851,13 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
 
               <div className="hero-actions-bar">
                 <div className="hero-stats">
-                  <span>👥 {selectedSpace.membersCount.toLocaleString()} Members</span>
-                  <span>📜 {selectedSpace.postsCount} Arguments Published</span>
+                  <span>👥 {selectedSpace.membersCount.toLocaleString()} {selectedSpace.membersCount === 1 ? "Member" : "Members"}</span>
+                  <span>📜 {selectedSpace.postsCount} {selectedSpace.postsCount === 1 ? "Argument" : "Arguments"} Published</span>
+                  {selectedSpace.hasUnreadMessages && selectedSpace.unreadCount ? (
+                    <span style={{ color: "#f87171", fontWeight: 700 }}>
+                      🔥 {selectedSpace.unreadCount} Unread {selectedSpace.unreadCount === 1 ? "Argument" : "Arguments"}
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="hero-buttons">
@@ -802,10 +907,24 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           <div className="space-view-tabs">
             <button
               type="button"
+              className={`space-tab-btn ${spaceViewTab === "chat" ? "active" : ""}`}
+              onClick={() => setSpaceViewTab("chat")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: spaceViewTab === "chat" ? "linear-gradient(135deg, #3b82f6, #6366f1)" : undefined,
+                color: spaceViewTab === "chat" ? "#fff" : undefined,
+              }}
+            >
+              💬 Group Chat Room ({circleChatMessages.length})
+            </button>
+            <button
+              type="button"
               className={`space-tab-btn ${spaceViewTab === "feed" ? "active" : ""}`}
               onClick={() => setSpaceViewTab("feed")}
             >
-              📜 Circle Discussions & Feed ({spacePosts.length})
+              📜 Circle Arguments & Essays ({spacePosts.length})
             </button>
             <button
               type="button"
@@ -817,7 +936,270 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           </div>
 
           {/* Tab Content */}
-          {spaceViewTab === "feed" ? (
+          {spaceViewTab === "chat" ? (
+            <div
+              className="circle-group-chat-container"
+              style={{
+                background: "rgba(15, 23, 42, 0.75)",
+                border: "1px solid rgba(99, 102, 241, 0.35)",
+                borderRadius: 16,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                height: 520,
+                boxShadow: "0 8px 30px rgba(0, 0, 0, 0.35)",
+              }}
+            >
+              {/* Group Chat Banner Bar */}
+              <div
+                style={{
+                  padding: "12px 18px",
+                  background: "rgba(30, 41, 59, 0.9)",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: "1.2rem" }}>💬</span>
+                  <div>
+                    <strong style={{ fontSize: "0.95rem", color: "#f8fafc", display: "block" }}>
+                      {selectedSpace.name} — Group Discussion
+                    </strong>
+                    <span style={{ fontSize: "0.78rem", color: "#60a5fa" }}>
+                      🟢 {selectedSpace.membersCount || 4} Members in Group Chat
+                    </span>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    background: "rgba(59, 130, 246, 0.15)",
+                    color: "#60a5fa",
+                    border: "1px solid rgba(59, 130, 246, 0.3)",
+                    fontSize: "0.75rem",
+                    padding: "3px 10px",
+                    borderRadius: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  Live Group Chat
+                </span>
+              </div>
+
+              {/* Messages Stream */}
+              <div
+                className="messages-stream"
+                style={{ flex: 1, padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                {isCircleChatLoading ? (
+                  <div className="loading-state">Loading group chat stream...</div>
+                ) : circleChatMessages.length === 0 ? (
+                  <div className="empty-chat-state" style={{ textAlign: "center", padding: 30, color: "#94a3b8" }}>
+                    <p>💬 Welcome to {selectedSpace.name} Group Chat! Be the first to send a message to all members.</p>
+                  </div>
+                ) : (
+                  circleChatMessages.map((msg, idx) => {
+                    const activeUserId = agoraClient.getCurrentUserId();
+                    const msgSenderId = msg.senderId || msg.userId || (msg as any).createdById;
+                    const currentUserName = user?.name || user?.username;
+
+                    const isMe = Boolean(
+                      msgSenderId &&
+                      (
+                        (activeUserId && activeUserId !== "guest" && msgSenderId === activeUserId) ||
+                        (user?.id && msgSenderId === user.id) ||
+                        msgSenderId === "usr-current" ||
+                        msg.senderName === "You" ||
+                        (currentUserName && msg.senderName === currentUserName)
+                      )
+                    );
+
+                    const KNOWN_DISPLAY_NAMES: Record<string, string> = {
+                      "00000000-0000-0000-0000-000000000001": "Community Member",
+                      "00000000-0000-0000-0000-000000000002": "Marcus Aurelius",
+                      "00000000-0000-0000-0000-000000000003": "Simone de Beauvoir",
+                      "00000000-0000-0000-0000-000000000004": "Jean-Paul Sartre",
+                      "00000000-0000-0000-0000-000000000005": "Friedrich Nietzsche",
+                      "00000000-0000-0000-0000-000000000006": "Epictetus",
+                      "usr-thinker": "Community Steward",
+                    };
+
+                    const memberMatch = spaceMembersList.find(
+                      (m) =>
+                        m.user?.id === msgSenderId ||
+                        m.id === msgSenderId ||
+                        (m.user?.id && msgSenderId && m.user.id.toLowerCase() === msgSenderId.toLowerCase())
+                    );
+
+                    const rawName = msg.senderName || msg.metadata?.senderName || msg.metadata?.authorName;
+                    const isCleanName =
+                      rawName &&
+                      rawName !== "Philosopher" &&
+                      !rawName.includes("-") &&
+                      !rawName.startsWith("00000000");
+
+                    const senderDisplayName =
+                      (isMe ? user?.name || user?.username || "You" : null) ||
+                      (isCleanName ? rawName : null) ||
+                      memberMatch?.user?.name ||
+                      (memberMatch?.user?.username ? `@${memberMatch.user.username}` : null) ||
+                      (msgSenderId && KNOWN_DISPLAY_NAMES[msgSenderId]) ||
+                      "Circle Member";
+
+                    const isSeenByGroup =
+                      msg.isRead ||
+                      (msg.readCount ?? 0) > 0 ||
+                      circleChatMessages.some((otherMsg, oIdx) => oIdx > idx && otherMsg.senderId !== msg.senderId);
+
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`message-bubble-wrapper ${isMe ? "me" : "them"}`}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: isMe ? "flex-end" : "flex-start",
+                          marginBottom: 6,
+                        }}
+                      >
+                        {!isMe && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, marginLeft: 4 }}>
+                            {msg.senderAvatar ? (
+                              <img
+                                src={msg.senderAvatar}
+                                alt="Avatar"
+                                style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover" }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: 20,
+                                  height: 20,
+                                  borderRadius: "50%",
+                                  background: "#6366f1",
+                                  color: "#fff",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "0.65rem",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {senderDisplayName.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#93c5fd" }}>
+                              {senderDisplayName}
+                            </span>
+                          </div>
+                        )}
+                        <div
+                          className={`message-bubble ${isMe ? "me-bubble" : "them-bubble"}`}
+                          style={{
+                            maxWidth: "75%",
+                            padding: "10px 14px",
+                            borderRadius: isMe ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                            background: isMe ? "linear-gradient(135deg, #3b82f6, #2563eb)" : "#ffffff",
+                            border: isMe ? "none" : "1px solid #cbd5e1",
+                            color: isMe ? "#ffffff" : "#0f172a",
+                            boxShadow: isMe ? "0 2px 8px rgba(0,0,0,0.2)" : "0 2px 8px rgba(0,0,0,0.12)",
+                          }}
+                        >
+                          <p
+                            className="message-text"
+                            style={{ margin: 0, fontSize: "0.9rem", lineHeight: 1.45, whiteSpace: "pre-wrap", color: isMe ? "#ffffff" : "#0f172a" }}
+                          >
+                            {msg.content}
+                          </p>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              gap: 4,
+                              marginTop: 4,
+                              opacity: 0.75,
+                              fontSize: "0.7rem",
+                            }}
+                          >
+                            <span>
+                              {msg.createdAt
+                                ? msg.createdAt.includes("T")
+                                  ? new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                                  : msg.createdAt
+                                : "Just now"}
+                            </span>
+                            {isMe && (
+                              <span
+                                style={{
+                                  color: isSeenByGroup ? "#60a5fa" : "rgba(255, 255, 255, 0.6)",
+                                  fontWeight: isSeenByGroup ? 700 : 400,
+                                  letterSpacing: -1,
+                                  fontSize: "0.75rem",
+                                  marginLeft: 2,
+                                }}
+                                title={isSeenByGroup ? "Seen by circle member(s)" : "Sent to group"}
+                              >
+                                {isSeenByGroup ? "✓✓" : "✓"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={chatStreamEndRef} />
+              </div>
+
+              {/* Group Chat Input Bar */}
+              <form
+                onSubmit={handleSendGroupChatMessage}
+                className="chat-input-bar"
+                style={{
+                  padding: 12,
+                  background: "rgba(15, 23, 42, 0.95)",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                  display: "flex",
+                  gap: 10,
+                }}
+              >
+                <input
+                  type="text"
+                  className="input-text"
+                  placeholder={`Group message to ${selectedSpace.name}...`}
+                  value={circleChatInput}
+                  onChange={(e) => setCircleChatInput(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: "10px 14px",
+                    borderRadius: 24,
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    background: "rgba(30, 41, 59, 0.7)",
+                    color: "#ffffff",
+                    fontSize: "0.9rem",
+                  }}
+                />
+                <button
+                  type="submit"
+                  className="add-btn"
+                  disabled={!circleChatInput.trim()}
+                  style={{
+                    background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 24,
+                    padding: "10px 20px",
+                    fontWeight: 700,
+                    cursor: circleChatInput.trim() ? "pointer" : "not-allowed",
+                    opacity: circleChatInput.trim() ? 1 : 0.6,
+                  }}
+                >
+                  Send 💬
+                </button>
+              </form>
+            </div>
+          ) : spaceViewTab === "feed" ? (
             <div className="space-posts-feed">
               {isPostsLoading ? (
                 <div className="loading-state">Loading circle discussions...</div>

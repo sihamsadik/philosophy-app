@@ -60,7 +60,7 @@ export const App: React.FC = () => {
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [unreadDmCount, setUnreadDmCount] = useState(0);
-  const [hasCircleMessages, setHasCircleMessages] = useState<boolean>(true);
+  const [hasCircleMessages, setHasCircleMessages] = useState<boolean>(false);
   const [realtimeSocket, setRealtimeSocket] = useState<Socket | null>(null);
   const [connectTargetUser, setConnectTargetUser] = useState<User | null>(null);
 
@@ -147,7 +147,7 @@ export const App: React.FC = () => {
       const message = {
         ...raw,
         senderId: raw.userId || raw.senderId,
-        senderName: raw.user?.name || raw.user?.username || "Philosopher",
+        senderName: raw.senderName || raw.user?.name || raw.user?.username || raw.metadata?.senderName || (raw.userId ? `@${raw.userId.slice(0, 8)}` : "Group Member"),
         senderAvatar: raw.user?.avatar,
       };
       window.dispatchEvent(new CustomEvent("agora_chat_message_created", { detail: message }));
