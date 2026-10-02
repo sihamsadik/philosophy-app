@@ -2,13 +2,13 @@
 // Static routes (/by-slug, /user-spaces, …) MUST stay above /:id.
 // NOTE: :memberId is treated as the member's USER id (operate on space_members by user).
 import { Hono } from "hono";
-import { and, eq, isNull, desc, asc, count, inArray, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ne, isNull, desc, asc, count, inArray, ilike, or, sql } from "drizzle-orm";
 import type { Variables } from "../http/context.js";
 import { Errors } from "../http/errors.js";
 import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
 import { logger } from "../lib/logger.js";
-import { spaces, spaceMembers, spaceRules, entities, comments, profiles, reports } from "../db/schema/index.js";
+import { spaces, spaceMembers, spaceRules, entities, comments, profiles, reports, conversations, conversationMembers, chatMessages } from "../db/schema/index.js";
 import { readPagination, paginate } from "../http/envelope.js";
 import { shapeSpace, shapeRule, shapeUser, generateShortId, parseInclude, loadSpaceFiles } from "../lib/shape.js";
 import {
@@ -138,6 +138,7 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     const memberCountsMap = new Map<string, number>();
     const postCountsMap = new Map<string, number>();
     const userJoinedSpaceIds = new Set<string>();
+    const unreadBySpaceId = new Map<string, number>();
 
     if (spaceIds.length > 0) {
       const activeMemberCounts = await getDb()
@@ -172,6 +173,25 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
         for (const m of userMemberships) {
           userJoinedSpaceIds.add(m.spaceId);
         }
+
+        const unreadRows = await getDb().select({ spaceId: conversations.spaceId, unread: count() })
+          .from(conversations)
+          .innerJoin(conversationMembers, and(
+            eq(conversationMembers.conversationId, conversations.id),
+            eq(conversationMembers.userId, uid),
+            eq(conversationMembers.isActive, true),
+          ))
+          .innerJoin(chatMessages, and(
+            eq(chatMessages.conversationId, conversations.id),
+            ne(chatMessages.userId, uid),
+            sql`${chatMessages.userDeletedAt} is null`,
+            sql`(${conversationMembers.lastReadAt} is null or ${chatMessages.createdAt} > ${conversationMembers.lastReadAt})`,
+          ))
+          .where(and(eq(conversations.projectId, c.var.projectId), eq(conversations.type, "space"), inArray(conversations.spaceId, spaceIds)))
+          .groupBy(conversations.spaceId);
+        for (const row of unreadRows) {
+          if (row.spaceId) unreadBySpaceId.set(row.spaceId, Number(row.unread));
+        }
       }
     }
 
@@ -181,7 +201,8 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
       const isMember = uid ? (userJoinedSpaceIds.has(r.id) || r.userId === uid) : false;
       const spaceWithCounts = { ...r, membersCount: realMemberCount, postsCount: realPostCount };
       const shaped = shapeSpace(spaceWithCounts, { isMember, files: fileMap ? (fileMap.get(r.id) ?? []) : undefined });
-      return { ...shaped, postsCount: realPostCount };
+      const unreadCount = isMember ? (unreadBySpaceId.get(r.id) ?? 0) : 0;
+      return { ...shaped, postsCount: realPostCount, unreadCount, hasUnreadMessages: unreadCount > 0 };
     });
 
     return c.json(paginate(shapedRows, n, page, limit));

@@ -159,9 +159,15 @@ export class AgoraPhilosophyClient {
   getCurrentUserId(): string {
     if (this.currentUserId) return this.currentUserId;
     if (typeof window !== "undefined") {
-      return localStorage.getItem("philosophy_current_user_id") || "guest";
+      let stored = localStorage.getItem("philosophy_current_user_id");
+      if (!stored || stored === "guest" || stored === "00000000-0000-0000-0000-000000000001") {
+        stored = `usr-anon-${Math.random().toString(36).substring(2, 9)}`;
+        localStorage.setItem("philosophy_current_user_id", stored);
+      }
+      this.currentUserId = stored;
+      return stored;
     }
-    return "guest";
+    return "usr-anon-guest";
   }
 
   getCurrentUser(): { id: string } | null {
@@ -490,6 +496,8 @@ export class AgoraPhilosophyClient {
             membersCount: s.membersCount || s.members_count || 0,
             postsCount: s.postsCount || 0,
             isJoined,
+            unreadCount: Number(s.unreadCount || 0),
+            hasUnreadMessages: Boolean(s.hasUnreadMessages || Number(s.unreadCount || 0) > 0),
             createdAt: s.createdAt ? (typeof s.createdAt === "string" && s.createdAt.includes("Established") ? s.createdAt : new Date(s.createdAt).toLocaleDateString()) : "Established",
           };
         });
@@ -672,6 +680,7 @@ export class AgoraPhilosophyClient {
       const convoId = await this.getSpaceConversationId(spaceId);
       if (convoId) {
         const res = await this.getMessages(convoId);
+        await this.markConversationRead(convoId);
         if (res?.messages && res.messages.length > 0) {
           return res;
         }
@@ -690,11 +699,16 @@ export class AgoraPhilosophyClient {
         createdAt: "Just now",
       },
     ];
-    return { messages: localList.length > 0 ? localList : demoList };
+    if (localList.length > 0) {
+      const existingIds = new Set(localList.map((m) => m.id));
+      const combined = [...demoList.filter((m) => !existingIds.has(m.id)), ...localList];
+      return { messages: combined };
+    }
+    return { messages: demoList };
   }
 
   async sendSpaceChatMessage(spaceId: string, content: string): Promise<ChatMessage> {
-    const activeUserId = this.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
+    const activeUserId = this.getCurrentUserId();
     const user = this.getCurrentUser() as any;
 
     try {
@@ -705,7 +719,7 @@ export class AgoraPhilosophyClient {
           senderAvatar: user?.avatar,
         });
         if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("agora_group_chat_message_created", { detail: sent }));
+          window.dispatchEvent(new CustomEvent("agora_group_chat_message_created", { detail: { ...sent, spaceId, conversationId: convoId } }));
         }
         return sent;
       }
@@ -1895,8 +1909,8 @@ export class AgoraPhilosophyClient {
       const mapped = rawList.map((m: any) => ({
         id: m.id || `msg-${Date.now()}`,
         conversationId: m.conversationId || conversationId,
-        senderId: m.senderId || m.userId || "usr-current",
-        senderName: m.senderName || m.user?.name || m.user?.username || m.metadata?.senderName || m.metadata?.authorName || (m.userId ? `@${m.userId.slice(0, 8)}` : "Group Member"),
+        senderId: m.senderId || m.userId || m.createdById || m.authorId || `usr-${m.id || Date.now()}`,
+        senderName: m.senderName || m.user?.name || m.user?.username || m.metadata?.senderName || m.metadata?.authorName || "Circle Member",
         senderAvatar: m.senderAvatar || m.user?.avatar,
         content: m.content || "",
         createdAt: m.createdAt ? (typeof m.createdAt === "string" ? m.createdAt : new Date(m.createdAt).toISOString()) : new Date().toISOString(),
@@ -1918,7 +1932,7 @@ export class AgoraPhilosophyClient {
   }
 
   async sendMessage(conversationId: string, content: string, metadata?: Record<string, any>): Promise<ChatMessage> {
-    const activeUserId = this.getCurrentUserId() || "00000000-0000-0000-0000-000000000001";
+    const activeUserId = this.getCurrentUserId();
     const user = this.getCurrentUser() as any;
     if (!conversationId.startsWith("conv-")) {
       const response = await this.request<any>(`/chat/conversations/${conversationId}/messages`, {

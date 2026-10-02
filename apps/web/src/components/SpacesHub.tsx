@@ -164,15 +164,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     }
   }, [spaces, onUnreadCircleStatusChange]);
 
-  const handleSelectSpace = (space: PhilosophicalSpace) => {
-    if (space.isJoined && space.hasUnreadMessages) {
-      const updated = { ...space, hasUnreadMessages: false, unreadCount: 0 };
-      setSpaces((prev) => prev.map((s) => (s.id === space.id || s.slug === space.slug ? updated : s)));
-      setSelectedSpace(updated);
-    } else {
-      setSelectedSpace(space);
-    }
-  };
+  const handleSelectSpace = (space: PhilosophicalSpace) => setSelectedSpace(space);
 
   // Load posts for selected space
   useEffect(() => {
@@ -211,6 +203,9 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
       try {
         const { messages: msgs } = await agoraClient.getSpaceChatMessages(selectedSpace.id);
         setCircleChatMessages(msgs);
+        setSpaces((prev) => prev.map((space) => space.id === selectedSpace.id
+          ? { ...space, hasUnreadMessages: false, unreadCount: 0 }
+          : space));
       } catch (err) {
         console.error("Failed to load space group chat:", err);
       } finally {
@@ -225,14 +220,16 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
       const msg = (e as CustomEvent<any>).detail;
       if (!msg || !msg.conversationId) return;
 
-      const msgSpaceId = msg.conversationId;
+      const msgSpaceId = msg.spaceId;
+      if (!msgSpaceId) return;
+      const isOwnMessage = msg.senderId === agoraClient.getCurrentUserId() || msg.userId === user?.id;
 
       setSpaces((prev) => {
         let updatedAny = false;
         const next = prev.map((s) => {
           if (s.id === msgSpaceId || s.slug === msgSpaceId) {
             const isCurrentlyViewing = selectedSpace?.id === s.id && spaceViewTab === "chat";
-            if (!isCurrentlyViewing && s.isJoined) {
+            if (!isCurrentlyViewing && s.isJoined && !isOwnMessage) {
               updatedAny = true;
               return {
                 ...s,
@@ -250,7 +247,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
         return next;
       });
 
-      if (selectedSpace && (selectedSpace.id === msgSpaceId || selectedSpace.slug === msgSpaceId)) {
+      if (selectedSpace?.id === msgSpaceId) {
         setCircleChatMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
@@ -260,7 +257,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
 
     window.addEventListener("agora_group_chat_message_created", handleIncomingGroupMsg);
     return () => window.removeEventListener("agora_group_chat_message_created", handleIncomingGroupMsg);
-  }, [selectedSpace, spaceViewTab, onUnreadCircleStatusChange]);
+  }, [selectedSpace, spaceViewTab, onUnreadCircleStatusChange, user?.id]);
 
   // Scroll to bottom of group chat stream
   useEffect(() => {
@@ -277,14 +274,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
 
     try {
       const sentMsg = await agoraClient.sendSpaceChatMessage(selectedSpace.id, text);
-      setCircleChatMessages((prev) => [...prev, sentMsg]);
-
-      // Automatically transition single tick ✓ to double blue ticks ✓✓ when seen by a group member
-      setTimeout(() => {
-        setCircleChatMessages((prev) =>
-          prev.map((m) => (m.id === sentMsg.id ? { ...m, isRead: true, readCount: 1 } : m))
-        );
-      }, 2000);
+      setCircleChatMessages((prev) => prev.some((message) => message.id === sentMsg.id) ? prev : [...prev, sentMsg]);
     } catch (err: any) {
       console.error("Failed to send group chat message:", err);
       alert(`Could not send group message: ${err?.message || "Server error"}`);
@@ -999,31 +989,11 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                     <p>💬 Welcome to {selectedSpace.name} Group Chat! Be the first to send a message to all members.</p>
                   </div>
                 ) : (
-                  circleChatMessages.map((msg, idx) => {
+                  circleChatMessages.map((msg) => {
                     const activeUserId = agoraClient.getCurrentUserId();
-                    const msgSenderId = msg.senderId || msg.userId || (msg as any).createdById;
-                    const currentUserName = user?.name || user?.username;
-
-                    const isMe = Boolean(
-                      msgSenderId &&
-                      (
-                        (activeUserId && activeUserId !== "guest" && msgSenderId === activeUserId) ||
-                        (user?.id && msgSenderId === user.id) ||
-                        msgSenderId === "usr-current" ||
-                        msg.senderName === "You" ||
-                        (currentUserName && msg.senderName === currentUserName)
-                      )
-                    );
-
-                    const KNOWN_DISPLAY_NAMES: Record<string, string> = {
-                      "00000000-0000-0000-0000-000000000001": "Community Member",
-                      "00000000-0000-0000-0000-000000000002": "Marcus Aurelius",
-                      "00000000-0000-0000-0000-000000000003": "Simone de Beauvoir",
-                      "00000000-0000-0000-0000-000000000004": "Jean-Paul Sartre",
-                      "00000000-0000-0000-0000-000000000005": "Friedrich Nietzsche",
-                      "00000000-0000-0000-0000-000000000006": "Epictetus",
-                      "usr-thinker": "Community Steward",
-                    };
+                    const msgSenderId = msg.senderId || msg.userId || (msg as any).createdById || "";
+                    const currentUserIds = [user?.id, (user as any)?.sub, (user as any)?.pid, activeUserId].filter(Boolean);
+                    const isMe = Boolean(msgSenderId && currentUserIds.includes(msgSenderId));
 
                     const memberMatch = spaceMembersList.find(
                       (m) =>
@@ -1033,24 +1003,14 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                     );
 
                     const rawName = msg.senderName || msg.metadata?.senderName || msg.metadata?.authorName;
-                    const isCleanName =
-                      rawName &&
-                      rawName !== "Philosopher" &&
-                      !rawName.includes("-") &&
-                      !rawName.startsWith("00000000");
+                    const isCleanName = rawName && rawName !== "Philosopher" && !rawName.startsWith("00000000") && !rawName.startsWith("usr-") && !rawName.startsWith("@");
 
                     const senderDisplayName =
                       (isMe ? user?.name || user?.username || "You" : null) ||
                       (isCleanName ? rawName : null) ||
                       memberMatch?.user?.name ||
-                      (memberMatch?.user?.username ? `@${memberMatch.user.username}` : null) ||
-                      (msgSenderId && KNOWN_DISPLAY_NAMES[msgSenderId]) ||
+                      memberMatch?.user?.username ||
                       "Circle Member";
-
-                    const isSeenByGroup =
-                      msg.isRead ||
-                      (msg.readCount ?? 0) > 0 ||
-                      circleChatMessages.some((otherMsg, oIdx) => oIdx > idx && otherMsg.senderId !== msg.senderId);
 
                     return (
                       <div
@@ -1132,15 +1092,15 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                             {isMe && (
                               <span
                                 style={{
-                                  color: isSeenByGroup ? "#60a5fa" : "rgba(255, 255, 255, 0.6)",
-                                  fontWeight: isSeenByGroup ? 700 : 400,
+                                  color: "rgba(255, 255, 255, 0.6)",
+                                  fontWeight: 400,
                                   letterSpacing: -1,
                                   fontSize: "0.75rem",
                                   marginLeft: 2,
                                 }}
-                                title={isSeenByGroup ? "Seen by circle member(s)" : "Sent to group"}
+                                title="Sent to group"
                               >
-                                {isSeenByGroup ? "✓✓" : "✓"}
+                                ✓
                               </span>
                             )}
                           </div>

@@ -151,6 +151,9 @@ export const App: React.FC = () => {
         senderAvatar: raw.user?.avatar,
       };
       window.dispatchEvent(new CustomEvent("agora_chat_message_created", { detail: message }));
+      if (raw.spaceId || raw.conversationType === "space" || raw.type === "space") {
+        window.dispatchEvent(new CustomEvent("agora_group_chat_message_created", { detail: message }));
+      }
       void refreshDmUnreadCount();
     };
     const handleRead = (receipt: { conversationId: string; userId: string; lastReadAt: string }) => {

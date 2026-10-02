@@ -440,8 +440,14 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
     const pageRows = rows.slice(0, limit);
     const reactionMap = await userReactionsByMessage(pageRows.map((r) => r.id), c.var.auth!.userId);
     const fileMap = await loadMessageFiles(c.var.projectId, pageRows.map((r) => r.id));
+    const authorIds = [...new Set(pageRows.map((r) => r.userId).filter((id): id is string => Boolean(id)))];
+    const authors = authorIds.length
+      ? await getDb().select().from(profiles).where(inArray(profiles.id, authorIds))
+      : [];
+    const authorMap = new Map(authors.map((author) => [author.id, shapeUser(author)]));
     const messages = pageRows.map((r) => shapeChatMessage(r, {
       userReactions: reactionMap.get(r.id) ?? [],
+      user: r.userId ? authorMap.get(r.userId) ?? null : null,
       ...(fileMap.has(r.id) ? { files: fileMap.get(r.id) } : {}),
     }));
     return c.json(await enrichSpaceReputation(c, { messages, hasMore }));
@@ -532,7 +538,15 @@ export const chatRoutes = new Hono<{ Variables: Variables }>()
       const { fileRow } = await storeUpload({ projectId: c.var.projectId, userId: c.var.auth!.userId, file, assoc: { chatMessageId: row!.id } });
       fileRows.push(fileRow);
     }
-    const shaped = shapeChatMessage(row!, { localId: body.localId, ...(fileRows.length ? { files: fileRows.map(shapeFile) } : {}) });
+    const [author] = await getDb().select().from(profiles).where(eq(profiles.id, c.var.auth!.userId)).limit(1);
+    const shaped = {
+      ...shapeChatMessage(row!, {
+        localId: body.localId,
+        user: author ? shapeUser(author) : null,
+        ...(fileRows.length ? { files: fileRows.map(shapeFile) } : {}),
+      }),
+      ...(convo.spaceId ? { spaceId: convo.spaceId } : {}),
+    };
     indexContentAsync(c.var.projectId, "message", row!.id, row!.content);
     logger.debug({ projectId: c.var.projectId, conversationId: convo.id, messageId: row!.id, userId: c.var.auth!.userId, parentMessageId: row!.parentMessageId ?? null, files: fileRows.length }, "chat: message created");
     const memberRows = await getDb().select({ userId: conversationMembers.userId }).from(conversationMembers)
