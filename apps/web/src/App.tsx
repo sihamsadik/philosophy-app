@@ -91,12 +91,30 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  const refreshCircleUnreadStatus = React.useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      setHasCircleMessages(false);
+      return;
+    }
+    try {
+      const { spaces } = await agoraClient.getSpaces(undefined, { memberOf: true, limit: 100 });
+      setHasCircleMessages(spaces.some((space) => space.isJoined && (space.unreadCount ?? 0) > 0));
+    } catch {
+      setHasCircleMessages(false);
+    }
+  }, [isAuthenticated, user?.id]);
+
   React.useEffect(() => {
     refreshNotifCount();
     refreshDmUnreadCount();
+    void refreshCircleUnreadStatus();
 
     const handleNotifUpdate = () => refreshNotifCount();
-    const handleDmUpdate = () => refreshDmUnreadCount();
+    const handleDmUpdate = () => {
+      void refreshDmUnreadCount();
+      void refreshCircleUnreadStatus();
+    };
+    const handleCircleUpdate = () => void refreshCircleUnreadStatus();
     const handleOpenProfileEvent = (e: any) => {
       if (e.detail?.user || e.detail?.userId) {
         handleOpenPublicProfile(e.detail.user || { id: e.detail.userId, username: e.detail.username });
@@ -113,12 +131,15 @@ export const App: React.FC = () => {
     window.addEventListener("agora_comment_added", handleNotifUpdate);
     window.addEventListener("agora_message_sent", handleDmUpdate);
     window.addEventListener("agora_dm_unread_updated", handleDmUpdate);
+    window.addEventListener("agora_group_chat_message_created", handleCircleUpdate);
+    window.addEventListener("agora_chat_conversation_read", handleCircleUpdate);
     window.addEventListener("agora_open_profile", handleOpenProfileEvent);
     window.addEventListener("agora_select_space", handleOpenSpaceEvent);
 
     // Poll every 15s to update unread badges when background activity occurs
     const interval = setInterval(() => {
       refreshNotifCount();
+      void refreshCircleUnreadStatus();
     }, 15000);
 
     return () => {
@@ -126,11 +147,13 @@ export const App: React.FC = () => {
       window.removeEventListener("agora_comment_added", handleNotifUpdate);
       window.removeEventListener("agora_message_sent", handleDmUpdate);
       window.removeEventListener("agora_dm_unread_updated", handleDmUpdate);
+      window.removeEventListener("agora_group_chat_message_created", handleCircleUpdate);
+      window.removeEventListener("agora_chat_conversation_read", handleCircleUpdate);
       window.removeEventListener("agora_open_profile", handleOpenProfileEvent);
       window.removeEventListener("agora_select_space", handleOpenSpaceEvent);
       clearInterval(interval);
     };
-  }, [refreshNotifCount, refreshDmUnreadCount, user?.id, isAuthenticated]);
+  }, [refreshNotifCount, refreshDmUnreadCount, refreshCircleUnreadStatus, user?.id, isAuthenticated]);
 
   React.useEffect(() => {
     const token = agoraClient.getAuthToken();
@@ -466,8 +489,9 @@ export const App: React.FC = () => {
         authorName={user?.name || user?.username || undefined}
         authorHandle={user?.username || undefined}
         authorAvatar={user?.avatar || undefined}
-        onPostPublished={() => {
+        onPostPublished={(post) => {
           setFeedRefreshKey((prev) => prev + 1);
+          window.dispatchEvent(new CustomEvent("agora_entity_created", { detail: post }));
         }}
       />
 

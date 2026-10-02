@@ -460,7 +460,7 @@ export class AgoraPhilosophyClient {
   /**
    * Philosophical Spaces & Community Circles
    */
-  async getSpaces(category?: string): Promise<{ spaces: PhilosophicalSpace[] }> {
+  async getSpaces(category?: string, options: { memberOf?: boolean; limit?: number } = {}): Promise<{ spaces: PhilosophicalSpace[] }> {
     let savedJoinedIds: string[] = [];
     if (typeof window !== "undefined") {
       try {
@@ -470,7 +470,11 @@ export class AgoraPhilosophyClient {
     }
 
     try {
-      const query = category && category !== "all" ? `?category=${encodeURIComponent(category)}` : "";
+      const params = new URLSearchParams();
+      if (category && category !== "all") params.set("category", category);
+      if (options.memberOf) params.set("memberOf", "true");
+      if (options.limit) params.set("limit", String(options.limit));
+      const query = params.size ? `?${params.toString()}` : "";
       const res = await this.request<any>(`/spaces${query}`);
       const list = res?.spaces || res?.data || (Array.isArray(res) ? res : null);
       if (Array.isArray(list)) {
@@ -2073,6 +2077,7 @@ export class AgoraPhilosophyClient {
     title: string;
     content: string;
     postType: "argument" | "thought_experiment" | "question" | "essay" | "thesis";
+    spaceId?: string;
     primarySchool?: string;
     keyThinkers?: string[];
     authorName?: string;
@@ -2086,6 +2091,7 @@ export class AgoraPhilosophyClient {
     const payload = {
       title: postData.title,
       content: postData.content,
+      spaceId: postData.spaceId,
       metadata: {
         postType: postData.postType,
         primarySchool: postData.primarySchool || "General Philosophy",
@@ -2116,8 +2122,10 @@ export class AgoraPhilosophyClient {
         upvotesCount: 0,
         commentsCount: 0,
         createdAt: "Just now",
+        spaceId: res?.spaceId || postData.spaceId,
       };
-    } catch {
+    } catch (error) {
+      if (this.isAuthenticated()) throw error;
       const newPost: PhilosophicalPost = {
         id: `post-${Date.now()}`,
         title: postData.title,
@@ -2132,6 +2140,7 @@ export class AgoraPhilosophyClient {
         upvotesCount: 0,
         commentsCount: 0,
         createdAt: "Just now",
+        spaceId: postData.spaceId,
       };
       DEMO_POSTS.unshift(newPost);
       return newPost;

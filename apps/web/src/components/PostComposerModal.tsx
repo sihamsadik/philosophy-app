@@ -76,6 +76,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
         title: title.trim(),
         content: content.trim(),
         postType,
+        spaceId: selectedSpaceId || initialSpaceId || undefined,
         primarySchool: primarySchool.trim() || matchedSpace?.primarySchool || "General Philosophy",
         keyThinkers: keyThinkers.length > 0 ? keyThinkers : matchedSpace?.keyThinkers || ["Various Thinkers"],
         authorName: currentAuthorName,

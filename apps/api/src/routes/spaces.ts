@@ -112,8 +112,11 @@ export const spaceRoutes = new Hono<{ Variables: Variables }>()
     const uid = c.var.auth?.userId;
     if (q("memberOf") === "true") {
       if (!uid) return c.json(paginate([], 0, page, limit));
-      conds.push(inArray(spaces.id, getDb().select({ id: spaceMembers.spaceId }).from(spaceMembers)
-        .where(and(eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.userId, uid), eq(spaceMembers.status, "active")))));
+      conds.push(or(
+        inArray(spaces.id, getDb().select({ id: spaceMembers.spaceId }).from(spaceMembers)
+          .where(and(eq(spaceMembers.projectId, c.var.projectId), eq(spaceMembers.userId, uid), eq(spaceMembers.status, "active")))),
+        eq(spaces.userId, uid),
+      )!);
     }
 
     const disc = discoverableSpacesSql(c);

@@ -195,6 +195,19 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     fetchSpacePosts();
   }, [selectedSpace]);
 
+  useEffect(() => {
+    const handlePublishedPost = (event: Event) => {
+      const post = (event as CustomEvent<any>).detail;
+      if (!post || post.spaceId !== selectedSpace?.id) return;
+      setSpacePosts((current) => current.some((item) => item.id === post.id) ? current : [post, ...current]);
+      setSpaces((current) => current.map((space) => space.id === post.spaceId
+        ? { ...space, postsCount: space.postsCount + 1 }
+        : space));
+    };
+    window.addEventListener("agora_entity_created", handlePublishedPost);
+    return () => window.removeEventListener("agora_entity_created", handlePublishedPost);
+  }, [selectedSpace?.id]);
+
   // Load Group Chat messages for selected space & listen for real-time messages across joined circles
   useEffect(() => {
     if (!selectedSpace) return;
