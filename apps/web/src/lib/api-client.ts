@@ -3236,4 +3236,6 @@ export const DEMO_LEADERBOARD: LeaderboardEntry[] = [
   },
 ];
 
-export const agoraClient = new AgoraPhilosophyClient();
+export const agoraClient = new AgoraPhilosophyClient({
+  baseUrl: import.meta.env.VITE_API_URL || "/api"
+});
