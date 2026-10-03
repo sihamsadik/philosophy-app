@@ -34,9 +34,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
       const rawList = res?.posts || (res as any)?.data || [];
       const list = Array.isArray(rawList) ? rawList : [];
       setPosts(list);
-      if (list.length > 0 && list[0]?.id) {
-        setExpandedCommentsPostIds([list[0].id]);
-      }
+      setExpandedCommentsPostIds([]);
     } catch (err: any) {
       console.error("Failed to load posts:", err);
       setError(err.message || "Could not connect to database/backend service.");
