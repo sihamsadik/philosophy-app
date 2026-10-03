@@ -19,6 +19,7 @@ const sql = postgres(url, { max: 1, prepare: false, onnotice() {} });
 try {
   // Provision vanilla Postgres roles, schemas, and helper functions if they don't exist yet
   await sql.unsafe(`
+    /* 
     do $$ begin
       if not exists (select 1 from pg_roles where rolname = 'anon') then
         create role anon nologin noinherit;
@@ -45,6 +46,7 @@ try {
     grant usage on schema private to public;
     grant usage on schema extensions to public;
     grant execute on function auth.uid() to public;
+    */
 
     create schema if not exists pgmq;
     create or replace function pgmq.create(queue_name text) returns void language plpgsql as $$ begin null; end $$;
