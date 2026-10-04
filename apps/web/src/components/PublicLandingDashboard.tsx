@@ -133,14 +133,14 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
           ) : (
             upcomingEvents.map((event) => {
               const startDate = new Date(event.startTime);
-              const isLive = event.status === "active" && new Date() >= startDate;
+              const isLive = new Date() >= startDate && (!event.endTime || new Date() <= new Date(event.endTime));
               return (
                 <div key={event.id} style={{ background: "rgba(30, 41, 59, 0.8)", padding: 16, borderRadius: 14, borderLeft: `4px solid ${isLive ? '#ef4444' : '#3b82f6'}` }}>
                   <span style={{ fontSize: "0.75rem", background: isLive ? "rgba(239, 68, 68, 0.2)" : "rgba(59, 130, 246, 0.2)", color: isLive ? "#f87171" : "#60a5fa", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
                     {isLive ? "🔴 LIVE NOW" : `📅 ${startDate.toLocaleDateString()}`}
                   </span>
                   <h4 style={{ color: "#f8fafc", margin: "8px 0 4px 0", fontSize: "1rem" }}>{event.title}</h4>
-                  <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0 0 12px 0" }}>Host: {event.metadata?.hostName || "Thinker"} • {event.capacity || 0} Capacity</p>
+                  <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0 0 12px 0" }}>Host: {event.hostUser?.name || event.hostUser?.username || "Thinker"} • {event.maxCapacity || 0} Capacity</p>
                   <button type="button" onClick={() => onOpenAuth("signin")} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: isLive ? "#ef4444" : "#3b82f6", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>
                     Sign In to {isLive ? "Attend" : "RSVP"}
                   </button>
