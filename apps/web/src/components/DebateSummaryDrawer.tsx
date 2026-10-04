@@ -66,8 +66,8 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
         ) : (
           <div className="drawer-body">
             <div className="meta-stats-bar">
-              <span>💬 {summary.commentCount} Total Comments Analyzed</span>
-              <span>🕒 Generated: {new Date(summary.generatedAt).toLocaleTimeString()}</span>
+              <span>💬 {summary.commentCount}</span>
+              <span>🕒 {new Date(summary.generatedAt).toLocaleTimeString()}</span>
             </div>
 
             {/* Main Positions / Theses */}

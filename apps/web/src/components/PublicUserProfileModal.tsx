@@ -501,8 +501,8 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                         {post.content}
                       </p>
                       <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: "0.85rem", color: "#94a3b8" }}>
-                        <span>⚡ {post.upvotesCount} Insightful</span>
-                        <span>💬 {post.commentsCount} Comments</span>
+                        <span>⚡ {post.upvotesCount}</span>
+                        <span>💬 {post.commentsCount}</span>
                       </div>
                     </div>
                   ))}

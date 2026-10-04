@@ -186,11 +186,6 @@ export const RichReactionPicker: React.FC<RichReactionPickerProps> = ({
             }}
           >
             <span style={{ fontSize: isSmall ? "0.85rem" : "1rem", lineHeight: 1 }}>{config.emoji}</span>
-            {!isSmall && (
-              <span className="reaction-label" style={{ opacity: isActive ? 1 : 0.85 }}>
-                {config.label}
-              </span>
-            )}
             {countVal > 0 && (
               <span
                 className="reaction-count-chip"

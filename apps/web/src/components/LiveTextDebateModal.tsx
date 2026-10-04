@@ -367,7 +367,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                 <h3 style={{ margin: 0, fontSize: "1.1rem" }}>{activeHostName}</h3>
                 <span className="live-pulse-badge" style={{ background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: 12, padding: "2px 8px", fontSize: "0.75rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", animation: "pulse 1.5s infinite" }}></span>
-                  🔴 LIVE NOW — {formatTimer(elapsedSeconds)}
+                  🔴 {formatTimer(elapsedSeconds)}
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: "0.8rem", color: "var(--text-muted)", marginTop: 4 }}>

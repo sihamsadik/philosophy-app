@@ -123,7 +123,7 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
           <div style={{ background: "rgba(30, 41, 59, 0.8)", padding: 16, borderRadius: 14, borderLeft: "4px solid #ef4444" }}>
-            <span style={{ fontSize: "0.75rem", background: "rgba(239, 68, 68, 0.2)", color: "#f87171", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>🔴 LIVE NOW</span>
+            <span style={{ fontSize: "0.75rem", background: "rgba(239, 68, 68, 0.2)", color: "#f87171", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>🔴</span>
             <h4 style={{ color: "#f8fafc", margin: "8px 0 4px 0", fontSize: "1rem" }}>🌌 Transcendental Idealism Symposium</h4>
             <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0 0 12px 0" }}>Host: Immanuel Kant • 18 Attendees</p>
             <button type="button" onClick={() => onOpenAuth("signin")} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>
