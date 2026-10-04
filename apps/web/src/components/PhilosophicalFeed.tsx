@@ -254,7 +254,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                         }
                       }}
                     >
-                      💬 Comments & Debate Tree ({post.commentsCount})
+                      💬 Comments ({post.commentsCount})
                     </button>
 
                     <button
@@ -279,7 +279,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                       } as User)
                     }
                   >
-                    💬 Direct Message Author
+                    💬 DM
                   </button>
                 </div>
 

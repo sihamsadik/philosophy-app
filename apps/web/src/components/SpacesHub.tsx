@@ -80,24 +80,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
     try {
       const { conversations: list } = await agoraClient.getConversations();
       const friends = list.map((c) => c.participant).filter(Boolean) as User[];
-      setRecentFriends(
-        friends.length > 0
-          ? friends
-          : [
-              {
-                id: "00000000-0000-0000-0000-000000000004",
-                name: "Immanuel Kant",
-                username: "kant",
-                avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-              } as User,
-              {
-                id: "00000000-0000-0000-0000-000000000005",
-                name: "Friedrich Nietzsche",
-                username: "nietzsche",
-                avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
-              } as User,
-            ]
-      );
+      setRecentFriends(friends);
     } catch {
       setRecentFriends([]);
     }
@@ -1230,7 +1213,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                               className={`action-btn ${isCommentsExpanded ? "active" : ""}`}
                               onClick={() => toggleCommentsSection(post.id)}
                             >
-                              💬 Comments & Debate Tree ({post.commentsCount})
+                              💬 Comments ({post.commentsCount})
                             </button>
 
                             {onOpenDebateSummary && (

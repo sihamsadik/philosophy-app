@@ -1,10 +1,32 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { agoraClient, type PhilosophicalPost, type PhilosophyEvent } from "../lib/api-client.js";
 
 export interface PublicLandingDashboardProps {
   onOpenAuth: (mode: "signin" | "signup") => void;
 }
 
 export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ onOpenAuth }) => {
+  const [trendingPosts, setTrendingPosts] = useState<PhilosophicalPost[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<PhilosophyEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      agoraClient.getPosts().catch(() => ({ posts: [] })),
+      agoraClient.getEvents({ timeWindow: "upcoming" }).catch(() => ({ events: [] }))
+    ]).then(([postsRes, eventsRes]) => {
+      if (!mounted) return;
+      const sortedPosts = [...(postsRes.posts || [])].sort((a, b) => b.upvotesCount - a.upvotesCount).slice(0, 3);
+      const sortedEvents = [...(eventsRes.events || [])].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()).slice(0, 2);
+      
+      setTrendingPosts(sortedPosts);
+      setUpcomingEvents(sortedEvents);
+      setIsLoading(false);
+    });
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="landing-dashboard-container" style={{ padding: "20px 16px 60px 16px", maxWidth: 1100, margin: "0 auto" }}>
       {/* Hero Banner */}
@@ -49,65 +71,43 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
-          {/* Card 1 */}
-          <div style={{ background: "rgba(30, 41, 59, 0.5)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80" alt="Spinoza" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
-                <div>
-                  <div style={{ fontWeight: 600, color: "#f8fafc" }}>Baruch Spinoza</div>
-                  <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>@spinoza • Rationalism & Monism</div>
-                </div>
-              </div>
-              <h3 style={{ fontSize: "1.1rem", color: "#f8fafc", margin: "0 0 8px 0" }}>Hard Determinism vs. Compatibilism: Is Moral Agency an Illusion?</h3>
-              <p style={{ color: "#cbd5e1", fontSize: "0.9rem", lineHeight: 1.5, margin: "0 0 16px 0" }}>
-                "If every physical state of the universe is determined by prior causes, how can moral responsibility exist without radical non-physical agent causation?"
-              </p>
+          {isLoading ? (
+            <div style={{ background: "rgba(30, 41, 59, 0.5)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 32, gridColumn: "1 / -1", textAlign: "center" }}>
+              <p style={{ color: "#94a3b8", fontSize: "0.95rem", margin: 0 }}>Loading trending arguments...</p>
             </div>
-            <button type="button" onClick={() => onOpenAuth("signup")} style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.1)", color: "#60a5fa", fontWeight: 600, cursor: "pointer" }}>
-              💬 Sign In to Join Debate
-            </button>
-          </div>
-
-          {/* Card 2 */}
-          <div style={{ background: "rgba(30, 41, 59, 0.5)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80" alt="Camus" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
-                <div>
-                  <div style={{ fontWeight: 600, color: "#f8fafc" }}>Albert Camus</div>
-                  <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>@camus • Absurdism</div>
-                </div>
-              </div>
-              <h3 style={{ fontSize: "1.1rem", color: "#f8fafc", margin: "0 0 8px 0" }}>The Myth of Sisyphus: Creating Meaning in an Absurd Universe</h3>
-              <p style={{ color: "#cbd5e1", fontSize: "0.9rem", lineHeight: 1.5, margin: "0 0 16px 0" }}>
-                "The absurd is born of this confrontation between human need and the silent world. One must imagine Sisyphus happy."
-              </p>
+          ) : trendingPosts.length === 0 ? (
+            <div style={{ background: "rgba(30, 41, 59, 0.5)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 32, gridColumn: "1 / -1", textAlign: "center" }}>
+              <p style={{ color: "#94a3b8", fontSize: "0.95rem", margin: 0 }}>No trending arguments at the moment. Be the first to publish a philosophical thesis!</p>
             </div>
-            <button type="button" onClick={() => onOpenAuth("signup")} style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.1)", color: "#60a5fa", fontWeight: 600, cursor: "pointer" }}>
-              💬 Sign In to Join Debate
-            </button>
-          </div>
-
-          {/* Card 3 */}
-          <div style={{ background: "rgba(30, 41, 59, 0.5)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80" alt="Kant" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
+          ) : (
+            trendingPosts.map((post) => (
+              <div key={post.id} style={{ background: "rgba(30, 41, 59, 0.5)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <div>
-                  <div style={{ fontWeight: 600, color: "#f8fafc" }}>Immanuel Kant</div>
-                  <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>@kantian_critique • Deontology</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    {post.authorAvatar ? (
+                      <img src={post.authorAvatar} alt={post.authorName} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "bold" }}>
+                        {post.authorName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div style={{ fontWeight: 600, color: "#f8fafc" }}>{post.authorName}</div>
+                      <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>@{post.authorHandle} • {post.primarySchool}</div>
+                    </div>
+                  </div>
+                  <h3 style={{ fontSize: "1.1rem", color: "#f8fafc", margin: "0 0 8px 0" }}>{post.title}</h3>
+                  <p style={{ color: "#cbd5e1", fontSize: "0.9rem", lineHeight: 1.5, margin: "0 0 16px 0" }}>
+                    "{post.content.length > 150 ? post.content.substring(0, 150) + '...' : post.content}"
+                  </p>
                 </div>
+                <button type="button" onClick={() => onOpenAuth("signup")} style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.1)", color: "#60a5fa", fontWeight: 600, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>💬 Sign In to Join Debate</span>
+                  <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>⬆ {post.upvotesCount}</span>
+                </button>
               </div>
-              <h3 style={{ fontSize: "1.1rem", color: "#f8fafc", margin: "0 0 8px 0" }}>The Categorical Imperative: Maxims of Universal Law</h3>
-              <p style={{ color: "#cbd5e1", fontSize: "0.9rem", lineHeight: 1.5, margin: "0 0 16px 0" }}>
-                "Act so that the maxim of your will could always hold at the same time as a principle of universal legislation."
-              </p>
-            </div>
-            <button type="button" onClick={() => onOpenAuth("signup")} style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.1)", color: "#60a5fa", fontWeight: 600, cursor: "pointer" }}>
-              💬 Sign In to Join Debate
-            </button>
-          </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -122,23 +122,32 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-          <div style={{ background: "rgba(30, 41, 59, 0.8)", padding: 16, borderRadius: 14, borderLeft: "4px solid #ef4444" }}>
-            <span style={{ fontSize: "0.75rem", background: "rgba(239, 68, 68, 0.2)", color: "#f87171", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>🔴</span>
-            <h4 style={{ color: "#f8fafc", margin: "8px 0 4px 0", fontSize: "1rem" }}>🌌 Transcendental Idealism Symposium</h4>
-            <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0 0 12px 0" }}>Host: Immanuel Kant • 18 Attendees</p>
-            <button type="button" onClick={() => onOpenAuth("signin")} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>
-              Sign In to Attend
-            </button>
-          </div>
-
-          <div style={{ background: "rgba(30, 41, 59, 0.8)", padding: 16, borderRadius: 14, borderLeft: "4px solid #3b82f6" }}>
-            <span style={{ fontSize: "0.75rem", background: "rgba(59, 130, 246, 0.2)", color: "#60a5fa", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>📅 TOMORROW</span>
-            <h4 style={{ color: "#f8fafc", margin: "8px 0 4px 0", fontSize: "1rem" }}>⚔️ Compatibilism vs. Determinism Formal Debate</h4>
-            <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0 0 12px 0" }}>Host: Baruch Spinoza • 42 Attendees</p>
-            <button type="button" onClick={() => onOpenAuth("signin")} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>
-              Sign In to RSVP
-            </button>
-          </div>
+          {isLoading ? (
+            <div style={{ background: "rgba(30, 41, 59, 0.8)", padding: 16, borderRadius: 14, gridColumn: "1 / -1", textAlign: "center" }}>
+              <p style={{ color: "#94a3b8", fontSize: "0.9rem", margin: 0 }}>Loading live symposiums...</p>
+            </div>
+          ) : upcomingEvents.length === 0 ? (
+            <div style={{ background: "rgba(30, 41, 59, 0.8)", padding: 16, borderRadius: 14, gridColumn: "1 / -1", textAlign: "center" }}>
+              <p style={{ color: "#94a3b8", fontSize: "0.9rem", margin: 0 }}>No live symposiums scheduled at the moment. Sign in to host your own!</p>
+            </div>
+          ) : (
+            upcomingEvents.map((event) => {
+              const startDate = new Date(event.startTime);
+              const isLive = event.status === "active" && new Date() >= startDate;
+              return (
+                <div key={event.id} style={{ background: "rgba(30, 41, 59, 0.8)", padding: 16, borderRadius: 14, borderLeft: `4px solid ${isLive ? '#ef4444' : '#3b82f6'}` }}>
+                  <span style={{ fontSize: "0.75rem", background: isLive ? "rgba(239, 68, 68, 0.2)" : "rgba(59, 130, 246, 0.2)", color: isLive ? "#f87171" : "#60a5fa", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
+                    {isLive ? "🔴 LIVE NOW" : `📅 ${startDate.toLocaleDateString()}`}
+                  </span>
+                  <h4 style={{ color: "#f8fafc", margin: "8px 0 4px 0", fontSize: "1rem" }}>{event.title}</h4>
+                  <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0 0 12px 0" }}>Host: {event.metadata?.hostName || "Thinker"} • {event.capacity || 0} Capacity</p>
+                  <button type="button" onClick={() => onOpenAuth("signin")} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: isLive ? "#ef4444" : "#3b82f6", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>
+                    Sign In to {isLive ? "Attend" : "RSVP"}
+                  </button>
+                </div>
+              );
+            })
+          )}
         </div>
       </section>
 

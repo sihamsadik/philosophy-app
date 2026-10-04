@@ -303,7 +303,7 @@ export const App: React.FC = () => {
                     className="dropdown-item-btn"
                     onClick={() => handleOpenDM(null)}
                   >
-                    💬 Direct Messages (DMs)
+                    💬 DMs
                   </button>
                   <button
                     type="button"

@@ -218,9 +218,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               />
             </div>
 
-            <div className="jwt-security-note">
-              🔒 <span>Secured by JWT Token Session Authentication & Argon2 Password Hashing</span>
-            </div>
+
 
             <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
               {isSubmitting ? "Signing In..." : "Sign In to Philosophy App"}
@@ -311,9 +309,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               )}
             </div>
 
-            <div className="jwt-security-note">
-              🛡️ <span>JWT Signed Auth Session • Password Hashing with Argon2</span>
-            </div>
+
 
             <button
               type="submit"
