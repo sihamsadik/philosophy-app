@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Zap, MessageCircle, Clock, Pin, Swords, Handshake, HelpCircle, X, ChevronUp, ChevronDown } from "lucide-react";
 import type { DiscussionSummary } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 
@@ -42,13 +43,13 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
       <div className="drawer-content-pane" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-header">
           <div>
-            <h3>⚡ Structured Debate Overview & Synthesis</h3>
+            <h3><Zap size={18} style={{ marginRight: 6, verticalAlign: "middle" }} /> Structured Debate Overview & Synthesis</h3>
             <p className="drawer-subtitle">
               Structured summary of positions, arguments, agreements, and open inquiry paths.
             </p>
           </div>
           <button className="close-drawer-btn" onClick={onClose}>
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -66,8 +67,8 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
         ) : (
           <div className="drawer-body">
             <div className="meta-stats-bar">
-              <span>💬 {summary.commentCount}</span>
-              <span>🕒 {new Date(summary.generatedAt).toLocaleTimeString()}</span>
+              <span><MessageCircle size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> {summary.commentCount}</span>
+              <span><Clock size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> {new Date(summary.generatedAt).toLocaleTimeString()}</span>
             </div>
 
             {/* Main Positions / Theses */}
@@ -77,8 +78,8 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
                 className="accordion-header-btn"
                 onClick={() => toggleSection("positions")}
               >
-                <h4 className="section-title">📌 Main Philosophical Positions & Theses</h4>
-                <span>{expandedSection === "positions" ? "▲" : "▼"}</span>
+                <h4 className="section-title"><Pin size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Main Philosophical Positions & Theses</h4>
+                <span>{expandedSection === "positions" ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
               </button>
               {(expandedSection === "positions" || expandedSection === null) && (
                 <div className="position-cards-grid">
@@ -103,8 +104,8 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
                   className="accordion-header-btn"
                   onClick={() => toggleSection("arguments")}
                 >
-                  <h4 className="section-title">⚔️ Key Arguments & Rebuttals</h4>
-                  <span>{expandedSection === "arguments" ? "▲" : "▼"}</span>
+                  <h4 className="section-title"><Swords size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Key Arguments & Rebuttals</h4>
+                  <span>{expandedSection === "arguments" ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
                 </button>
                 {(expandedSection === "arguments" || expandedSection === null) && (
                   <div className="arguments-list">
@@ -132,8 +133,8 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
                 className="accordion-header-btn"
                 onClick={() => toggleSection("consensus")}
               >
-                <h4 className="section-title">🤝 Consensus & Points of Disagreement</h4>
-                <span>{expandedSection === "consensus" ? "▲" : "▼"}</span>
+                <h4 className="section-title"><Handshake size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Consensus & Points of Disagreement</h4>
+                <span>{expandedSection === "consensus" ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
               </button>
               {(expandedSection === "consensus" || expandedSection === null) && (
                 <div className="dual-column-section">
@@ -166,8 +167,8 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
                   className="accordion-header-btn"
                   onClick={() => toggleSection("questions")}
                 >
-                  <h4 className="section-title">❓ Unresolved Philosophical Questions</h4>
-                  <span>{expandedSection === "questions" ? "▲" : "▼"}</span>
+                  <h4 className="section-title"><HelpCircle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Unresolved Philosophical Questions</h4>
+                  <span>{expandedSection === "questions" ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
                 </button>
                 {(expandedSection === "questions" || expandedSection === null) && (
                   <div className="questions-box-list">

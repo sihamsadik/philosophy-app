@@ -1,4 +1,5 @@
 import React from "react";
+import { Download, Globe, Apple, PartyPopper, CheckCircle, X } from "lucide-react";
 
 export interface PwaInstallModalProps {
   isOpen: boolean;
@@ -61,7 +62,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: "1.8rem" }}>📲</span>
+            <Download size={28} color="#60a5fa" />
             <h3 style={{ margin: 0, fontSize: "1.25rem", color: "#f8fafc" }}>Philosophy App</h3>
           </div>
           <button
@@ -69,7 +70,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
             onClick={onClose}
             style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}
           >
-            ✕
+          <X size={18} />
           </button>
         </div>
 
@@ -95,12 +96,12 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
                 marginBottom: 12,
               }}
             >
-              📲 Install App Now (1-Click)
+              <Download size={15} style={{ marginRight: 6, verticalAlign: "middle" }} /> Install App Now (1-Click)
             </button>
           </div>
         ) : isLocalNetworkIp ? (
           <div>
-            <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>🌐</div>
+            <Globe size={40} color="#60a5fa" style={{ marginBottom: 10 }} />
             <h4 style={{ margin: "0 0 8px 0", fontSize: "1.1rem", color: "#f59e0b" }}>
               Local Wi-Fi Connection (HTTP)
             </h4>
@@ -108,24 +109,24 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
               You are connected via your local PC network IP address (<code>{window.location.hostname}</code>).
             </p>
             <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 12, padding: 12, marginBottom: 16, textAlign: "left", fontSize: "0.85rem", color: "#fcd34d" }}>
-              <strong>🔒 Browser Security Requirement:</strong><br />
+              <strong><CheckCircle size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> Browser Security Requirement:</strong><br />
               Chrome blocks mobile PWA installation over plain HTTP local IPs.<br />
               Once deployed to a live server with <strong>HTTPS</strong> (Vercel, Netlify, Firebase) or run via HTTPS tunnel, 1-click mobile installation works automatically!
             </div>
           </div>
         ) : isIOS ? (
           <div>
-            <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>🍎</div>
+            <Apple size={40} color="#38bdf8" style={{ marginBottom: 10 }} />
             <h4 style={{ margin: "0 0 8px 0", fontSize: "1.1rem", color: "#38bdf8" }}>
               Install on iOS Safari
             </h4>
             <p style={{ color: "#cbd5e1", fontSize: "0.88rem", lineHeight: 1.5, margin: "0 0 16px 0" }}>
-              Tap the <strong>Share</strong> button in Safari (box with up arrow) and select <strong>"Add to Home Screen"</strong> 📲.
+              Tap the <strong>Share</strong> button in Safari (box with up arrow) and select <strong>"Add to Home Screen"</strong> <Download size={13} style={{ verticalAlign: "middle" }} />.
             </p>
           </div>
         ) : isStandalone ? (
           <div>
-            <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>🎉</div>
+            <PartyPopper size={40} color="#4ade80" style={{ marginBottom: 10 }} />
             <h4 style={{ margin: "0 0 8px 0", fontSize: "1.1rem", color: "#4ade80" }}>
               Running in App Window!
             </h4>
@@ -135,7 +136,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
           </div>
         ) : (
           <div>
-            <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>✅</div>
+            <CheckCircle size={40} color="#60a5fa" style={{ marginBottom: 10 }} />
             <h4 style={{ margin: "0 0 8px 0", fontSize: "1.1rem", color: "#60a5fa" }}>
               Already Installed on PC!
             </h4>

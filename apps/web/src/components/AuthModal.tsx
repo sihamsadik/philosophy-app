@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.js";
+import { Landmark, User as UserIcon } from "lucide-react";
 import type { User } from "@philosophy/contract";
 
 export interface AuthModalProps {
@@ -164,7 +165,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     <div className="drawer-overlay" onClick={onClose}>
       <div className="auth-modal-pane" onClick={(e) => e.stopPropagation()}>
         <div className="auth-modal-header">
-          <h2>🏛️ Welcome to Philosophy App</h2>
+          <h2 style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}><Landmark size={22} /> Welcome to Philosophy App</h2>
           <p className="auth-modal-subtitle">
             Sign in or create your account to discover intellectual connections.
           </p>
@@ -338,21 +339,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               className="demo-user-btn"
               onClick={() => handleDemoSignIn("sartre")}
             >
-              👤 Sartre
+              <UserIcon size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Sartre
             </button>
             <button
               type="button"
               className="demo-user-btn"
               onClick={() => handleDemoSignIn("spinoza")}
             >
-              👤 Spinoza
+              <UserIcon size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Spinoza
             </button>
             <button
               type="button"
               className="demo-user-btn"
               onClick={() => handleDemoSignIn("camus")}
             >
-              👤 Camus
+              <UserIcon size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Camus
             </button>
           </div>
         </div>

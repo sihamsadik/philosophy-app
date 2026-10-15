@@ -1,4 +1,5 @@
 import React from "react";
+import { Home, Landmark, Handshake, CalendarDays, Trophy, User } from "lucide-react";
 
 export type NavTab = "debates" | "spaces" | "recommendations" | "symposiums" | "leaderboard" | "profile" | "search";
 
@@ -15,13 +16,22 @@ export const BottomNavDock: React.FC<BottomNavDockProps> = ({
   unreadNotifCount = 0,
   hasCircleMessages = false,
 }) => {
-  const tabs: { id: NavTab; label: string; icon: string }[] = [
-    { id: "debates", label: "Home", icon: "🏠" },
-    { id: "spaces", label: "Circles", icon: "🏛️" },
-    { id: "recommendations", label: "Peers", icon: "🤝" },
-    { id: "symposiums", label: "Events", icon: "📅" },
-    { id: "leaderboard", label: "Ranks", icon: "🏆" },
-    { id: "profile", label: "Profile", icon: "👤" },
+  const tabIcons: Record<NavTab, React.ReactNode> = {
+    debates: <Home size={20} />,
+    spaces: <Landmark size={20} />,
+    recommendations: <Handshake size={20} />,
+    symposiums: <CalendarDays size={20} />,
+    leaderboard: <Trophy size={20} />,
+    profile: <User size={20} />,
+    search: <User size={20} />,
+  };
+  const tabs: { id: NavTab; label: string }[] = [
+    { id: "debates", label: "Home" },
+    { id: "spaces", label: "Circles" },
+    { id: "recommendations", label: "Peers" },
+    { id: "symposiums", label: "Events" },
+    { id: "leaderboard", label: "Ranks" },
+    { id: "profile", label: "Profile" },
   ];
 
   return (
@@ -37,7 +47,7 @@ export const BottomNavDock: React.FC<BottomNavDockProps> = ({
               onClick={() => onTabChange(tab.id)}
             >
               <div className="dock-icon-wrapper">
-                <span className="dock-icon">{tab.icon}</span>
+                <span className="dock-icon">{tabIcons[tab.id]}</span>
                 {tab.id === "recommendations" && unreadNotifCount > 0 && (
                   <span className="dock-badge-dot" title="New peer connection requests" />
                 )}

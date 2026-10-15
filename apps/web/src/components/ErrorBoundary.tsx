@@ -1,4 +1,5 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
+import { Landmark, RefreshCw } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -28,8 +29,8 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="error-boundary-fallback" style={{ padding: "32px", textAlign: "center", background: "rgba(18, 26, 43, 0.85)", borderRadius: "16px", margin: "20px 0", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
-          <h3 style={{ fontSize: "1.3rem", color: "#fca5a5", marginBottom: "8px" }}>
-            🏛️ {this.props.fallbackTitle || "Application Feed Recovered"}
+          <h3 style={{ fontSize: "1.3rem", color: "#fca5a5", marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <Landmark size={20} /> {this.props.fallbackTitle || "Application Feed Recovered"}
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "16px" }}>
             {this.state.error?.message || "An unexpected error occurred while rendering content."}
@@ -42,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
               window.location.reload();
             }}
           >
-            🔄 Refresh Application Page
+            <RefreshCw size={15} style={{ marginRight: 6, verticalAlign: "middle" }} /> Refresh Application Page
           </button>
         </div>
       );

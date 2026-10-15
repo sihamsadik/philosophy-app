@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Download } from "lucide-react";
 import { PwaInstallModal } from "./PwaInstallModal.js";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -120,7 +121,7 @@ export const InstallAppBanner: React.FC<InstallAppBannerProps> = ({ onInstalled 
 
             <div className="banner-actions">
               <button type="button" className="install-confirm-btn" onClick={handleInstallClick}>
-                📲 INSTALL APP
+                <Download size={15} style={{ marginRight: 6, verticalAlign: "middle" }} /> INSTALL APP
               </button>
               <button type="button" className="install-dismiss-btn" onClick={handleDismiss}>
                 Not now

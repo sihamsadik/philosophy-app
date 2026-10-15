@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Landmark, UserPlus, LogIn, ScrollText, MessageCircle, ThumbsUp, Calendar, Radio } from "lucide-react";
 import { agoraClient, type PhilosophicalPost, type PhilosophyEvent } from "../lib/api-client.js";
 
 export interface PublicLandingDashboardProps {
@@ -32,7 +33,7 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
       {/* Hero Banner */}
       <section className="landing-hero" style={{ textAlign: "center", padding: "48px 24px", background: "linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.1)", boxShadow: "0 20px 50px rgba(0,0,0,0.5)", marginBottom: 40, backdropFilter: "blur(12px)" }}>
         <div style={{ display: "inline-block", background: "rgba(59, 130, 246, 0.15)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 30, padding: "6px 18px", color: "#60a5fa", fontWeight: 600, fontSize: "0.85rem", marginBottom: 16 }}>
-          🏛️ GLOBAL INTELLECTUAL ASSEMBLY & DIALECTIC HUB
+          <Landmark size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> GLOBAL INTELLECTUAL ASSEMBLY & DIALECTIC HUB
         </div>
         <h1 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#f8fafc", margin: "12px 0", lineHeight: 1.2, letterSpacing: "-0.02em" }}>
           Where Deep Thinkers Debate, Connect & Discover Truth
@@ -46,14 +47,14 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
             onClick={() => onOpenAuth("signup")}
             style={{ padding: "14px 32px", borderRadius: 30, border: "none", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", color: "#ffffff", fontWeight: 700, fontSize: "1rem", cursor: "pointer", boxShadow: "0 8px 24px rgba(37, 99, 235, 0.4)", transition: "transform 0.2s" }}
           >
-            🚀 Create Free Account & Join Debate
+            <UserPlus size={16} style={{ marginRight: 8, verticalAlign: "middle" }} /> Create Free Account & Join Debate
           </button>
           <button
             type="button"
             onClick={() => onOpenAuth("signin")}
             style={{ padding: "14px 28px", borderRadius: 30, border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(255, 255, 255, 0.05)", color: "#f8fafc", fontWeight: 600, fontSize: "1rem", cursor: "pointer" }}
           >
-            🔑 Sign In to Existing Account
+            <LogIn size={16} style={{ marginRight: 8, verticalAlign: "middle" }} /> Sign In to Existing Account
           </button>
         </div>
       </section>
@@ -62,7 +63,7 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
       <section style={{ marginBottom: 48 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div>
-            <h2 style={{ fontSize: "1.5rem", color: "#f1f5f9", margin: 0 }}>📜 Trending Philosophical Arguments</h2>
+            <h2 style={{ fontSize: "1.5rem", color: "#f1f5f9", margin: 0, display: "flex", alignItems: "center", gap: 8 }}><ScrollText size={22} /> Trending Philosophical Arguments</h2>
             <p style={{ color: "#94a3b8", margin: "4px 0 0 0", fontSize: "0.9rem" }}>Preview arguments published by thinkers in the database.</p>
           </div>
           <button type="button" onClick={() => onOpenAuth("signin")} style={{ background: "none", border: "none", color: "#60a5fa", fontWeight: 600, cursor: "pointer" }}>
@@ -102,8 +103,8 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
                   </p>
                 </div>
                 <button type="button" onClick={() => onOpenAuth("signup")} style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.1)", color: "#60a5fa", fontWeight: 600, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span>💬 Sign In to Join Debate</span>
-                  <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>⬆ {post.upvotesCount}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><MessageCircle size={15} /> Sign In to Join Debate</span>
+                  <span style={{ fontSize: "0.85rem", opacity: 0.8, display: "flex", alignItems: "center", gap: 4 }}><ThumbsUp size={13} /> {post.upvotesCount}</span>
                 </button>
               </div>
             ))
@@ -114,7 +115,7 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
       {/* Featured Live Symposiums */}
       <section style={{ marginBottom: 48, background: "rgba(15, 23, 42, 0.6)", borderRadius: 20, padding: 24, border: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          <span style={{ fontSize: "1.5rem" }}>🏛️</span>
+          <Landmark size={24} color="#60a5fa" />
           <div>
             <h2 style={{ fontSize: "1.3rem", color: "#f8fafc", margin: 0 }}>Upcoming Live Symposiums & Formal Debates</h2>
             <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "2px 0 0 0" }}>Schedule & RSVP to voice your perspectives in audio/video dialogues.</p>
@@ -137,7 +138,7 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
               return (
                 <div key={event.id} style={{ background: "rgba(30, 41, 59, 0.8)", padding: 16, borderRadius: 14, borderLeft: `4px solid ${isLive ? '#ef4444' : '#3b82f6'}` }}>
                   <span style={{ fontSize: "0.75rem", background: isLive ? "rgba(239, 68, 68, 0.2)" : "rgba(59, 130, 246, 0.2)", color: isLive ? "#f87171" : "#60a5fa", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
-                    {isLive ? "🔴 LIVE NOW" : `📅 ${startDate.toLocaleDateString()}`}
+                    {isLive ? <><Radio size={11} style={{ marginRight: 4, verticalAlign: "middle" }} />LIVE NOW</> : <><Calendar size={11} style={{ marginRight: 4, verticalAlign: "middle" }} />{startDate.toLocaleDateString()}</>}
                   </span>
                   <h4 style={{ color: "#f8fafc", margin: "8px 0 4px 0", fontSize: "1rem" }}>{event.title}</h4>
                   <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "0 0 12px 0" }}>Host: {event.hostUser?.name || event.hostUser?.username || "Thinker"} • {event.maxCapacity || 0} Capacity</p>
