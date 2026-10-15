@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { MessageCircle, Brain, Handshake, Heart, Settings, User as UserIcon, BookOpen, X, Camera, Upload, HelpCircle, BookMarked } from "lucide-react";
 import type { User, PhilosophyProfile, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 
@@ -16,11 +17,11 @@ const SAMPLE_AVATARS = [
   { name: "Beauvoir Photo", url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80" },
 ];
 
-const INTENTS: { id: ConnectionIntent; label: string; icon: string }[] = [
-  { id: "discussion", label: "Discussions & Debates", icon: "💬" },
-  { id: "intellectual", label: "Intellectual Growth", icon: "🧠" },
-  { id: "friendship", label: "Philosophical Friendship", icon: "🤝" },
-  { id: "dating", label: "Philosophical Dating", icon: "❤️" },
+const INTENTS: { id: ConnectionIntent; label: string; icon: React.ReactNode }[] = [
+  { id: "discussion", label: "Discussions & Debates", icon: <MessageCircle size={18} /> },
+  { id: "intellectual", label: "Intellectual Growth", icon: <Brain size={18} /> },
+  { id: "friendship", label: "Philosophical Friendship", icon: <Handshake size={18} /> },
+  { id: "dating", label: "Philosophical Dating", icon: <Heart size={18} /> },
 ];
 
 export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
@@ -187,13 +188,11 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               </div>
             )}
             <div>
-              <h3>⚙️ GitHub/Telegram Style Profile Settings</h3>
+              <h3><Settings size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> GitHub/Telegram Style Profile Settings</h3>
               <p className="settings-subtitle">Customize your bio, photo, quote, and worldview identity.</p>
             </div>
           </div>
-          <button className="close-drawer-btn" onClick={onClose}>
-            ✕
-          </button>
+          <button className="close-drawer-btn" onClick={onClose}><X size={18} /></button>
         </div>
 
         {/* Navigation Tabs */}
@@ -203,21 +202,21 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             className={`auth-tab-btn ${activeTab === "basic" ? "active" : ""}`}
             onClick={() => setActiveTab("basic")}
           >
-            👤 Basic Info & Quote
+            <UserIcon size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Basic Info & Quote
           </button>
           <button
             type="button"
             className={`auth-tab-btn ${activeTab === "worldview" ? "active" : ""}`}
             onClick={() => setActiveTab("worldview")}
           >
-            📚 Worldview & Books
+            <BookOpen size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Worldview & Books
           </button>
           <button
             type="button"
             className={`auth-tab-btn ${activeTab === "intents" ? "active" : ""}`}
             onClick={() => setActiveTab("intents")}
           >
-            ⚙️ Connection Intents
+            <Settings size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Connection Intents
           </button>
         </div>
 
@@ -248,11 +247,11 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="section-label">📷 Profile Photo / Avatar</label>
+                <label className="section-label"><Camera size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Profile Photo / Avatar</label>
                 
                 <div style={{ display: "flex", gap: "10px", alignItems: "center", margin: "8px 0 12px 0" }}>
                   <label className="connect-btn" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                    📁 Upload Photo from Device
+                    <Upload size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Upload Photo from Device
                     <input
                       type="file"
                       accept="image/*"
@@ -310,7 +309,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
               {/* The Quote They Love */}
               <div className="form-group highlight-box">
-                <label className="section-label">💬 Favorite Philosophical Quote You Love</label>
+                <label className="section-label"><MessageCircle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Favorite Philosophical Quote You Love</label>
                 <textarea
                   className="input-textarea"
                   rows={2}
@@ -346,17 +345,17 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
               {/* Recommended Books & Favorite Texts */}
               <div className="form-group">
-                <label className="section-label">📚 Recommended Books & Key Texts</label>
+                <label className="section-label"><BookOpen size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Recommended Books & Key Texts</label>
                 <ul className="question-list">
                   {favoriteTexts.map((text, idx) => (
                     <li key={idx} className="list-item">
-                      <span>📖 {text}</span>
+                      <span><BookMarked size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {text}</span>
                       <button
                         type="button"
                         className="remove-btn"
                         onClick={() => setFavoriteTexts(favoriteTexts.filter((_, i) => i !== idx))}
                       >
-                        ✕
+                        <X size={14} />
                       </button>
                     </li>
                   ))}
@@ -391,13 +390,13 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 <ul className="question-list">
                   {coreQuestions.map((q, idx) => (
                     <li key={idx} className="list-item">
-                      <span>❓ "{q}"</span>
+                      <span><HelpCircle size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> "{q}"</span>
                       <button
                         type="button"
                         className="remove-btn"
                         onClick={() => setCoreQuestions(coreQuestions.filter((_, i) => i !== idx))}
                       >
-                        ✕
+                        <X size={14} />
                       </button>
                     </li>
                   ))}

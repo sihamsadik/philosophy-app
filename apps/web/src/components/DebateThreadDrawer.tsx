@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Crown, MessageCircle, GitBranch, Swords, Brain, CircleDot, ChevronDown, ChevronUp, ThumbsUp, X } from "lucide-react";
 import type { PhilosophicalPost, PhilosophicalComment } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
@@ -210,12 +211,12 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
   const stanceBadge = (stance?: "thesis" | "antithesis" | "synthesis") => {
     switch (stance) {
       case "thesis":
-        return <span className="stance-badge thesis">🟢 Thesis</span>;
+        return <span className="stance-badge thesis"><CircleDot size={10} color="#4ade80" style={{ marginRight: 3 }} />Thesis</span>;
       case "antithesis":
-        return <span className="stance-badge antithesis">🔴 Antithesis</span>;
+        return <span className="stance-badge antithesis"><CircleDot size={10} color="#f87171" style={{ marginRight: 3 }} />Antithesis</span>;
       case "synthesis":
       default:
-        return <span className="stance-badge synthesis">⚪ Synthesis</span>;
+        return <span className="stance-badge synthesis"><CircleDot size={10} color="#a855f7" style={{ marginRight: 3 }} />Synthesis</span>;
     }
   };
 
@@ -343,7 +344,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                     letterSpacing: "0.03em",
                   }}
                 >
-                  👑 Original Author
+                  <Crown size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> Original Author
                 </span>
               ) : isCurrentUser ? (
                 <span
@@ -388,7 +389,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                 style={{ background: isUpvoted ? "rgba(59, 130, 246, 0.2)" : "none", border: "none", color: isUpvoted ? "#60a5fa" : "#94a3b8", fontSize: "0.78rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "2px 6px", borderRadius: 6 }}
                 onClick={() => handleUpvoteComment(comment.id)}
               >
-                👍 {comment.upvotesCount}
+                <ThumbsUp size={13} style={{ marginRight: 4 }} /> {comment.upvotesCount}
               </button>
 
               <button
@@ -410,7 +411,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                   }
                 }}
               >
-                💬 {isReplying ? "Cancel Reply" : "Reply"}
+                <MessageCircle size={13} style={{ marginRight: 4 }} /> {isReplying ? "Cancel Reply" : "Reply"}
               </button>
 
               {childReplies.length > 0 && (
@@ -420,7 +421,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                   style={{ background: "none", border: "none", color: "#38bdf8", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", padding: "2px 6px" }}
                   onClick={() => toggleCollapse(comment.id)}
                 >
-                  {isCollapsed ? `▼ ${childReplies.length} replies` : `▲ Hide replies`}
+                  {isCollapsed ? <><ChevronDown size={13} style={{ marginRight: 3 }} />{childReplies.length} replies</> : <><ChevronUp size={13} style={{ marginRight: 3 }} />Hide replies</>}
                 </button>
               )}
             </div>
@@ -435,21 +436,21 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                   className={`stance-btn thesis ${replyStance === "thesis" ? "selected" : ""}`}
                   onClick={() => setReplyStance("thesis")}
                 >
-                  🟢 Thesis
+                  <CircleDot size={12} color="#4ade80" style={{ marginRight: 4 }} /> Thesis
                 </button>
                 <button
                   type="button"
                   className={`stance-btn antithesis ${replyStance === "antithesis" ? "selected" : ""}`}
                   onClick={() => setReplyStance("antithesis")}
                 >
-                  🔴 Antithesis
+                  <CircleDot size={12} color="#f87171" style={{ marginRight: 4 }} /> Antithesis
                 </button>
                 <button
                   type="button"
                   className={`stance-btn synthesis ${replyStance === "synthesis" ? "selected" : ""}`}
                   onClick={() => setReplyStance("synthesis")}
                 >
-                  ⚪ Synthesis
+                  <CircleDot size={12} color="#a855f7" style={{ marginRight: 4 }} /> Synthesis
                 </button>
               </div>
 
@@ -496,14 +497,12 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
         {/* Drawer Header */}
         <div className="drawer-header">
           <div>
-            <h3>💬 Live Philosophical Debate Tree</h3>
+            <h3><MessageCircle size={18} style={{ marginRight: 6, verticalAlign: "middle" }} /> Live Philosophical Debate Tree</h3>
             <p className="drawer-subtitle">
               {postTitle ? `Debating: "${postTitle}"` : "Interactive Comment Tree & Split View"}
             </p>
           </div>
-          <button type="button" className="close-drawer-btn" onClick={onClose}>
-            ✕
-          </button>
+          <button type="button" className="close-drawer-btn" onClick={onClose}><X size={18} /></button>
         </div>
 
         {/* Action Controls & View Switcher */}
@@ -514,14 +513,14 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
               className={`toggle-mode-btn ${viewMode === "nested" ? "active" : ""}`}
               onClick={() => setViewMode("nested")}
             >
-              🌳 Nested Tree View
+              <GitBranch size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Nested Tree View
             </button>
             <button
               type="button"
               className={`toggle-mode-btn ${viewMode === "split" ? "active" : ""}`}
               onClick={() => setViewMode("split")}
             >
-              ⚔️ Side-by-Side Split View
+              <Swords size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Side-by-Side Split View
             </button>
           </div>
 
@@ -535,7 +534,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                 onOpenDebateSummary(postId);
               }}
             >
-              🧠 Launch AI Debate Summary
+              <Brain size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Launch AI Debate Summary
             </button>
           )}
         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Swords, FlaskConical, HelpCircle, Pin, BookOpen, Landmark, Globe, PenLine, Rocket, X } from "lucide-react";
 import type { PhilosophicalPost, PhilosophicalSpace } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
@@ -13,12 +14,12 @@ export interface PostComposerModalProps {
   initialSpaceId?: string;
 }
 
-const POST_TYPES: { id: PhilosophicalPost["postType"]; label: string; icon: string }[] = [
-  { id: "argument", label: "Argument", icon: "⚔️" },
-  { id: "thought_experiment", label: "Thought Experiment", icon: "🧪" },
-  { id: "question", label: "Core Question", icon: "❓" },
-  { id: "thesis", label: "Thesis / Proposition", icon: "📌" },
-  { id: "essay", label: "Philosophical Essay", icon: "📖" },
+const POST_TYPES: { id: PhilosophicalPost["postType"]; label: string; icon: React.ReactNode }[] = [
+  { id: "argument", label: "Argument", icon: <Swords size={18} /> },
+  { id: "thought_experiment", label: "Thought Experiment", icon: <FlaskConical size={18} /> },
+  { id: "question", label: "Core Question", icon: <HelpCircle size={18} /> },
+  { id: "thesis", label: "Thesis / Proposition", icon: <Pin size={18} /> },
+  { id: "essay", label: "Philosophical Essay", icon: <BookOpen size={18} /> },
 ];
 
 export const PostComposerModal: React.FC<PostComposerModalProps> = ({
@@ -110,14 +111,12 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
         {/* Header */}
         <div className="settings-modal-header">
           <div className="header-title-block">
-            <h3>✍️ Publish Philosophical Post</h3>
+            <h3><PenLine size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Publish Philosophical Post</h3>
             <p className="settings-subtitle">
               Share an argument, thought experiment, or thesis with the community.
             </p>
           </div>
-          <button className="close-drawer-btn" onClick={onClose}>
-            ✕
-          </button>
+          <button className="close-drawer-btn" onClick={onClose}><X size={18} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="settings-form-body">
@@ -171,7 +170,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
 
           {/* Space Selector */}
           <div className="form-group">
-            <label className="section-label">🏛️ Target Circle / Space (Optional)</label>
+            <label className="section-label"><Landmark size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Target Circle / Space (Optional)</label>
             <select
               className="input-text"
               value={selectedSpaceId}
@@ -184,7 +183,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
                 }
               }}
             >
-              <option value="">🌐 General Community Feed (No Specific Circle)</option>
+              <option value=""><Globe size={13} style={{ marginRight: 4 }} /> General Community Feed (No Specific Circle)</option>
               {availableSpaces.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} ({s.primarySchool || s.category})
@@ -195,7 +194,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
 
           {/* Taxonomy Details */}
           <div className="form-group highlight-box">
-            <label className="section-label">🏛️ Philosophical Context (Optional)</label>
+            <label className="section-label"><Landmark size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Philosophical Context (Optional)</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
               <input
                 type="text"
@@ -217,7 +216,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
           {/* Submit Action */}
           <div className="settings-actions">
             <button type="submit" className="save-submit-btn" disabled={isPublishing}>
-              {isPublishing ? "Publishing..." : "🚀 Publish Post"}
+              {isPublishing ? "Publishing..." : <><Rocket size={15} style={{ marginRight: 6, verticalAlign: "middle" }} /> Publish Post</>}
             </button>
           </div>
         </form>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Crown, MessageCircle, GitBranch, Swords, Brain, CircleDot, ChevronDown, ChevronUp } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import type { PhilosophicalComment } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
@@ -185,12 +186,12 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
   const stanceBadge = (stance?: "thesis" | "antithesis" | "synthesis") => {
     switch (stance) {
       case "thesis":
-        return <span className="stance-badge thesis">🟢 Thesis</span>;
+        return <span className="stance-badge thesis"><CircleDot size={10} color="#4ade80" style={{ marginRight: 3 }} />Thesis</span>;
       case "antithesis":
-        return <span className="stance-badge antithesis">🔴 Antithesis</span>;
+        return <span className="stance-badge antithesis"><CircleDot size={10} color="#f87171" style={{ marginRight: 3 }} />Antithesis</span>;
       case "synthesis":
       default:
-        return <span className="stance-badge synthesis">⚪ Synthesis</span>;
+        return <span className="stance-badge synthesis"><CircleDot size={10} color="#a855f7" style={{ marginRight: 3 }} />Synthesis</span>;
     }
   };
 
@@ -315,7 +316,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                     letterSpacing: "0.03em",
                   }}
                 >
-                  👑 Original Author
+                  <Crown size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> Original Author
                 </span>
               ) : isCurrentUser ? (
                 <span
@@ -395,7 +396,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                   }
                 }}
               >
-                💬 {isReplying ? "Cancel Reply" : "Reply"}
+                <MessageCircle size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {isReplying ? "Cancel Reply" : "Reply"}
               </button>
 
               {childReplies.length > 0 && (
@@ -405,7 +406,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                   style={{ background: "none", border: "none", color: "#38bdf8", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", padding: "2px 6px" }}
                   onClick={() => toggleCollapse(comment.id)}
                 >
-                  {isCollapsed ? `▼ ${childReplies.length} replies` : `▲ Hide replies`}
+                  {isCollapsed ? <><ChevronDown size={13} style={{ marginRight: 3 }} />{childReplies.length} replies</> : <><ChevronUp size={13} style={{ marginRight: 3 }} />Hide replies</>}
                 </button>
               )}
             </div>
@@ -420,21 +421,21 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
                   className={`stance-btn thesis ${replyStance === "thesis" ? "selected" : ""}`}
                   onClick={() => setReplyStance("thesis")}
                 >
-                  🟢 Thesis
+                  <CircleDot size={12} color="#4ade80" style={{ marginRight: 4 }} /> Thesis
                 </button>
                 <button
                   type="button"
                   className={`stance-btn antithesis ${replyStance === "antithesis" ? "selected" : ""}`}
                   onClick={() => setReplyStance("antithesis")}
                 >
-                  🔴 Antithesis
+                  <CircleDot size={12} color="#f87171" style={{ marginRight: 4 }} /> Antithesis
                 </button>
                 <button
                   type="button"
                   className={`stance-btn synthesis ${replyStance === "synthesis" ? "selected" : ""}`}
                   onClick={() => setReplyStance("synthesis")}
                 >
-                  ⚪ Synthesis
+                  <CircleDot size={12} color="#a855f7" style={{ marginRight: 4 }} /> Synthesis
                 </button>
               </div>
 
@@ -480,7 +481,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
       {/* Header & Controls Bar */}
       <div className="comments-header-bar">
         <div className="comments-title-block">
-          <h3>💬 Philosophical Debate & Discussion Tree</h3>
+          <h3><MessageCircle size={18} style={{ marginRight: 6, verticalAlign: "middle" }} /> Philosophical Debate & Discussion Tree</h3>
           <span className="comments-count-pill">{comments.length} Contributions</span>
         </div>
 
@@ -492,14 +493,14 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
               className={`toggle-mode-btn ${viewMode === "nested" ? "active" : ""}`}
               onClick={() => setViewMode("nested")}
             >
-              🌳 Nested Thread Tree
+              <GitBranch size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Nested Thread Tree
             </button>
             <button
               type="button"
               className={`toggle-mode-btn ${viewMode === "split" ? "active" : ""}`}
               onClick={() => setViewMode("split")}
             >
-              ⚔️ Thesis vs. Antithesis Split View
+              <Swords size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Thesis vs. Antithesis Split View
             </button>
           </div>
 
@@ -510,7 +511,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
               className="ai-summary-trigger-btn"
               onClick={() => onOpenDebateSummary(entityId)}
             >
-              🧠 AI Debate Analysis & Summary
+              <Brain size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> AI Debate Analysis & Summary
             </button>
           )}
         </div>
@@ -525,21 +526,21 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
             className={`stance-btn thesis ${topCommentStance === "thesis" ? "selected" : ""}`}
             onClick={() => setTopCommentStance("thesis")}
           >
-            🟢 Thesis (Proponent)
+            <CircleDot size={12} color="#4ade80" style={{ marginRight: 4 }} /> Thesis (Proponent)
           </button>
           <button
             type="button"
             className={`stance-btn antithesis ${topCommentStance === "antithesis" ? "selected" : ""}`}
             onClick={() => setTopCommentStance("antithesis")}
           >
-            🔴 Antithesis (Rebuttal)
+            <CircleDot size={12} color="#f87171" style={{ marginRight: 4 }} /> Antithesis (Rebuttal)
           </button>
           <button
             type="button"
             className={`stance-btn synthesis ${topCommentStance === "synthesis" ? "selected" : ""}`}
             onClick={() => setTopCommentStance("synthesis")}
           >
-            ⚪ Synthesis (Neutral / Integration)
+            <CircleDot size={12} color="#a855f7" style={{ marginRight: 4 }} /> Synthesis (Neutral / Integration)
           </button>
         </div>
 
@@ -553,7 +554,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
 
         <div className="form-submit-row">
           <button type="submit" className="connect-btn">
-            💬 Post {topCommentStance.toUpperCase()} Contribution
+            <MessageCircle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Post {topCommentStance.toUpperCase()} Contribution
           </button>
         </div>
       </form>
@@ -575,7 +576,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
             {/* Left Column: Thesis */}
             <div className="split-column thesis-col">
               <div className="split-col-header thesis-header">
-                <h4>🟢 Thesis / Proponents</h4>
+                <h4><CircleDot size={12} color="#4ade80" style={{ marginRight: 4 }} /> Thesis / Proponents</h4>
                 <span className="col-count-chip">{thesisComments.length}</span>
               </div>
               <div className="split-comments-list">
@@ -621,7 +622,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
             {/* Right Column: Antithesis */}
             <div className="split-column antithesis-col">
               <div className="split-col-header antithesis-header">
-                <h4>🔴 Antithesis / Rebuttals</h4>
+                <h4><CircleDot size={12} color="#f87171" style={{ marginRight: 4 }} /> Antithesis / Rebuttals</h4>
                 <span className="col-count-chip">{antithesisComments.length}</span>
               </div>
               <div className="split-comments-list">
@@ -668,7 +669,7 @@ export const PhilosophicalCommentsSection: React.FC<PhilosophicalCommentsSection
           {/* Bottom Panel: Synthesis */}
           <div className="synthesis-panel">
             <div className="split-col-header synthesis-header">
-              <h4>⚪ Synthesis & Neutral Integrations</h4>
+              <h4><CircleDot size={12} color="#a855f7" style={{ marginRight: 4 }} /> Synthesis & Neutral Integrations</h4>
               <span className="col-count-chip">{synthesisComments.length}</span>
             </div>
             <div className="synthesis-grid">

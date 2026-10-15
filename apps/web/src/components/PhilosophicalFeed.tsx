@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ScrollText, PenLine, AlertTriangle, RefreshCw, Brain, MessageCircle, Zap } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
@@ -95,13 +96,13 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
       {/* Header & Composer Trigger */}
       <div className="feed-header">
         <div>
-          <h2>📜 Philosophical Debates & Post Feed</h2>
+          <h2><ScrollText size={20} style={{ marginRight: 8, verticalAlign: "middle" }} /> Philosophical Debates & Post Feed</h2>
           <p className="feed-subtitle">
             Read, analyze, and publish community arguments, theses, and thought experiments.
           </p>
         </div>
         <button type="button" className="connect-btn" onClick={onOpenComposer}>
-          ✍️ Publish New Post
+          <PenLine size={15} style={{ marginRight: 6, verticalAlign: "middle" }} /> Publish New Post
         </button>
       </div>
 
@@ -128,22 +129,22 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
       ) : error ? (
         <div className="error-banner" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: 20, margin: "16px 0", color: "#f87171", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}>⚠️ Database / Backend Connection Error</strong>
+            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}><AlertTriangle size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Database / Backend Connection Error</strong>
             <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>{error}. Unable to load live debates from database.</span>
           </div>
           <button type="button" onClick={fetchPosts} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-            🔄 Retry
+            <RefreshCw size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Retry
           </button>
         </div>
       ) : !filteredPosts || filteredPosts.length === 0 ? (
         <div className="empty-state" style={{ padding: 40, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12, border: "1px dashed rgba(255,255,255,0.1)", margin: "16px 0" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>📜</div>
+          <ScrollText size={40} color="#94a3b8" style={{ marginBottom: 8 }} />
           <h3 style={{ fontSize: "1.25rem", margin: "8px 0" }}>No Active Philosophical Debates</h3>
           <p style={{ color: "#94a3b8", maxWidth: 450, margin: "0 auto 16px auto" }}>
             {filterType !== "all" ? `No posts matched filter "${filterType}".` : "There are no debate posts available in the local database right now. Publish the first one!"}
           </p>
           <button type="button" className="connect-btn" onClick={onOpenComposer}>
-            ✍️ Publish First Post
+            <PenLine size={15} style={{ marginRight: 6, verticalAlign: "middle" }} /> Publish First Post
           </button>
         </div>
       ) : (
@@ -213,7 +214,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                     </span>
                     {(post as any).keyThinkers.map((thinker: string, i: number) => (
                       <span key={i} className="chip thinker-chip">
-                        🧠 {thinker}
+                        <Brain size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> {thinker}
                       </span>
                     ))}
                   </div>
@@ -254,7 +255,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                         }
                       }}
                     >
-                      💬 Comments ({post.commentsCount})
+                      <MessageCircle size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Comments ({post.commentsCount})
                     </button>
 
                     <button
@@ -262,7 +263,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                       className="ai-summary-trigger-btn"
                       onClick={() => onOpenDebateSummary(post.id)}
                     >
-                      ⚡ Debate Overview
+                      <Zap size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Debate Overview
                     </button>
                   </div>
 
@@ -279,7 +280,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                       } as User)
                     }
                   >
-                    💬 DM
+                    <MessageCircle size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> DM
                   </button>
                 </div>
 

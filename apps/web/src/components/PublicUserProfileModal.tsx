@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { User as UserIcon, X, Zap, Handshake, PenLine, Check, MessageCircle, Clock, Landmark, ScrollText, FileText } from "lucide-react";
 import type { User, ConnectionIntent } from "@philosophy/contract";
 import type { PhilosophicalPost, ConnectionRequest } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
@@ -216,7 +217,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
         {/* Header & Close button */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ margin: 0, color: "#f8fafc", fontSize: "1.15rem", display: "flex", alignItems: "center", gap: 8 }}>
-            <span>👤 Public Thinker Profile</span>
+            <span><UserIcon size={16} /> Public Thinker Profile</span>
           </h3>
           <button
             type="button"
@@ -225,7 +226,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
             title="Close Profile"
             style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: "1.4rem", cursor: "pointer" }}
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -255,7 +256,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                     <div className="profile-name-row" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <h1 className="profile-display-name">{displayName}</h1>
                       <span className="profile-reputation-badge" title="Philosophy Reputation Score">
-                        ⚡ {reputation} Rep
+                        <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {reputation} Rep
                       </span>
                       <span
                         className="profile-reputation-badge"
@@ -266,7 +267,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                         }}
                         title="Total Established Connections"
                       >
-                        🤝 {connectionCount} {connectionCount === 1 ? "Connection" : "Connections"}
+                        <Handshake size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {connectionCount} {connectionCount === 1 ? "Connection" : "Connections"}
                       </span>
                     </div>
                     <p className="profile-handle-text">{handleTag}</p>
@@ -285,7 +286,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                         if (onEditOwnProfile) onEditOwnProfile();
                       }}
                     >
-                      ✏️ Edit Profile
+                      <PenLine size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Edit Profile
                     </button>
                   ) : (
                     <>
@@ -305,7 +306,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                               gap: 6,
                             }}
                           >
-                            ✓ Connected
+                            <Check size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Connected
                           </span>
                           <button
                             type="button"
@@ -313,7 +314,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                             style={{ background: "#4f46e5", color: "#fff" }}
                             onClick={handleMessageClick}
                           >
-                            💬 Direct Message
+                            <MessageCircle size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Direct Message
                           </button>
                         </>
                       )}
@@ -325,7 +326,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                           disabled
                           style={{ opacity: 0.65, cursor: "not-allowed", background: "rgba(148, 163, 184, 0.2)" }}
                         >
-                          ⌛ Invitation Sent
+                          <Clock size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Invitation Sent
                         </button>
                       )}
 
@@ -338,7 +339,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                             onClick={handleAcceptClick}
                             disabled={isActionLoading}
                           >
-                            🟢 Accept Connection
+                            <Check size={14} style={{ color: "#4ade80", marginRight: 4, verticalAlign: "middle" }} /> Accept Connection
                           </button>
                           <button
                             type="button"
@@ -347,7 +348,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                             onClick={handleDeclineClick}
                             disabled={isActionLoading}
                           >
-                            🔴 Decline
+                            <X size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Decline
                           </button>
                         </>
                       )}
@@ -361,7 +362,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                             onClick={handleConnectClick}
                             disabled={isActionLoading}
                           >
-                            🤝 Connect
+                            <Handshake size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Connect
                           </button>
                           <button
                             type="button"
@@ -369,7 +370,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                             style={{ background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.15)", color: "#e2e8f0" }}
                             onClick={handleMessageClick}
                           >
-                            💬 Message Request
+                            <MessageCircle size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Message Request
                           </button>
                         </>
                       )}
@@ -390,7 +391,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
             {prof?.favoriteQuote && (
               <div className="profile-section-card" style={{ marginBottom: 16 }}>
                 <div className="section-card-header">
-                  <h3>💬 Favorite Philosophical Quote</h3>
+                  <h3><MessageCircle size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Favorite Philosophical Quote</h3>
                 </div>
                 <div className="worldview-quote-box" style={{ borderLeftColor: "#a855f7" }}>
                   <p className="quote-text">"{prof.favoriteQuote}"</p>
@@ -407,7 +408,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
             {prof?.worldviewSummary && (
               <div className="profile-section-card" style={{ marginBottom: 16 }}>
                 <div className="section-card-header">
-                  <h3>🧠 Personal Worldview & Stance</h3>
+                  <h3><UserIcon size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Personal Worldview & Stance</h3>
                 </div>
                 <div className="worldview-quote-box">
                   <p className="quote-text">"{prof.worldviewSummary}"</p>
@@ -422,7 +423,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                 {prof.primarySchools && prof.primarySchools.length > 0 && (
                   <div className="profile-section-card">
                     <div className="section-card-header">
-                      <h3>📜 Primary Philosophical Schools</h3>
+                      <h3><ScrollText size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Primary Philosophical Schools</h3>
                     </div>
                     <div className="tag-cloud">
                       {prof.primarySchools.map((school, i) => (
@@ -438,7 +439,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                 {prof.keyThinkers && prof.keyThinkers.length > 0 && (
                   <div className="profile-section-card">
                     <div className="section-card-header">
-                      <h3>🏛️ Influential Thinkers & Authors</h3>
+                      <h3><Landmark size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Influential Thinkers & Authors</h3>
                     </div>
                     <div className="tag-cloud">
                       {prof.keyThinkers.map((thinker, i) => (
@@ -455,7 +456,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
             {/* Authored Posts & Discussions */}
             <div className="profile-section-card">
               <div className="section-card-header">
-                <h3>📝 Authored Arguments & Discussions ({userPosts.length})</h3>
+                <h3><FileText size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Authored Arguments & Discussions ({userPosts.length})</h3>
               </div>
               {userPosts.length === 0 ? (
                 <p style={{ color: "#94a3b8", fontSize: "0.92rem", fontStyle: "italic" }}>
@@ -501,8 +502,8 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                         {post.content}
                       </p>
                       <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: "0.85rem", color: "#94a3b8" }}>
-                        <span>⚡ {post.upvotesCount}</span>
-                        <span>💬 {post.commentsCount}</span>
+                        <span><Zap size={12} style={{ marginRight: 3, verticalAlign: "middle" }} /> {post.upvotesCount}</span>
+                        <span><MessageCircle size={12} style={{ marginRight: 3, verticalAlign: "middle" }} /> {post.commentsCount}</span>
                       </div>
                     </div>
                   ))}

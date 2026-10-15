@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Radio, ScrollText, Eye, MessageCircle, X, ThumbsUp, Flame, Lightbulb, CircleDot } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import type { PhilosophyEvent } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
@@ -367,18 +368,18 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                 <h3 style={{ margin: 0, fontSize: "1.1rem" }}>{activeHostName}</h3>
                 <span className="live-pulse-badge" style={{ background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: 12, padding: "2px 8px", fontSize: "0.75rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", animation: "pulse 1.5s infinite" }}></span>
-                  🔴 {formatTimer(elapsedSeconds)}
+                  <Radio size={8} style={{ marginRight: 4, verticalAlign: "middle" }} /> {formatTimer(elapsedSeconds)}
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: "0.8rem", color: "var(--text-muted)", marginTop: 4 }}>
-                <span>📜 {debateData.school}</span>
-                <span>👁️ {activeViewers} Thinkers In Room</span>
-                <span>💬 {currentMessages.length} Arguments</span>
+                <span><ScrollText size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {debateData.school}</span>
+                <span><Eye size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {activeViewers} Thinkers In Room</span>
+                <span><MessageCircle size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {currentMessages.length} Arguments</span>
               </div>
             </div>
           </div>
           <button type="button" className="close-drawer-btn" onClick={onClose} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}>
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -396,14 +397,14 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
 
           {/* Stance Heatbar */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem" }}>
-            <span style={{ color: "#4ade80", fontWeight: 600 }}>🟢 Thesis {thesisPct}%</span>
+            <span style={{ color: "#4ade80", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><CircleDot size={12} color="#4ade80" /> Thesis {thesisPct}%</span>
             <div style={{ flex: 1, height: 6, borderRadius: 4, background: "rgba(255,255,255,0.1)", display: "flex", overflow: "hidden" }}>
               <div style={{ width: `${thesisPct}%`, background: "#4ade80" }}></div>
               <div style={{ width: `${antiPct}%`, background: "#f87171" }}></div>
               <div style={{ width: `${synPct}%`, background: "#a855f7" }}></div>
             </div>
-            <span style={{ color: "#f87171", fontWeight: 600 }}>🔴 Antithesis {antiPct}%</span>
-            <span style={{ color: "#a855f7", fontWeight: 600 }}>⚪ Synthesis {synPct}%</span>
+            <span style={{ color: "#f87171", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><CircleDot size={12} color="#f87171" /> Antithesis {antiPct}%</span>
+            <span style={{ color: "#a855f7", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><CircleDot size={12} color="#a855f7" /> Synthesis {synPct}%</span>
           </div>
         </div>
 
@@ -440,7 +441,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                       color: msg.stance === "thesis" ? "#4ade80" : msg.stance === "antithesis" ? "#f87171" : "#c084fc",
                     }}
                   >
-                    {msg.stance === "thesis" ? "🟢 Thesis" : msg.stance === "antithesis" ? "🔴 Antithesis" : "⚪ Synthesis"}
+                    {msg.stance === "thesis" ? <><CircleDot size={10} color="#4ade80" style={{ marginRight: 3 }} />Thesis</> : msg.stance === "antithesis" ? <><CircleDot size={10} color="#f87171" style={{ marginRight: 3 }} />Antithesis</> : <><CircleDot size={10} color="#a855f7" style={{ marginRight: 3 }} />Synthesis</>}
                   </span>
                   <span className="bubble-time" style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{msg.timestamp}</span>
                 </div>
@@ -467,7 +468,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                     gap: 4,
                   }}
                 >
-                  👍 {msg.reactions?.upvotes || 0}
+                  <ThumbsUp size={13} style={{ marginRight: 3 }} /> {msg.reactions?.upvotes || 0}
                 </button>
                 <button
                   type="button"
@@ -486,7 +487,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                     gap: 4,
                   }}
                 >
-                  🔥 {msg.reactions?.fire || 0}
+                  <Flame size={13} style={{ marginRight: 3 }} /> {msg.reactions?.fire || 0}
                 </button>
                 <button
                   type="button"
@@ -505,7 +506,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                     gap: 4,
                   }}
                 >
-                  💡 {msg.reactions?.insights || 0}
+                  <Lightbulb size={13} style={{ marginRight: 3 }} /> {msg.reactions?.insights || 0}
                 </button>
               </div>
             </div>
@@ -531,7 +532,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                 cursor: "pointer",
               }}
             >
-              🟢 Thesis (Proponent)
+              <CircleDot size={12} color="#4ade80" style={{ marginRight: 4 }} /> Thesis (Proponent)
             </button>
             <button
               type="button"
@@ -548,7 +549,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                 cursor: "pointer",
               }}
             >
-              🔴 Antithesis (Rebuttal)
+              <CircleDot size={12} color="#f87171" style={{ marginRight: 4 }} /> Antithesis (Rebuttal)
             </button>
             <button
               type="button"
@@ -565,7 +566,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
                 cursor: "pointer",
               }}
             >
-              ⚪ Synthesis
+              <CircleDot size={12} color="#a855f7" style={{ marginRight: 4 }} /> Synthesis
             </button>
           </div>
 
@@ -587,7 +588,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
               }}
             />
             <button type="submit" style={{ padding: "10px 20px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", color: "#ffffff", fontWeight: 700, cursor: "pointer" }}>
-              Send 💬
+              Send <MessageCircle size={14} style={{ marginLeft: 6, verticalAlign: "middle" }} />
             </button>
           </div>
         </form>
