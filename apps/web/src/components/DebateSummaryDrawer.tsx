@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Zap, MessageCircle, Clock, Pin, Swords, Handshake, HelpCircle, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Zap, MessageCircle, Clock, Pin, Swords, Handshake, CircleQuestionMark, X, ChevronUp, ChevronDown } from "lucide-react";
 import type { DiscussionSummary } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 
@@ -167,7 +167,7 @@ export const DebateSummaryDrawer: React.FC<DebateSummaryDrawerProps> = ({
                   className="accordion-header-btn"
                   onClick={() => toggleSection("questions")}
                 >
-                  <h4 className="section-title"><HelpCircle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Unresolved Philosophical Questions</h4>
+                  <h4 className="section-title"><CircleQuestionMark size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> Unresolved Philosophical Questions</h4>
                   <span>{expandedSection === "questions" ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
                 </button>
                 {(expandedSection === "questions" || expandedSection === null) && (

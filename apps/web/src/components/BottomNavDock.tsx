@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Landmark, Handshake, CalendarDays, Trophy, User } from "lucide-react";
+import { House, Landmark, Handshake, CalendarDays, Trophy, User } from "lucide-react";
 
 export type NavTab = "debates" | "spaces" | "recommendations" | "symposiums" | "leaderboard" | "profile" | "search";
 
@@ -17,7 +17,7 @@ export const BottomNavDock: React.FC<BottomNavDockProps> = ({
   hasCircleMessages = false,
 }) => {
   const tabIcons: Record<NavTab, React.ReactNode> = {
-    debates: <Home size={20} />,
+    debates: <House size={20} />,
     spaces: <Landmark size={20} />,
     recommendations: <Handshake size={20} />,
     symposiums: <CalendarDays size={20} />,

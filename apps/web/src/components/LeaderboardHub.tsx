@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Globe, Flame, Landmark, Zap, Coffee, AlertTriangle, RefreshCw, Crown, Medal, MessageCircle, Lock, BarChart2 } from "lucide-react";
+import { Trophy, Globe, Flame, Landmark, Zap, Coffee, TriangleAlert, RefreshCw, Crown, Medal, MessageCircle, Lock, ChartBar } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, DEMO_LEADERBOARD, ALL_PLATFORM_BADGES, type LeaderboardEntry, type PhilosophicalBadge } from "../lib/api-client.js";
 
@@ -114,7 +114,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
       ) : error ? (
         <div className="error-banner" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: 20, margin: "16px 0", color: "#f87171", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}><AlertTriangle size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Database / Backend Connection Error</strong>
+            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}><TriangleAlert size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Database / Backend Connection Error</strong>
             <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>{error}. Unable to load leaderboard from database.</span>
           </div>
           <button type="button" onClick={loadLeaderboard} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
@@ -328,7 +328,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
 
           {/* Full Rankings Table */}
           <div className="leaderboard-table-card">
-            <h3 className="section-title"><BarChart2 size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Complete Community Rankings</h3>
+            <h3 className="section-title"><ChartBar size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Complete Community Rankings</h3>
             <div className="table-wrapper">
               <table className="leaderboard-table">
                 <thead>

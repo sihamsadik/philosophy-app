@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Swords, FlaskConical, HelpCircle, Pin, BookOpen, Landmark, Globe, PenLine, Rocket, X } from "lucide-react";
+import { Swords, FlaskConical, CircleQuestionMark, Pin, BookOpen, Landmark, Globe, PenLine, Rocket, X } from "lucide-react";
 import type { PhilosophicalPost, PhilosophicalSpace } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
@@ -17,7 +17,7 @@ export interface PostComposerModalProps {
 const POST_TYPES: { id: PhilosophicalPost["postType"]; label: string; icon: React.ReactNode }[] = [
   { id: "argument", label: "Argument", icon: <Swords size={18} /> },
   { id: "thought_experiment", label: "Thought Experiment", icon: <FlaskConical size={18} /> },
-  { id: "question", label: "Core Question", icon: <HelpCircle size={18} /> },
+  { id: "question", label: "Core Question", icon: <CircleQuestionMark size={18} /> },
   { id: "thesis", label: "Thesis / Proposition", icon: <Pin size={18} /> },
   { id: "essay", label: "Philosophical Essay", icon: <BookOpen size={18} /> },
 ];

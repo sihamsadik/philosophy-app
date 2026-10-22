@@ -1,5 +1,5 @@
 import React from "react";
-import { Download, Globe, Apple, PartyPopper, CheckCircle, X } from "lucide-react";
+import { Download, Globe, Apple, PartyPopper, CircleCheck, X } from "lucide-react";
 
 export interface PwaInstallModalProps {
   isOpen: boolean;
@@ -109,7 +109,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
               You are connected via your local PC network IP address (<code>{window.location.hostname}</code>).
             </p>
             <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 12, padding: 12, marginBottom: 16, textAlign: "left", fontSize: "0.85rem", color: "#fcd34d" }}>
-              <strong><CheckCircle size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> Browser Security Requirement:</strong><br />
+              <strong><CircleCheck size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> Browser Security Requirement:</strong><br />
               Chrome blocks mobile PWA installation over plain HTTP local IPs.<br />
               Once deployed to a live server with <strong>HTTPS</strong> (Vercel, Netlify, Firebase) or run via HTTPS tunnel, 1-click mobile installation works automatically!
             </div>
@@ -136,7 +136,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
           </div>
         ) : (
           <div>
-            <CheckCircle size={40} color="#60a5fa" style={{ marginBottom: 10 }} />
+            <CircleCheck size={40} color="#60a5fa" style={{ marginBottom: 10 }} />
             <h4 style={{ margin: "0 0 8px 0", fontSize: "1.1rem", color: "#60a5fa" }}>
               Already Installed on PC!
             </h4>

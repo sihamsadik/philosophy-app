@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MessageCircle, Brain, Handshake, Heart, Settings, User as UserIcon, BookOpen, X, Camera, Upload, HelpCircle, BookMarked } from "lucide-react";
+import { MessageCircle, Brain, Handshake, Heart, Settings, User as UserIcon, BookOpen, X, Camera, Upload, CircleQuestionMark, BookMarked } from "lucide-react";
 import type { User, PhilosophyProfile, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
 
@@ -390,7 +390,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 <ul className="question-list">
                   {coreQuestions.map((q, idx) => (
                     <li key={idx} className="list-item">
-                      <span><HelpCircle size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> "{q}"</span>
+                      <span><CircleQuestionMark size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> "{q}"</span>
                       <button
                         type="button"
                         className="remove-btn"

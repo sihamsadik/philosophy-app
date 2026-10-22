@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { agoraClient } from "../lib/api-client.js";
-import { Heart, ThumbUp, Eye, Smile, ThumbsDown } from "lucide-react";
+import { Heart, ThumbsUp, Eye, Smile, ThumbsDown } from "lucide-react";
 
 export type ReactionType = "love" | "upvote" | "wow" | "funny" | "downvote";
 
@@ -26,7 +26,7 @@ export const REACTION_CONFIGS: ReactionConfig[] = [
   },
   {
     key: "upvote",
-    icon: ThumbUp,
+    icon: ThumbsUp,
     label: "Upvote",
     pointsLabel: "+1 Rep",
     activeColor: "#3b82f6",
