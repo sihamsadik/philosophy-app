@@ -29,30 +29,30 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
   }, []);
 
   return (
-    <div className="landing-dashboard-container" style={{ padding: "20px 16px 60px 16px", maxWidth: 1100, margin: "0 auto" }}>
+    <div className="landing-dashboard-container" style={{ padding: "20px 16px 30px 16px", maxWidth: 1100, margin: "0 auto" }}>
       {/* Hero Banner */}
-      <section className="landing-hero" style={{ textAlign: "center", padding: "48px 24px", background: "linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.1)", boxShadow: "0 20px 50px rgba(0,0,0,0.5)", marginBottom: 40, backdropFilter: "blur(12px)" }}>
+      <section className="landing-hero" style={{ textAlign: "center", padding: "32px 16px", background: "linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)", borderRadius: 24, border: "1px solid rgba(255, 255, 255, 0.1)", boxShadow: "0 20px 50px rgba(0,0,0,0.5)", marginBottom: 20, backdropFilter: "blur(12px)" }}>
         <div style={{ display: "inline-block", background: "rgba(59, 130, 246, 0.15)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 30, padding: "6px 18px", color: "#60a5fa", fontWeight: 600, fontSize: "0.85rem", marginBottom: 16 }}>
           <Landmark size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> GLOBAL INTELLECTUAL ASSEMBLY & DIALECTIC HUB
         </div>
-        <h1 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#f8fafc", margin: "12px 0", lineHeight: 1.2, letterSpacing: "-0.02em" }}>
+        <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#f8fafc", margin: "12px 0", lineHeight: 1.2, letterSpacing: "-0.02em" }}>
           Where Deep Thinkers Debate, Connect & Discover Truth
         </h1>
-        <p style={{ fontSize: "1.1rem", color: "#94a3b8", maxWidth: 720, margin: "0 auto 28px auto", lineHeight: 1.6 }}>
+        <p style={{ fontSize: "0.95rem", color: "#94a3b8", maxWidth: 720, margin: "0 auto 28px auto", lineHeight: 1.6 }}>
           Agora brings together philosophers, ethicists, and rationalists. Explore structured arguments, participate in live symposiums, and measure worldview compatibility.
         </p>
         <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={() => onOpenAuth("signup")}
-            style={{ padding: "14px 32px", borderRadius: 30, border: "none", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", color: "#ffffff", fontWeight: 700, fontSize: "1rem", cursor: "pointer", boxShadow: "0 8px 24px rgba(37, 99, 235, 0.4)", transition: "transform 0.2s" }}
+            style={{ padding: "12px 24px", borderRadius: 30, border: "none", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", color: "#ffffff", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", boxShadow: "0 8px 24px rgba(37, 99, 235, 0.4)", transition: "transform 0.2s" }}
           >
             <UserPlus size={16} style={{ marginRight: 8, verticalAlign: "middle" }} /> Create Free Account & Join Debate
           </button>
           <button
             type="button"
             onClick={() => onOpenAuth("signin")}
-            style={{ padding: "14px 28px", borderRadius: 30, border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(255, 255, 255, 0.05)", color: "#f8fafc", fontWeight: 600, fontSize: "1rem", cursor: "pointer" }}
+            style={{ padding: "12px 20px", borderRadius: 30, border: "1px solid rgba(255, 255, 255, 0.2)", background: "rgba(255, 255, 255, 0.05)", color: "#f8fafc", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer" }}
           >
             <LogIn size={16} style={{ marginRight: 8, verticalAlign: "middle" }} /> Sign In to Existing Account
           </button>

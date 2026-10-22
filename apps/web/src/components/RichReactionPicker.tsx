@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { agoraClient } from "../lib/api-client.js";
+import { Heart, ThumbUp, Eye, Smile, ThumbsDown } from "lucide-react";
 
 export type ReactionType = "love" | "upvote" | "wow" | "funny" | "downvote";
 
 export interface ReactionConfig {
   key: ReactionType;
-  emoji: string;
+  icon: React.ElementType;
   label: string;
   pointsLabel: string;
   activeColor: string;
@@ -16,7 +17,7 @@ export interface ReactionConfig {
 export const REACTION_CONFIGS: ReactionConfig[] = [
   {
     key: "love",
-    emoji: "❤️",
+    icon: Heart,
     label: "Love",
     pointsLabel: "+2 Rep",
     activeColor: "#f43f5e",
@@ -25,7 +26,7 @@ export const REACTION_CONFIGS: ReactionConfig[] = [
   },
   {
     key: "upvote",
-    emoji: "👍",
+    icon: ThumbUp,
     label: "Upvote",
     pointsLabel: "+1 Rep",
     activeColor: "#3b82f6",
@@ -34,7 +35,7 @@ export const REACTION_CONFIGS: ReactionConfig[] = [
   },
   {
     key: "wow",
-    emoji: "😮",
+    icon: Eye,
     label: "Insightful",
     pointsLabel: "+1 Rep",
     activeColor: "#f59e0b",
@@ -43,7 +44,7 @@ export const REACTION_CONFIGS: ReactionConfig[] = [
   },
   {
     key: "funny",
-    emoji: "😄",
+    icon: Smile,
     label: "Wit",
     pointsLabel: "+1 Rep",
     activeColor: "#10b981",
@@ -52,7 +53,7 @@ export const REACTION_CONFIGS: ReactionConfig[] = [
   },
   {
     key: "downvote",
-    emoji: "👎",
+    icon: ThumbsDown,
     label: "Disagree",
     pointsLabel: "0 Rep",
     activeColor: "#94a3b8",
@@ -185,7 +186,7 @@ export const RichReactionPicker: React.FC<RichReactionPickerProps> = ({
               boxShadow: isActive ? `0 2px 10px ${config.activeBg}` : "none",
             }}
           >
-            <span style={{ fontSize: isSmall ? "0.85rem" : "1rem", lineHeight: 1 }}>{config.emoji}</span>
+            <config.icon size={isSmall ? 14 : 16} style={{ verticalAlign: "middle" }} />
             {countVal > 0 && (
               <span
                 className="reaction-count-chip"
