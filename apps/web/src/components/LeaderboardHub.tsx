@@ -197,7 +197,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                 </div>
               )}
 
-              {/* 1st Place Gold */}}
+              {/* 1st Place Gold */}
               {topThree[0] && (
                 <div className="podium-card rank-1">
                   <Crown size={22} color="#f59e0b" className="podium-crown" />
@@ -261,7 +261,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                 </div>
               )}
 
-              {/* 3rd Place Bronze */}}
+              {/* 3rd Place Bronze */}
               {topThree[2] && (
                 <div className="podium-card rank-3">
                   <div className="podium-rank-badge"><Medal size={14} style={{ color: "#CD7F32", marginRight: 4 }} /> 3rd</div>
