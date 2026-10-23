@@ -3,6 +3,7 @@ import type { User } from "@philosophy/contract";
 import type { PhilosophyEvent } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
+import { MessageCircle } from "lucide-react";
 
 export interface LiveEventJoinModalProps {
   isOpen: boolean;

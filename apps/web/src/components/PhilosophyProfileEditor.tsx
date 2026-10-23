@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { User, PhilosophyProfile, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
+import { MessageCircle } from "lucide-react";
 
 const POPULAR_SCHOOLS = [
   "Existentialism",
@@ -227,7 +228,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
         {favoriteQuote && (
           <div className="profile-section-card">
             <div className="section-card-header">
-              <h3>💬 Favorite Philosophical Quote</h3>
+              <h3> Favorite Philosophical Quote</h3>
             </div>
             <div className="worldview-quote-box" style={{ borderLeftColor: "#a855f7" }}>
               <p className="quote-text">"{favoriteQuote}"</p>

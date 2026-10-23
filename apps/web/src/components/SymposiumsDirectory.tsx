@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, DEMO_EVENTS, DEMO_RSVPS, type EventType, type PhilosophyEvent, type EventRSVP, type RSVPStatus, getAvatarUrl, getEventPriorityScore } from "../lib/api-client.js";
 import { LiveEventJoinModal } from "./LiveEventJoinModal.js";
+import { MessageCircle } from "lucide-react";
 
 export interface SymposiumsDirectoryProps {
   onOpenComposer: () => void;

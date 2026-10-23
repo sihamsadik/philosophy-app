@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophyNotification, type ConnectionRequest } from "../lib/api-client.js";
+import { MessageCircle } from "lucide-react";
 
 export interface NotificationCenterDrawerProps {
   isOpen: boolean;

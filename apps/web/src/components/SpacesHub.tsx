@@ -3,7 +3,7 @@ import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophicalSpace, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
 import { useAuth } from "../context/AuthContext.js";
-
+import { MessageCircle } from "lucide-react";
 export interface SpacesHubProps {
   onOpenDM?: (user: User) => void;
   onOpenDebateSummary?: (postId: string) => void;

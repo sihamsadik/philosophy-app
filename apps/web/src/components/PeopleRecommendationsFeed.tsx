@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User, UserRecommendation, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient, type ConnectionRequest } from "../lib/api-client.js";
 import { DualAxisCompatibilityGauge } from "./DualAxisCompatibilityGauge.js";
+import { MessageCircle } from "lucide-react";
 
 const INTENT_FILTERS: { id: ConnectionIntent | "all"; label: string; icon: string }[] = [
   { id: "all", label: "All Thinkers", icon: "🌐" },

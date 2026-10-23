@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { EventType, PhilosophicalSpace, PhilosophyEvent } from "../lib/api-client.js";
 import { agoraClient, DEMO_SPACES } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
+import { MessageCircle } from "lucide-react";
 
 export interface EventComposerModalProps {
   isOpen: boolean;

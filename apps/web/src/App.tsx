@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { io, type Socket } from "socket.io-client";
+import { MessageCircle } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import { useAuth } from "./context/AuthContext.js";
 import { PhilosophyProfileEditor } from "./components/PhilosophyProfileEditor.js";

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { MessageCircle } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import type { Socket } from "socket.io-client";
 import type { DirectConversation, ChatMessage, PhilosophicalSpace } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
+// import { MessageCircle } from "lucide-react";
 
 export interface DirectMessageDrawerProps {
   isOpen: boolean;
@@ -400,7 +402,8 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
         {/* Header */}
         <div className="drawer-header">
           <div className="header-title-block">
-            <h3>💬 Messages</h3>
+            <MessageCircle size={20} strokeWidth={2} />
+            <h3>Messages</h3>
             <span className="drawer-subtitle">
               {messageSection === "replies" ? "Community replies to your comments" : "🔒 End-to-end encrypted private & secure direct messages"}
             </span>
