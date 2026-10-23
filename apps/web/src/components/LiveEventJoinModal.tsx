@@ -472,7 +472,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
                   onOpenDM(host);
                 }}
               >
-                💬 DM Host
+                <MessageCircle size={10} strokeWidth={2} />
               </button>
             )}
           </div>
@@ -521,7 +521,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
 
         {/* Format Indicator Banner */}
         <div style={{ background: isVideoMeeting ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)", border: isVideoMeeting ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: "1.2rem" }}>{isVideoMeeting ? "📹" : "💬"}</span>
+          <span style={{ fontSize: "1.2rem" }}>{isVideoMeeting ? "📹" : "<MessageCircle size={10} strokeWidth={2} />"}</span>
           <div style={{ flex: 1 }}>
             <span style={{ fontSize: "0.78rem", fontWeight: 700, color: isVideoMeeting ? "#f87171" : "#60a5fa", display: "block" }}>
               {isVideoMeeting ? "EXTERNAL VIDEO MEETING SESSION" : "IN-PLATFORM LIVE TEXT DEBATE CHAT ROOM"}
@@ -604,7 +604,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
         {!isVideoMeeting && (
           <div style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#38bdf8" }}>💬 LIVE DEBATE CHAT STREAM</span>
+              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#38bdf8" }}>LIVE DEBATE CHAT STREAM</span>
               <span style={{ fontSize: "0.75rem", color: isEndedConcluded ? "#f87171" : "#4ade80", fontWeight: 600 }}>
                 {isEndedConcluded ? "🔒 Event Concluded" : "● Active Debate"}
               </span>
@@ -758,7 +758,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
                     style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255, 255, 255, 0.15)", background: "rgba(255, 255, 255, 0.05)", color: "#ffffff", fontSize: "0.85rem", outline: "none" }}
                   />
                   <button type="submit" style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", color: "#ffffff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>
-                    Send 💬
+                     <MessageCircle size={10} strokeWidth={2} />
                   </button>
                 </div>
               </form>

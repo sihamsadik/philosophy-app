@@ -824,7 +824,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                         disabled={!canSend}
                       />
                       <button type="submit" className="add-btn" disabled={!canSend || !inputMessage.trim()}>
-                        Send 💬
+                        <MessageCircle size={10} strokeWidth={2} />
                       </button>
                     </form>
                   );

@@ -2324,7 +2324,7 @@ Makes space chat usable for all space members, plus README launch polish.
   reading/posting (membership-gated) — making space chat effectively creator-only. New space
   conversations also seed `postingPermission` from the space (admins-only spaces ⇒ admins-only chat;
   already enforced on send), and the response now includes `currentMember` + `memberCount`. The demo
-  surfaces it as a "💬 Space chat" panel in `SpaceView` (`useFetchSpaceConversation` +
+  surfaces it as a "<MessageCircle size={10} strokeWidth={2} /> Space chat" panel in `SpaceView` (`useFetchSpaceConversation` +
   `ConversationProvider`).
 
 ## [0.2.2] - 2026-05-27

@@ -903,7 +903,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 color: spaceViewTab === "chat" ? "#fff" : undefined,
               }}
             >
-              💬 Group Chat Room ({circleChatMessages.length})
+            Group Chat Room ({circleChatMessages.length})
             </button>
             <button
               type="button"
@@ -948,7 +948,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: "1.2rem" }}>💬</span>
+                  <span style={{ fontSize: "1.2rem" }}><MessageCircle size={10} strokeWidth={2} /></span>
                   <div>
                     <strong style={{ fontSize: "0.95rem", color: "#f8fafc", display: "block" }}>
                       {selectedSpace.name} — Group Discussion
@@ -982,7 +982,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   <div className="loading-state">Loading group chat stream...</div>
                 ) : circleChatMessages.length === 0 ? (
                   <div className="empty-chat-state" style={{ textAlign: "center", padding: 30, color: "#94a3b8" }}>
-                    <p>💬 Welcome to {selectedSpace.name} Group Chat! Be the first to send a message to all members.</p>
+                    <p>Welcome to {selectedSpace.name} Group Chat! Be the first to send a message to all members.</p>
                   </div>
                 ) : (
                   circleChatMessages.map((msg) => {
@@ -1151,7 +1151,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                     opacity: circleChatInput.trim() ? 1 : 0.6,
                   }}
                 >
-                  Send 💬
+                 <MessageCircle size={10} strokeWidth={2} />
                 </button>
               </form>
             </div>
@@ -1213,7 +1213,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                               className={`action-btn ${isCommentsExpanded ? "active" : ""}`}
                               onClick={() => toggleCommentsSection(post.id)}
                             >
-                              💬 Comments ({post.commentsCount})
+                              <MessageCircle size={10} strokeWidth={2} /> ({post.commentsCount})
                             </button>
 
                             {onOpenDebateSummary && (
@@ -1241,7 +1241,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                                 } as User)
                               }
                             >
-                              💬 Message Author
+                              <MessageCircle size={10} strokeWidth={2} /> Message Author
                             </button>
                           )}
                         </div>
@@ -1310,7 +1310,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                               className="connect-btn-sm"
                               onClick={() => onOpenDM(u)}
                             >
-                              💬 DM
+                              <MessageCircle size={10} strokeWidth={2} />
                             </button>
                           )}
                         </div>
@@ -1488,7 +1488,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                         <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>@{friend.username || "philosopher"}</div>
                       </div>
                     </div>
-                    <span style={{ fontSize: "0.8rem", color: "#3b82f6", fontWeight: 700 }}>Send 💬</span>
+                    <span style={{ fontSize: "0.8rem", color: "#3b82f6", fontWeight: 700 }}>Send <MessageCircle size={10} strokeWidth={2} /></span>
                   </button>
                 ))}
               </div>

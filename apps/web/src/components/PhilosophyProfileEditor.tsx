@@ -26,7 +26,7 @@ const POPULAR_THINKERS = [
 ];
 
 const INTENTS: { id: ConnectionIntent; label: string; icon: string }[] = [
-  { id: "discussion", label: "Discussions & Debates", icon: "💬" },
+  { id: "discussion", label: "Discussions & Debates", icon: "<MessageCircle size={10} strokeWidth={2} />" },
   { id: "intellectual", label: "Intellectual Growth", icon: "🧠" },
   { id: "friendship", label: "Philosophical Friendship", icon: "🤝" },
   { id: "dating", label: "Philosophical Dating", icon: "❤️" },

@@ -29,6 +29,7 @@ import { PublicLandingDashboard } from "./components/PublicLandingDashboard.js";
 import { BottomNavDock, type NavTab as BottomNavTab } from "./components/BottomNavDock.js";
 import { agoraClient } from "./lib/api-client.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
+import { Bell } from "lucide-react";
 
 type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | "symposiums" | "leaderboard";
 
@@ -260,7 +261,7 @@ export const App: React.FC = () => {
             onClick={() => setIsNotifDrawerOpen(true)}
             title="Notification Center"
           >
-            🔔
+            <Bell size={20} strokeWidth={2} />
             {unreadNotifCount > 0 && <span className="top-notif-badge">{unreadNotifCount}</span>}
           </button>
 
@@ -270,7 +271,7 @@ export const App: React.FC = () => {
             onClick={() => handleOpenDM(null)}
             title="Direct Messages"
           >
-            💬
+            <MessageCircle size={10} strokeWidth={2} />
             {unreadDmCount > 0 && <span className="top-notif-badge">{unreadDmCount}</span>}
           </button>
 
@@ -304,7 +305,7 @@ export const App: React.FC = () => {
                     className="dropdown-item-btn"
                     onClick={() => handleOpenDM(null)}
                   >
-                    💬 DMs
+                    <MessageCircle size={10} strokeWidth={2} /> 
                   </button>
                   <button
                     type="button"

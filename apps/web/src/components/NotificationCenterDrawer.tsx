@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophyNotification, type ConnectionRequest } from "../lib/api-client.js";
 import { MessageCircle } from "lucide-react";
-
+import { Bell } from "lucide-react";
 export interface NotificationCenterDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -131,7 +131,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
         {/* Header */}
         <div className="drawer-header">
           <div className="header-title-block">
-            <h3>🔔 Real-Time Notification Center</h3>
+            <h3><Bell size={20} strokeWidth={2} /></h3>
             <p className="drawer-subtitle">
               Connection invites, direct messages, upvotes, and thread rebuttals
             </p>
@@ -315,7 +315,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                           onOpenDM(notif.sender!);
                         }}
                       >
-                        💬 Reply in DMs
+                        <MessageCircle size={10} strokeWidth={2} />
                       </button>
                     )}
 

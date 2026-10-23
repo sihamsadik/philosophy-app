@@ -618,7 +618,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                           setSelectedEventForRoster(null);
                         }}
                       >
-                        💬 DM
+                        <MessageCircle size={10} strokeWidth={2} />
                       </button>
                     )}
                   </div>

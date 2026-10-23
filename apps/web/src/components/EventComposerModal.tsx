@@ -236,7 +236,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                 }}
               >
                 <div style={{ fontWeight: 700, fontSize: "0.9rem", color: eventFormat === "text_debate" ? "#60a5fa" : "#ffffff" }}>
-                  💬 Live Text Debate Room
+                 Live Text Debate Room
                 </div>
                 <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 4 }}>
                   In-platform real-time chat debate (No Google Meet / Telegram needed)
@@ -420,7 +420,6 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
             </div>
           ) : (
             <div style={{ background: "rgba(59, 130, 246, 0.08)", border: "1px dashed rgba(59, 130, 246, 0.3)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: "1.2rem" }}>💬</span>
               <span style={{ fontSize: "0.8rem", color: "#93c5fd" }}>
                 Live Text Chat Debate will run directly inside Philosophy Agora. No external URL required!
               </span>

@@ -443,7 +443,7 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                         style={{ fontSize: "0.85rem" }}
                         onClick={() => onOpenDM && onOpenDM(user)}
                       >
-                        💬 Message
+                        <MessageCircle size={10} strokeWidth={2} />
                       </button>
                     </>
                   )}

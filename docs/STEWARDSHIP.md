@@ -140,7 +140,7 @@ clear, removable abuse).
 
 ---
 
-## 💬 Mediation channels *(live)*
+## <MessageCircle size={10} strokeWidth={2} /> Mediation channels *(live)*
 
 The hardest part of a case is usually just *talking to people*. Mediation channels give you a **private,
 async space** to do that — built on the same chat the community already uses. The parties see the channel
