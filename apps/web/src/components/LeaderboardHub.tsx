@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Globe, Flame, Landmark, Zap, Coffee, TriangleAlert, RefreshCw, Crown, Medal, MessageCircle, Lock, ChartBar } from "lucide-react";
+import { Trophy, Globe, Flame, Landmark, Zap, Coffee, TriangleAlert, RefreshCw, Crown, Medal, MessageCircle, Lock, ChartBar, Check, Swords, ScrollText, CalendarDays } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, DEMO_LEADERBOARD, ALL_PLATFORM_BADGES, type LeaderboardEntry, type PhilosophicalBadge } from "../lib/api-client.js";
 
 export interface LeaderboardHubProps {
   onOpenDM?: (targetUser: User) => void;
 }
+
+const badgeIcon = (name: string) => {
+  switch (name) {
+    case "swords": return <Swords size={16} />;
+    case "scroll-text": return <ScrollText size={16} />;
+    case "calendar-days": return <CalendarDays size={16} />;
+    case "landmark": return <Landmark size={16} />;
+    case "zap": return <Zap size={16} />;
+    default: return <Trophy size={16} />;
+  }
+};
 
 export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -197,7 +208,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   <div className="podium-badges-row">
                     {topThree[1].badges.map((b: PhilosophicalBadge) => (
                       <span key={b.id} className="badge-pill-sm" title={b.description}>
-                        {b.icon}
+                        {badgeIcon(b.icon)}
                       </span>
                     ))}
                   </div>
@@ -261,7 +272,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   <div className="podium-badges-row">
                     {topThree[0].badges.map((b: PhilosophicalBadge) => (
                       <span key={b.id} className="badge-pill-sm" title={b.description}>
-                        {b.icon}
+                        {badgeIcon(b.icon)}
                       </span>
                     ))}
                   </div>
@@ -324,7 +335,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   <div className="podium-badges-row">
                     {topThree[2].badges.map((b: PhilosophicalBadge) => (
                       <span key={b.id} className="badge-pill-sm" title={b.description}>
-                        {b.icon}
+                        {badgeIcon(b.icon)}
                       </span>
                     ))}
                   </div>
@@ -439,7 +450,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
             <div className="badges-grid">
               {badges.map((badge) => (
                 <div key={badge.id} className="badge-showcase-card">
-                  <div className="badge-icon-wrapper">{badge.icon}</div>
+                  <div className="badge-icon-wrapper">{badgeIcon(badge.icon)}</div>
                   <div className="badge-card-content">
                     <h4>{badge.title}</h4>
                     <p className="badge-desc">{badge.description}</p>
@@ -448,7 +459,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                         {badge.category.toUpperCase()}
                       </span>
                       {(badge.progressPercentage ?? 0) >= 100 ? (
-                        <span className="badge-status-unlocked" style={{ color: "#10b981", fontWeight: 600 }}>✓ Unlocked</span>
+                        <span className="badge-status-unlocked" style={{ color: "#10b981", fontWeight: 600 }}><Check size={13} /> Unlocked</span>
                       ) : (
                         <span className="badge-status-locked" style={{ color: "#94a3b8", fontSize: "0.85rem", fontWeight: 500 }}>
                         <Lock size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> {badge.progressPercentage ?? 0}% Progress

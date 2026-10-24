@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
+import { Handshake, X, Sparkles, Check, Zap } from "lucide-react";
 
 export interface ConnectionRequestModalProps {
   isOpen: boolean;
@@ -53,19 +54,19 @@ export const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({
         {/* Header */}
         <div className="settings-modal-header">
           <div className="header-title-block">
-            <h3>🤝 Send Intellectual Connection Invite</h3>
+            <h3><Handshake size={18} /> Send Intellectual Connection Invite</h3>
             <p className="settings-subtitle">
               Initiate a formal connection with personalized dialogue intentions.
             </p>
           </div>
           <button type="button" className="close-drawer-btn" onClick={onClose}>
-            ✕
+            <X size={18} />
           </button>
         </div>
 
         {isSentSuccess ? (
           <div className="request-sent-success-state">
-            <span className="success-icon">✨</span>
+            <span className="success-icon"><Sparkles size={24} /></span>
             <h4>Connection Invite Sent!</h4>
             <p>Your introduction note has been sent to @{targetUser.username || "philosopher"}.</p>
           </div>
@@ -90,10 +91,10 @@ export const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({
               {/* Compatibility Summary Badges */}
               <div className="compatibility-badges-row">
                 <span className="compatibility-chip high-overlap">
-                  🟢 88% Shared Interests
+                  <><Check size={14} /> 88% Shared Interests</>
                 </span>
                 <span className="compatibility-chip productive-tension">
-                  ⚡ Productive Dialectical Tension
+                  <><Zap size={14} /> Productive Dialectical Tension</>
                 </span>
               </div>
 
@@ -118,7 +119,7 @@ export const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({
                 Cancel
               </button>
               <button type="submit" className="save-submit-btn" disabled={isSending}>
-                {isSending ? "Sending Invite..." : "🤝 Send Connection Invite"}
+                {isSending ? "Sending Invite..." : <><Handshake size={16} /> Send Connection Invite</>}
               </button>
             </div>
           </form>

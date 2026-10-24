@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, DEMO_EVENTS, DEMO_RSVPS, type EventType, type PhilosophyEvent, type EventRSVP, type RSVPStatus, getAvatarUrl, getEventPriorityScore } from "../lib/api-client.js";
 import { LiveEventJoinModal } from "./LiveEventJoinModal.js";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, CalendarDays, Swords, Landmark, BookOpen, FlaskConical, Search, Flame, Radio, CircleAlert, RefreshCw, Clock3, UsersRound, Link2, Info, Lightbulb, CircleCheck, CircleHelp, CircleX, X, ScrollText, Zap, Timer } from "lucide-react";
 
 export interface SymposiumsDirectoryProps {
   onOpenComposer: () => void;
@@ -128,15 +128,15 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
   const getEventTypeLabel = (type: string) => {
     switch (type) {
       case "symposium":
-        return { label: "🏛️ Symposium", colorClass: "badge-symposium" };
+        return { label: <><Landmark size={13} /> Symposium</>, colorClass: "badge-symposium" };
       case "live_debate":
-        return { label: "⚔️ Live Debate", colorClass: "badge-debate" };
+        return { label: <><Swords size={13} /> Live Debate</>, colorClass: "badge-debate" };
       case "reading_group":
-        return { label: "📖 Reading Group", colorClass: "badge-reading" };
+        return { label: <><BookOpen size={13} /> Reading Group</>, colorClass: "badge-reading" };
       case "workshop":
-        return { label: "🧪 Workshop", colorClass: "badge-workshop" };
+        return { label: <><FlaskConical size={13} /> Workshop</>, colorClass: "badge-workshop" };
       default:
-        return { label: "📅 Event", colorClass: "badge-default" };
+        return { label: <><CalendarDays size={13} /> Event</>, colorClass: "badge-default" };
     }
   };
 
@@ -147,10 +147,10 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
 
     if (now >= start && now <= end) {
       const elapsedMins = Math.floor((now - start) / 60000);
-      return { status: "live", text: `🔴 LIVE NOW (${elapsedMins}m elapsed)` };
+      return { status: "live", icon: <Radio size={13} />, text: `LIVE NOW (${elapsedMins}m elapsed)` };
     }
     if (now > end) {
-      return { status: "past", text: "📜 Concluded" };
+      return { status: "past", icon: <ScrollText size={13} />, text: "Concluded" };
     }
 
     const diffMs = start - now;
@@ -159,9 +159,9 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
     const hours = Math.floor(mins / 60);
 
     if (hours > 0) {
-      return { status: "upcoming", text: `⏳ Starts in ${hours}h ${mins % 60}m ${secs}s` };
+      return { status: "upcoming", icon: <Timer size={13} />, text: `Starts in ${hours}h ${mins % 60}m ${secs}s` };
     }
-    return { status: "upcoming", text: `⚡ Starts in ${mins}m ${secs}s` };
+    return { status: "upcoming", icon: <Zap size={13} />, text: `Starts in ${mins}m ${secs}s` };
   };
 
   const filteredEvents = events
@@ -219,7 +219,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
     <div className="symposiums-directory-container">
       {/* Directory Hero Header */}
       <div className="directory-hero-banner">
-        <div className="hero-badge">📅 PHILOSOPHICAL SYMPOSIUMS & LIVE EVENTS</div>
+        <div className="hero-badge"><CalendarDays size={14} /> PHILOSOPHICAL SYMPOSIUMS & LIVE EVENTS</div>
         <h2>Engage in Live Dialogue & Intellectual Assemblies</h2>
         <p>
           Gather with international thinkers for virtual symposiums, structured formal debates, weekly textual reading groups, and interactive workshops.
@@ -227,7 +227,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
 
         <div className="hero-actions-bar">
           <div className="search-box-wrapper">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><Search size={15} /></span>
             <input
               type="text"
               className="directory-search-input"
@@ -238,7 +238,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
           </div>
 
           <button className="btn-primary schedule-hero-btn" onClick={onOpenComposer}>
-            📅 Schedule Event
+            <><CalendarDays size={14} /> Schedule Event</>
           </button>
         </div>
       </div>
@@ -249,14 +249,14 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
           className={`tab-btn ${activeTypeTab === "all" ? "active" : ""}`}
           onClick={() => setActiveTypeTab("all")}
         >
-          🔥 All Assemblies
+          <><Flame size={14} /> All Assemblies</>
         </button>
         <button
           className={`tab-btn ${activeTypeTab === "live_now" ? "active" : ""}`}
           onClick={() => setActiveTypeTab("live_now")}
           style={{ position: "relative" }}
         >
-          🔴 LIVE NOW
+          <><Radio size={14} /> LIVE NOW</>
           {liveNowEvents.length > 0 && (
             <span style={{ background: "#ef4444", color: "#fff", borderRadius: 10, padding: "2px 6px", fontSize: "0.72rem", marginLeft: 6, fontWeight: 700 }}>
               {liveNowEvents.length}
@@ -267,25 +267,25 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
           className={`tab-btn ${activeTypeTab === "symposium" ? "active" : ""}`}
           onClick={() => setActiveTypeTab("symposium")}
         >
-          🏛️ Symposiums
+          <><Landmark size={14} /> Symposiums</>
         </button>
         <button
           className={`tab-btn ${activeTypeTab === "live_debate" ? "active" : ""}`}
           onClick={() => setActiveTypeTab("live_debate")}
         >
-          ⚔️ Live Debates
+          <><Swords size={14} /> Live Debates</>
         </button>
         <button
           className={`tab-btn ${activeTypeTab === "reading_group" ? "active" : ""}`}
           onClick={() => setActiveTypeTab("reading_group")}
         >
-          📖 Reading Groups
+          <><BookOpen size={14} /> Reading Groups</>
         </button>
         <button
           className={`tab-btn ${activeTypeTab === "workshop" ? "active" : ""}`}
           onClick={() => setActiveTypeTab("workshop")}
         >
-          🧪 Workshops
+          <><FlaskConical size={14} /> Workshops</>
         </button>
       </div>
 
@@ -298,20 +298,20 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
       ) : error ? (
         <div className="error-banner" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: 20, margin: "16px 0", color: "#f87171", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}>⚠️ Database / Backend Connection Error</strong>
+            <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}><CircleAlert size={14} /> Database / Backend Connection Error</strong>
             <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>{error}. Unable to load events from database.</span>
           </div>
           <button type="button" onClick={loadEvents} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-            🔄 Retry
+            <><RefreshCw size={14} /> Retry</>
           </button>
         </div>
       ) : filteredEvents.length === 0 ? (
         <div className="empty-directory-card">
-          <span className="empty-icon">🏛️</span>
+          <span className="empty-icon"><Landmark size={28} /></span>
           <h3>No events found</h3>
           <p>{searchQuery ? `No events matched search "${searchQuery}".` : "There are currently no events or live symposiums scheduled in the database."}</p>
           <button className="btn-primary" onClick={onOpenComposer}>
-            📅 Schedule First Symposium
+            <><CalendarDays size={14} /> Schedule First Symposium</>
           </button>
         </div>
       ) : (
@@ -326,7 +326,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                 <div className="event-card-header">
                   <span className={`event-type-chip ${colorClass}`}>{typeLabel}</span>
                   <span className={`status-countdown-chip ${countdown.status}`}>
-                    {countdown.text}
+                    <>{countdown.icon} {countdown.text}</>
                   </span>
                 </div>
 
@@ -334,7 +334,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
                   {event.spaceName ? (
                     <span className="space-context-tag">
-                      🏛️ {event.spaceName}
+                      <><Landmark size={13} /> {event.spaceName}</>
                     </span>
                   ) : <span />}
 
@@ -382,12 +382,12 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                     }}
                   >
                     {event.userRsvpStatus === "going"
-                      ? "🟢 Registered (Going)"
+                      ? <><CircleCheck size={13} /> Registered (Going)</>
                       : event.userRsvpStatus === "maybe"
-                      ? "🟡 Registered (Maybe)"
+                      ? <><CircleHelp size={13} /> Registered (Maybe)</>
                       : event.userRsvpStatus === "declined"
-                      ? "🔴 Not Registered (Declined)"
-                      : "⚪ Not Registered"}
+                      ? <><CircleX size={13} /> Not Registered (Declined)</>
+                      : "Not Registered"}
                   </span>
                 </div>
 
@@ -421,7 +421,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                 {/* Date, Time & Capacity Meta */}
                 <div className="event-meta-box">
                   <div className="meta-item">
-                    <span className="meta-icon">🕒</span>
+                    <span className="meta-icon"><Clock3 size={14} /></span>
                     <span>
                       {new Date(event.startTime).toLocaleDateString(undefined, {
                         weekday: "short",
@@ -434,7 +434,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                   </div>
 
                   <div className="meta-item">
-                    <span className="meta-icon">👥</span>
+                    <span className="meta-icon"><UsersRound size={14} /></span>
                     <span>
                       {event.registeredCount ?? event.attendeeCount} / {event.maxCapacity || "∞"} Registered
                     </span>
@@ -447,14 +447,14 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                       onClick={() => setSelectedLiveEvent(event)}
                       style={{ background: "transparent", border: "none", cursor: "pointer" }}
                     >
-                      🔗 {countdown.status === "live" ? "🔴 Join Live Event" : "ℹ️ View Live Meeting Info"}
+                      {countdown.status === "live" ? <><Link2 size={14} /> Join Live Event</> : <><Info size={14} /> View Live Meeting Info</>}
                     </button>
                   </div>
                 </div>
 
                 {/* Open Participation Notice */}
                 <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontStyle: "italic", marginTop: 4, marginBottom: 8 }}>
-                  💡 Registration manages roster notifications. Anyone can join live events regardless of RSVP status.
+                  <><Lightbulb size={13} /> Registration manages roster notifications. Anyone can join live events regardless of RSVP status.</>
                 </div>
 
                 {/* Event Tags */}
@@ -476,21 +476,21 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                       onClick={() => handleRsvp(event.id, "going")}
                       title="Register as Going (Counts in Roster)"
                     >
-                      🟢 Going
+                      <><CircleCheck size={13} /> Going</>
                     </button>
                     <button
                       className={`rsvp-btn maybe ${event.userRsvpStatus === "maybe" ? "active" : ""}`}
                       onClick={() => handleRsvp(event.id, "maybe")}
                       title="Register as Maybe (Tentative Roster)"
                     >
-                      🟡 Maybe
+                      <><CircleHelp size={13} /> Maybe</>
                     </button>
                     <button
                       className={`rsvp-btn declined ${event.userRsvpStatus === "declined" ? "active" : ""}`}
                       onClick={() => handleRsvp(event.id, "declined")}
                       title="Mark as Declined (Not Registered)"
                     >
-                      🔴 Declined
+                      <><CircleX size={13} /> Declined</>
                     </button>
                   </div>
 
@@ -498,7 +498,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                     className="view-roster-btn"
                     onClick={() => handleOpenRoster(event)}
                   >
-                    👥 Roster ({event.registeredCount ?? event.attendeeCount})
+                    <><UsersRound size={14} /> Roster ({event.registeredCount ?? event.attendeeCount})</>
                   </button>
                 </div>
               </div>
@@ -516,7 +516,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
           >
             <div className="modal-header">
               <div className="modal-title-group">
-                <span className="modal-icon">👥</span>
+                <span className="modal-icon"><UsersRound size={18} /></span>
                 <div>
                   <h3>Attendee Roster</h3>
                   <p className="modal-subtitle">{selectedEventForRoster.title}</p>
@@ -526,7 +526,7 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                 className="modal-close-btn"
                 onClick={() => setSelectedEventForRoster(null)}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
@@ -542,13 +542,13 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                 className={`roster-tab ${rosterTab === "going" ? "active" : ""}`}
                 onClick={() => setRosterTab("going")}
               >
-                🟢 Going ({rosterRsvps.filter((r) => r.status === "going").length})
+                <><CircleCheck size={13} /> Going ({rosterRsvps.filter((r) => r.status === "going").length})</>
               </button>
               <button
                 className={`roster-tab ${rosterTab === "maybe" ? "active" : ""}`}
                 onClick={() => setRosterTab("maybe")}
               >
-                🟡 Maybe ({rosterRsvps.filter((r) => r.status === "maybe").length})
+                <><CircleHelp size={13} /> Maybe ({rosterRsvps.filter((r) => r.status === "maybe").length})</>
               </button>
             </div>
 
@@ -599,10 +599,10 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
                         <span className="thinker-name">{rsvp.user.name || rsvp.user.username}</span>
                         <span className={`rsvp-status-badge status-${rsvp.status}`}>
                           {rsvp.status === "going"
-                            ? "🟢 Going"
+                            ? <><CircleCheck size={13} /> Going</>
                             : rsvp.status === "maybe"
-                            ? "🟡 Maybe"
-                            : "🔴 Declined"}
+                            ? <><CircleHelp size={13} /> Maybe</>
+                            : <><CircleX size={13} /> Declined</>}
                         </span>
                       </div>
                       <div className="thinker-meta">

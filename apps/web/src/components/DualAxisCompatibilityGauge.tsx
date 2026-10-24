@@ -1,5 +1,6 @@
 import React from "react";
 import type { User, CompatibilityScore } from "@philosophy/contract";
+import { CircleCheck, Zap, BookOpen } from "lucide-react";
 
 export interface DualAxisCompatibilityGaugeProps {
   compatibility: CompatibilityScore;
@@ -35,7 +36,7 @@ export const DualAxisCompatibilityGauge: React.FC<DualAxisCompatibilityGaugeProp
         {/* Shared Ground Score (Similarity) */}
         <div className="axis-row">
           <div className="axis-meta">
-            <span className="axis-title">🟢 Shared Ground (Similarity)</span>
+            <span className="axis-title"><CircleCheck size={14} /> Shared Ground (Similarity)</span>
             <span className="axis-value">{sharedGroundScore}%</span>
           </div>
           <div className="progress-track">
@@ -49,7 +50,7 @@ export const DualAxisCompatibilityGauge: React.FC<DualAxisCompatibilityGaugeProp
         {/* Productive Tension Score (Meaningful Difference) */}
         <div className="axis-row">
           <div className="axis-meta">
-            <span className="axis-title">⚡ Productive Tension (Difference)</span>
+            <span className="axis-title"><Zap size={14} /> Productive Tension (Difference)</span>
             <span className="axis-value">{productiveTensionScore}%</span>
           </div>
           <div className="progress-track">
@@ -101,7 +102,7 @@ export const DualAxisCompatibilityGauge: React.FC<DualAxisCompatibilityGaugeProp
             <span className="group-label">Shared Texts:</span>
             {compatibility.overlappingTexts.map((txt, i) => (
               <span key={i} className="chip text-chip">
-                📖 {txt}
+                <BookOpen size={13} /> {txt}
               </span>
             ))}
           </div>

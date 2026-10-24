@@ -3,7 +3,7 @@ import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophicalSpace, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
 import { useAuth } from "../context/AuthContext.js";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Landmark, Brain, Search, Globe, Target, CircleAlert, RefreshCw, Lightbulb, UsersRound, ScrollText, Flame, Link2, Plus, Sprout, Check, Pencil, Bot, X, Copy, ClipboardCheck, CircleCheck } from "lucide-react";
 export interface SpacesHubProps {
   onOpenDM?: (user: User) => void;
   onOpenDebateSummary?: (postId: string) => void;
@@ -98,7 +98,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   const handleSendCircleToFriend = async (space: PhilosophicalSpace, friend: User) => {
     try {
       const conv = await agoraClient.createDirectConversation(friend.id, friend);
-      const content = `Hey! Check out this circle: 🏛️ ${space.name} - ${space.description.slice(0, 80)}... https://agora.app/spaces/${space.slug || space.id}`;
+      const content = `Hey! Check out this circle: ${space.name} - ${space.description.slice(0, 80)}... https://agora.app/spaces/${space.slug || space.id}`;
       const metadata = {
         spaceId: space.id,
         spaceSlug: space.slug,
@@ -437,13 +437,13 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   const categoryBadge = (cat: string) => {
     switch (cat) {
       case "school":
-        return <span className="space-cat-badge school">🏛️ School Circle</span>;
+        return <span className="space-cat-badge school"><Landmark size={13} /> School Circle</span>;
       case "thinker":
-        return <span className="space-cat-badge thinker">🧠 Thinker Guild</span>;
+        return <span className="space-cat-badge thinker"><Brain size={13} /> Thinker Guild</span>;
       case "domain":
-        return <span className="space-cat-badge domain">🔍 Domain Hub</span>;
+        return <span className="space-cat-badge domain"><Search size={13} /> Domain Hub</span>;
       default:
-        return <span className="space-cat-badge general">🌐 General Circle</span>;
+        return <span className="space-cat-badge general"><Globe size={13} /> General Circle</span>;
     }
   };
 
@@ -515,7 +515,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                     gap: 4,
                   }}
                 >
-                  🎯 Worldview Match
+                  <><Target size={13} /> Worldview Match</>
                 </span>
               )}
               {space.isJoined && space.hasUnreadMessages && (
@@ -534,11 +534,11 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                     boxShadow: "0 0 10px rgba(239, 68, 68, 0.5)",
                   }}
                 >
-                  🔴 {space.unreadCount || 1} unread {(space.unreadCount || 1) === 1 ? "argument" : "arguments"}
+                  <><Flame size={13} /> {space.unreadCount || 1} unread {(space.unreadCount || 1) === 1 ? "argument" : "arguments"}</>
                 </span>
               )}
             </div>
-            {space.isJoined && <span className="joined-chip">✓ Member</span>}
+            {space.isJoined && <span className="joined-chip"><Check size={13} /> Member</span>}
           </div>
 
           <h3 className="space-title">{space.name}</h3>
@@ -549,7 +549,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
             <div className="space-thinkers-row">
               {space.keyThinkers.slice(0, 3).map((thinker, i) => (
                 <span key={i} className="chip thinker-chip-sm">
-                  🧠 {thinker}
+                  <><Brain size={12} /> {thinker}</>
                 </span>
               ))}
             </div>
@@ -558,11 +558,11 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           {/* Footer Stats & Action Buttons */}
           <div className="space-card-footer">
             <div className="space-meta-stats">
-              <span>👥 {space.membersCount.toLocaleString()} {space.membersCount === 1 ? "member" : "members"}</span>
-              <span>📜 {space.postsCount} {space.postsCount === 1 ? "argument" : "arguments"}</span>
+              <span><UsersRound size={13} /> {space.membersCount.toLocaleString()} {space.membersCount === 1 ? "member" : "members"}</span>
+              <span><ScrollText size={13} /> {space.postsCount} {space.postsCount === 1 ? "argument" : "arguments"}</span>
               {space.hasUnreadMessages && space.unreadCount ? (
                 <span style={{ color: "#f87171", fontWeight: 700 }}>
-                  🔥 {space.unreadCount} unread {space.unreadCount === 1 ? "argument" : "arguments"}
+                  <><Flame size={13} /> {space.unreadCount} unread {space.unreadCount === 1 ? "argument" : "arguments"}</>
                 </span>
               ) : null}
             </div>
@@ -591,7 +591,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 }}
                 title="Share circle link or send directly to a friend in DM"
               >
-                🔗 Share
+                <><Link2 size={14} /> Share</>
               </button>
 
               <button
@@ -617,7 +617,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
         <>
           <div className="spaces-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
             <div>
-              <h2>🏛️ Philosophical Spaces & Circles</h2>
+              <h2><Landmark size={19} /> Philosophical Spaces & Circles</h2>
               <p className="spaces-subtitle">
                 Discover communities structured by Philosophical School, Key Thinker, and Domain of Inquiry.
               </p>
@@ -630,11 +630,11 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 style={{ background: "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 10, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
                 onClick={() => setIsCreateModalOpen(true)}
               >
-                ➕ Create Circle
+                <><Plus size={14} /> Create Circle</>
               </button>
 
               <button type="button" className="action-btn seed-btn" onClick={handleSeedSpaces}>
-                🌱 Seed Philosophy Circles
+                <><Sprout size={14} /> Seed Philosophy Circles</>
               </button>
             </div>
           </div>
@@ -644,7 +644,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
             <input
               type="text"
               className="filter-input search-space-input"
-              placeholder="🔍 Search spaces by school, thinker, or keyword..."
+              placeholder="Search spaces by school, thinker, or keyword..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -674,16 +674,16 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           ) : error ? (
             <div className="error-banner" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: 20, margin: "16px 0", color: "#f87171", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}>⚠️ Server / Database Connection Error</strong>
+                <strong style={{ fontSize: "1.05rem", display: "block", marginBottom: 4 }}><CircleAlert size={14} /> Server / Database Connection Error</strong>
                 <span style={{ fontSize: "0.9rem", opacity: 0.9 }}>{error}. Unable to connect to local database.</span>
               </div>
               <button type="button" onClick={fetchSpaces} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                🔄 Retry
+                <><RefreshCw size={14} /> Retry</>
               </button>
             </div>
           ) : filteredSpaces.length === 0 ? (
             <div className="empty-state" style={{ padding: 40, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12, border: "1px dashed rgba(255,255,255,0.1)", margin: "16px 0" }}>
-              <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>⭕</div>
+              <div style={{ fontSize: "2.5rem", marginBottom: 8 }}><CircleCheck size={32} /></div>
               <h3 style={{ fontSize: "1.25rem", margin: "8px 0" }}>No Philosophical Circles Found</h3>
               <p style={{ color: "#94a3b8", maxWidth: 450, margin: "0 auto 16px auto" }}>
                 {searchTerm ? `No circles matched "${searchTerm}".` : "There are no active circles in the database."}
@@ -695,14 +695,14 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   style={{ background: "#3b82f6", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}
                   onClick={() => setIsCreateModalOpen(true)}
                 >
-                  ➕ Create First Circle
+                  <><Plus size={14} /> Create First Circle</>
                 </button>
                 <button
                   type="button"
                   className="action-btn seed-btn"
                   onClick={handleSeedSpaces}
                 >
-                  🌱 Seed Default Circles
+                  <><Sprout size={14} /> Seed Default Circles</>
                 </button>
               </div>
             </div>
@@ -771,7 +771,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
-                        💡 Suggested Circles ({suggestedCircles.length})
+                        <><Lightbulb size={15} /> Suggested Circles ({suggestedCircles.length})</>
                       </h3>
                       {userSchools.length > 0 && (
                         <span style={{ fontSize: "0.82rem", color: "#60a5fa", background: "rgba(59, 130, 246, 0.12)", padding: "3px 10px", borderRadius: 12, border: "1px solid rgba(59, 130, 246, 0.3)" }}>
@@ -837,11 +837,11 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
 
               <div className="hero-actions-bar">
                 <div className="hero-stats">
-                  <span>👥 {selectedSpace.membersCount.toLocaleString()} {selectedSpace.membersCount === 1 ? "Member" : "Members"}</span>
-                  <span>📜 {selectedSpace.postsCount} {selectedSpace.postsCount === 1 ? "Argument" : "Arguments"} Published</span>
+                  <span><UsersRound size={13} /> {selectedSpace.membersCount.toLocaleString()} {selectedSpace.membersCount === 1 ? "Member" : "Members"}</span>
+                  <span><ScrollText size={13} /> {selectedSpace.postsCount} {selectedSpace.postsCount === 1 ? "Argument" : "Arguments"} Published</span>
                   {selectedSpace.hasUnreadMessages && selectedSpace.unreadCount ? (
                     <span style={{ color: "#f87171", fontWeight: 700 }}>
-                      🔥 {selectedSpace.unreadCount} Unread {selectedSpace.unreadCount === 1 ? "Argument" : "Arguments"}
+                      <><Flame size={13} /> {selectedSpace.unreadCount} Unread {selectedSpace.unreadCount === 1 ? "Argument" : "Arguments"}</>
                     </span>
                   ) : null}
                 </div>
@@ -864,7 +864,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                     }}
                     onClick={() => handleOpenShareModal(selectedSpace)}
                   >
-                    🔗 Share Circle
+                    <><Link2 size={14} /> Share Circle</>
                   </button>
 
                   <button
@@ -872,7 +872,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                     className={`join-btn-lg ${selectedSpace.isJoined ? "joined" : ""}`}
                     onClick={() => handleJoinToggle(selectedSpace)}
                   >
-                    {selectedSpace.isJoined ? "✓ Circle Member (Click to Leave)" : "Join Circle"}
+                    {selectedSpace.isJoined ? <><Check size={14} /> Circle Member (Click to Leave)</> : "Join Circle"}
                   </button>
 
                   {onOpenComposerForSpace && (
@@ -881,7 +881,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                       className="connect-btn"
                       onClick={() => onOpenComposerForSpace(selectedSpace)}
                     >
-                      ✍️ Publish Argument to {selectedSpace.name}
+                      <><Pencil size={14} /> Publish Argument to {selectedSpace.name}</>
                     </button>
                   )}
                 </div>
@@ -910,14 +910,14 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
               className={`space-tab-btn ${spaceViewTab === "feed" ? "active" : ""}`}
               onClick={() => setSpaceViewTab("feed")}
             >
-              📜 Circle Arguments & Essays ({spacePosts.length})
+              <><ScrollText size={14} /> Circle Arguments & Essays ({spacePosts.length})</>
             </button>
             <button
               type="button"
               className={`space-tab-btn ${spaceViewTab === "roster" ? "active" : ""}`}
               onClick={() => setSpaceViewTab("roster")}
             >
-              👥 Key Thinkers & Member Roster ({spaceMembersList.length})
+              <><UsersRound size={14} /> Key Thinkers & Member Roster ({spaceMembersList.length})</>
             </button>
           </div>
 
@@ -954,7 +954,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                       {selectedSpace.name} — Group Discussion
                     </strong>
                     <span style={{ fontSize: "0.78rem", color: "#60a5fa" }}>
-                      🟢 {selectedSpace.membersCount || 4} Members in Group Chat
+                      <><CircleCheck size={13} /> {selectedSpace.membersCount || 4} Members in Group Chat</>
                     </span>
                   </div>
                 </div>
@@ -1096,7 +1096,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                                 }}
                                 title="Sent to group"
                               >
-                                ✓
+                                <Check size={12} />
                               </span>
                             )}
                           </div>
@@ -1222,7 +1222,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                                 className="ai-summary-trigger-btn"
                                 onClick={() => onOpenDebateSummary(post.id)}
                               >
-                                🧠 AI Debate Summary
+                                <><Brain size={14} /> AI Debate Summary</>
                               </button>
                             )}
                           </div>
@@ -1266,11 +1266,11 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
             <div className="space-roster-view">
               {selectedSpace.keyThinkers && selectedSpace.keyThinkers.length > 0 && (
                 <div className="roster-section">
-                  <h4>🧠 Core Philosophical Figures & Influences</h4>
+                  <h4><Brain size={15} /> Core Philosophical Figures & Influences</h4>
                   <div className="thinker-roster-grid">
                     {selectedSpace.keyThinkers.map((thinker, i) => (
                       <div key={i} className="thinker-roster-card">
-                        <div className="thinker-avatar-icon">🧠</div>
+                        <div className="thinker-avatar-icon"><Brain size={18} /></div>
                         <div className="thinker-info">
                           <h5>{thinker}</h5>
                           <span>Historical Steward of {selectedSpace.primarySchool || selectedSpace.name}</span>
@@ -1282,7 +1282,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
               )}
 
               <div className="roster-section" style={{ marginTop: 28 }}>
-                <h4>👥 Active Community Stewards & Members</h4>
+                <h4><UsersRound size={15} /> Active Community Stewards & Members</h4>
                 {isMembersLoading ? (
                   <div className="loading-state" style={{ padding: 20 }}>Loading circle members...</div>
                 ) : spaceMembersList.length === 0 ? (
@@ -1329,8 +1329,8 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
         <div className="modal-overlay" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
           <div className="modal-card" style={{ background: "var(--bg-card, #111827)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 16, width: "100%", maxWidth: 520, padding: 24, boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: "1.3rem", display: "flex", alignItems: "center", gap: 8 }}>🏛️ Create Philosophical Circle</h3>
-              <button type="button" onClick={() => setIsCreateModalOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.5rem", cursor: "pointer" }}>×</button>
+              <h3 style={{ margin: 0, fontSize: "1.3rem", display: "flex", alignItems: "center", gap: 8 }}><Landmark size={17} /> Create Philosophical Circle</h3>
+              <button type="button" onClick={() => setIsCreateModalOpen(false)} aria-label="Close" style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.5rem", cursor: "pointer" }}><X size={18} /></button>
             </div>
 
             <form onSubmit={handleCreateSpaceSubmit}>
@@ -1353,10 +1353,10 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   onChange={(e) => setNewSpaceCategory(e.target.value as any)}
                   style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "#1f2937", color: "#fff" }}
                 >
-                  <option value="school">🏛️ School of Thought (e.g. Existentialism, Stoicism)</option>
-                  <option value="thinker">🧠 Thinker Guild (e.g. Nietzsche, Kant, Camus)</option>
-                  <option value="domain">🔍 Domain of Inquiry (e.g. Ethics, Mind, Logic)</option>
-                  <option value="general">🌐 General Philosophical Circle</option>
+                  <option value="school">School of Thought (e.g. Existentialism, Stoicism)</option>
+                  <option value="thinker">Thinker Guild (e.g. Nietzsche, Kant, Camus)</option>
+                  <option value="domain">Domain of Inquiry (e.g. Ethics, Mind, Logic)</option>
+                  <option value="general">General Philosophical Circle</option>
                 </select>
               </div>
 
@@ -1421,20 +1421,20 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
           <div className="share-modal-card" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
-                🔗 Share Circle Link
+                <><Link2 size={14} /> Share Circle Link</>
               </h3>
               <button
                 type="button"
                 onClick={() => setShareTargetSpace(null)}
                 style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
             <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: 14, borderRadius: 12, marginBottom: 18, border: "1px solid rgba(255, 255, 255, 0.1)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                <span style={{ fontSize: "1.5rem" }}>🏛️</span>
+                <span style={{ fontSize: "1.5rem" }}><Landmark size={20} /></span>
                 <strong style={{ fontSize: "1rem", color: "#f8fafc" }}>{shareTargetSpace.name}</strong>
               </div>
               <p style={{ margin: 0, fontSize: "0.82rem", color: "#cbd5e1", lineHeight: 1.4 }}>{shareTargetSpace.description}</p>
@@ -1457,7 +1457,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   onClick={() => handleCopyCircleLink(shareTargetSpace)}
                   style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}
                 >
-                  {copiedToast ? "✓ Copied!" : "📋 Copy"}
+                  {copiedToast ? <><ClipboardCheck size={14} /> Copied!</> : <><Copy size={14} /> Copy</>}
                 </button>
               </div>
             </div>

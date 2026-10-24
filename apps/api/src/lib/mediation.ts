@@ -140,7 +140,7 @@ export async function closeMediationForCase(projectId: string, caseId: string, o
     const channels = await listCaseChannels(projectId, caseId);
     for (const ch of channels) {
       await getDb().update(conversations).set({ postingPermission: "admins", updatedAt: new Date() }).where(eq(conversations.id, ch.id));
-      await postSystemMessage(projectId, ch.id, "🕊️ This case has been resolved. This channel is now read-only.");
+      await postSystemMessage(projectId, ch.id, "This case has been resolved. This channel is now read-only.");
       if (onClose === "lock-leave") {
         const dropped = await getDb().update(conversationMembers).set({ isActive: false, leftAt: new Date() })
           .where(and(

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import type { User, UserRecommendation, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient, type ConnectionRequest } from "../lib/api-client.js";
 import { DualAxisCompatibilityGauge } from "./DualAxisCompatibilityGauge.js";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Globe, Swords, Brain, BookOpen, Handshake, UsersRound, Mail, Check, X, Zap, CircleX, UserPlus } from "lucide-react";
 
-const INTENT_FILTERS: { id: ConnectionIntent | "all"; label: string; icon: string }[] = [
-  { id: "all", label: "All Thinkers", icon: "🌐" },
-  { id: "discussion", label: "Debate Partners", icon: "⚔️" },
-  { id: "intellectual", label: "Intellectual Peers", icon: "🧠" },
-  { id: "friendship", label: "Reading Partners", icon: "📖" },
+const INTENT_FILTERS: { id: ConnectionIntent | "all"; label: string; icon: React.ReactNode }[] = [
+  { id: "all", label: "All Thinkers", icon: <Globe size={14} /> },
+  { id: "discussion", label: "Debate Partners", icon: <Swords size={14} /> },
+  { id: "intellectual", label: "Intellectual Peers", icon: <Brain size={14} /> },
+  { id: "friendship", label: "Reading Partners", icon: <BookOpen size={14} /> },
 ];
 
 export interface PeopleRecommendationsFeedProps {
@@ -101,7 +101,7 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
     <div className="recommendations-feed-container">
       <div className="feed-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h2>🤝 Philosopher Peer Discovery & Worldview Compatibility</h2>
+          <h2><Handshake size={20} /> Philosopher Peer Discovery & Worldview Compatibility</h2>
           <p className="feed-subtitle">
             Discover fellow thinkers and co-debaters based on dual-axis compatibility: shared ground + productive philosophical tension.
           </p>
@@ -122,7 +122,7 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
           }}
           title="Total Established Connections"
         >
-          <span style={{ fontSize: "1.1rem" }}>🤝</span>
+          <Handshake size={18} />
           <span>{connectionCount} {connectionCount === 1 ? "Connection" : "Connections"}</span>
         </div>
       </div>
@@ -142,7 +142,7 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: 8 }}>
             <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#f8fafc", display: "flex", alignItems: "center", gap: 8 }}>
-              <span>📬 Pending Connection Requests</span>
+              <span><Mail size={16} /> Pending Connection Requests</span>
               <span
                 style={{
                   background: "#ef4444",
@@ -255,7 +255,7 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                           boxShadow: "0 2px 6px rgba(34, 197, 94, 0.3)",
                         }}
                       >
-                        🟢 Accept Connection
+                        <><Check size={14} /> Accept Connection</>
                       </button>
                       <button
                         type="button"
@@ -276,7 +276,7 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                           gap: "6px",
                         }}
                       >
-                        🔴 Decline
+                        <><X size={14} /> Decline</>
                       </button>
                     </div>
                   </div>
@@ -384,7 +384,7 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                     </div>
                   </div>
                   <div className="reputation-badge">
-                    <span>⚡ {user.reputation ?? 0} Rep</span>
+                    <span><Zap size={13} /> {user.reputation ?? 0} Rep</span>
                   </div>
                 </div>
 
@@ -399,11 +399,11 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                 <div className="card-actions" style={{ gap: 10, flexWrap: "wrap" }}>
                   {isConnected ? (
                     <span className="status-accepted-chip" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981", padding: "6px 12px", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600 }}>
-                      ✓ Connected
+                      <><Check size={14} /> Connected</>
                     </span>
                   ) : isDeclined ? (
                     <span className="status-declined-chip" style={{ background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", padding: "6px 12px", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600 }}>
-                      ✕ Request Declined
+                      <><CircleX size={14} /> Request Declined</>
                     </span>
                   ) : isOutgoing ? (
                     <span className="status-pending-chip" style={{ background: "rgba(234, 179, 8, 0.15)", border: "1px solid rgba(234, 179, 8, 0.35)", color: "#eab308", padding: "6px 12px", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -417,14 +417,14 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                         style={{ flex: 1, fontSize: "0.85rem", padding: "8px 12px", borderRadius: 8, background: "#10b981", color: "#ffffff", border: "none", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
                         onClick={() => handleAcceptConnection(pendingReq.id, user.id)}
                       >
-                        🟢 Accept Connection
+                        <><Check size={14} /> Accept Connection</>
                       </button>
                       <button
                         className="decline-req-btn"
                         style={{ fontSize: "0.85rem", padding: "8px 12px", borderRadius: 8, background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.4)", cursor: "pointer", fontWeight: 600 }}
                         onClick={() => handleDeclineConnection(pendingReq.id, user.id)}
                       >
-                        🔴 Decline
+                        <><X size={14} /> Decline</>
                       </button>
                     </div>
                   ) : (
@@ -435,7 +435,7 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                           style={{ fontSize: "0.85rem" }}
                           onClick={() => onOpenConnectModal(user)}
                         >
-                          🤝 Send Invite
+                          <><UserPlus size={14} /> Send Invite</>
                         </button>
                       )}
                       <button

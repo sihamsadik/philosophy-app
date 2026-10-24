@@ -29,7 +29,7 @@ import { PublicLandingDashboard } from "./components/PublicLandingDashboard.js";
 import { BottomNavDock, type NavTab as BottomNavTab } from "./components/BottomNavDock.js";
 import { agoraClient } from "./lib/api-client.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
-import { Bell } from "lucide-react";
+import { Bell, Smartphone, Settings, Brain, LogOut } from "lucide-react";
 
 type NavTab = "profile" | "recommendations" | "search" | "debates" | "spaces" | "symposiums" | "leaderboard";
 
@@ -252,7 +252,7 @@ export const App: React.FC = () => {
             title="Install App (PWA)"
             style={{ fontSize: "0.9rem" }}
           >
-            📲
+            <Smartphone size={16} />
           </button>
 
           <button
@@ -298,7 +298,7 @@ export const App: React.FC = () => {
                     className="dropdown-item-btn"
                     onClick={() => setIsSettingsModalOpen(true)}
                   >
-                    ⚙️ Profile Settings & Bio
+                    <><Settings size={14} /> Profile Settings & Bio</>
                   </button>
                   <button
                     type="button"
@@ -312,7 +312,7 @@ export const App: React.FC = () => {
                     className="dropdown-item-btn"
                     onClick={() => setActiveTab("profile")}
                   >
-                    🧠 My Worldview Profile
+                    <><Brain size={14} /> My Worldview Profile</>
                   </button>
                   <div className="dropdown-divider" />
                   <button
@@ -320,7 +320,7 @@ export const App: React.FC = () => {
                     className="dropdown-item-btn logout"
                     onClick={() => logout()}
                   >
-                    🚪 Sign Out
+                    <><LogOut size={14} /> Sign Out</>
                   </button>
                 </div>
               )}

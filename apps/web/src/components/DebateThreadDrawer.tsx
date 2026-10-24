@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Crown, MessageCircle, GitBranch, Swords, Brain, CircleDot, ChevronDown, ChevronUp, ThumbsUp, X } from "lucide-react";
+import { Crown, MessageCircle, GitBranch, Swords, Brain, CircleDot, CircleCheck, CircleX, ChevronDown, ChevronUp, ThumbsUp, X } from "lucide-react";
 import type { PhilosophicalPost, PhilosophicalComment } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
@@ -550,21 +550,21 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                 className={`stance-btn thesis ${topCommentStance === "thesis" ? "selected" : ""}`}
                 onClick={() => setTopCommentStance("thesis")}
               >
-                🟢 Thesis
+                <><CircleCheck size={13} /> Thesis</>
               </button>
               <button
                 type="button"
                 className={`stance-btn antithesis ${topCommentStance === "antithesis" ? "selected" : ""}`}
                 onClick={() => setTopCommentStance("antithesis")}
               >
-                🔴 Antithesis
+                <><CircleX size={13} /> Antithesis</>
               </button>
               <button
                 type="button"
                 className={`stance-btn synthesis ${topCommentStance === "synthesis" ? "selected" : ""}`}
                 onClick={() => setTopCommentStance("synthesis")}
               >
-                ⚪ Synthesis
+                <><CircleDot size={13} /> Synthesis</>
               </button>
             </div>
 
@@ -600,7 +600,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                 {/* Thesis Column */}
                 <div className="split-column thesis-col">
                   <div className="split-col-header thesis-header">
-                    <h4>🟢 Thesis / Proponents</h4>
+                    <h4><CircleCheck size={14} /> Thesis / Proponents</h4>
                     <span className="col-count-chip">{thesisComments.length}</span>
                   </div>
                   <div className="split-comments-list">
@@ -632,7 +632,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
                 {/* Antithesis Column */}
                 <div className="split-column antithesis-col">
                   <div className="split-col-header antithesis-header">
-                    <h4>🔴 Antithesis / Rebuttals</h4>
+                    <h4><CircleX size={14} /> Antithesis / Rebuttals</h4>
                     <span className="col-count-chip">{antithesisComments.length}</span>
                   </div>
                   <div className="split-comments-list">
@@ -665,7 +665,7 @@ export const DebateThreadDrawer: React.FC<DebateThreadDrawerProps> = ({
               {/* Synthesis Panel */}
               <div className="synthesis-panel">
                 <div className="split-col-header synthesis-header">
-                  <h4>⚪ Synthesis & Neutral Integrations</h4>
+                  <h4><CircleDot size={14} /> Synthesis & Neutral Integrations</h4>
                   <span className="col-count-chip">{synthesisComments.length}</span>
                 </div>
                 <div className="synthesis-grid">

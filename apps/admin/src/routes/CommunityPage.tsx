@@ -8,7 +8,7 @@ import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity, BarChart3, FileText, Flag, Heart, Inbox, MessageSquare, PenLine, RefreshCw, ThumbsUp,
-  TrendingUp, Trophy, UserPlus, Users, type LucideIcon,
+  TrendingUp, Trophy, UserPlus, Users, Sun, CloudSun, Cloud, CloudLightning, CloudFog, type LucideIcon,
 } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import { useAuth } from "../auth/AuthContext";
@@ -320,12 +320,12 @@ function ModerationChart({ series, days }: { series: { hour: string; opened: num
 // ── Community Weather: the social graph's aggregate warmth (GET /social/weather). Disabled config
 // surfaces as a 400 and an unconfigured graph as a 503 — both render as a quiet muted note rather
 // than an error state, since either is a legitimate deployment choice. ──
-const BAND_META: Record<WeatherBand, { emoji: string; label: string }> = {
-  sunny: { emoji: "☀️", label: "Sunny" },
-  fine: { emoji: "🌤️", label: "Fine" },
-  overcast: { emoji: "☁️", label: "Overcast" },
-  stormy: { emoji: "⛈️", label: "Stormy" },
-  quiet: { emoji: "🌫️", label: "Quiet" },
+const BAND_META: Record<WeatherBand, { icon: LucideIcon; label: string }> = {
+  sunny: { icon: Sun, label: "Sunny" },
+  fine: { icon: CloudSun, label: "Fine" },
+  overcast: { icon: Cloud, label: "Overcast" },
+  stormy: { icon: CloudLightning, label: "Stormy" },
+  quiet: { icon: CloudFog, label: "Quiet" },
 };
 
 function WeatherSection() {
@@ -352,9 +352,10 @@ function WeatherSection() {
 
 function WeatherReading({ w }: { w: SocialWeather }) {
   const meta = BAND_META[w.band];
+  const WeatherIcon = meta.icon;
   return (
     <div className="flex items-center gap-4">
-      <span className="text-4xl" role="img" aria-label={meta.label}>{meta.emoji}</span>
+      <span className="text-4xl" aria-label={meta.label}><WeatherIcon size={36} strokeWidth={1.6} /></span>
       <div>
         <p className="text-2xl font-semibold tracking-tight text-fg">
           {meta.label}

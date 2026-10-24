@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Landmark, UsersRound, ScrollText, LockKeyhole, X, Mail, CircleCheck, CircleX, Clock3, Check, CheckCheck } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import type { Socket } from "socket.io-client";
 import type { DirectConversation, ChatMessage, PhilosophicalSpace } from "../lib/api-client.js";
@@ -142,7 +142,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
 
   const handleSendCircleMessage = async (circle: PhilosophicalSpace) => {
     if (!selectedConv) return;
-    const content = `Hey! Check out this circle: 🏛️ ${circle.name} - ${circle.description.slice(0, 80)}... https://agora.app/spaces/${circle.slug || circle.id}`;
+    const content = `Hey! Check out this circle: ${circle.name} - ${circle.description.slice(0, 80)}... https://agora.app/spaces/${circle.slug || circle.id}`;
     const metadata = {
       spaceId: circle.id,
       spaceSlug: circle.slug,
@@ -405,11 +405,11 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
             <MessageCircle size={20} strokeWidth={2} />
             <h3>Messages</h3>
             <span className="drawer-subtitle">
-              {messageSection === "replies" ? "Community replies to your comments" : "🔒 End-to-end encrypted private & secure direct messages"}
+              {messageSection === "replies" ? "Community replies to your comments" : <><LockKeyhole size={13} /> End-to-end encrypted private & secure direct messages</>}
             </span>
           </div>
           <button className="close-drawer-btn" onClick={onClose}>
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -575,7 +575,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                     return (
                       <div className="message-request-banner-box">
                         <div className="req-banner-text">
-                          <span className="req-badge-icon">📩</span>
+                          <span className="req-badge-icon"><Mail size={16} /></span>
                           <div>
                             <strong>Message Request from {selectedPartner.name || selectedPartner.username}</strong>
                             <p>Accept this request to continue messaging normally in a direct conversation.</p>
@@ -583,10 +583,10 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                         </div>
                         <div className="req-banner-actions">
                           <button type="button" className="accept-req-btn" onClick={handleAcceptRequest}>
-                            🟢 Accept
+                            <><CircleCheck size={14} /> Accept</>
                           </button>
                           <button type="button" className="decline-req-btn" onClick={handleDeclineRequest}>
-                            🔴 Decline
+                            <><X size={14} /> Decline</>
                           </button>
                         </div>
                       </div>
@@ -596,7 +596,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                   if (isPending && isRequester) {
                     return (
                       <div className="message-request-banner-box pending-sent">
-                        <span>⏳ Message request pending approval from @{selectedPartner.username || "philosopher"}.</span>
+                        <span><Clock3 size={14} /> Message request pending approval from @{selectedPartner.username || "philosopher"}.</span>
                       </div>
                     );
                   }
@@ -604,7 +604,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                   if (isDeclined) {
                     return (
                       <div className="message-request-banner-box declined-sent">
-                        <span>✕ Message request was declined. Normal messaging is not enabled.</span>
+                        <span><CircleX size={14} /> Message request was declined. Normal messaging is not enabled.</span>
                       </div>
                     );
                   }
@@ -616,7 +616,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                 <div className="messages-stream">
                   {messages.length === 0 ? (
                     <div className="empty-chat-state">
-                      <p>📜 Start a philosophical discussion with {selectedPartner.name}!</p>
+                      <p><ScrollText size={15} /> Start a philosophical discussion with {selectedPartner.name}!</p>
                     </div>
                   ) : (
                     (() => {
@@ -688,9 +688,9 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                                             </div>
                                           )}
                                           <div className="shared-card-titles">
-                                            <h4 className="shared-card-name">🏛️ {spaceTitle}</h4>
+                                            <h4 className="shared-card-name"><Landmark size={14} /> {spaceTitle}</h4>
                                             <span className="shared-card-sub">
-                                              👥 {msg.metadata?.membersCount || 4} members · 📜 {msg.metadata?.postsCount || 5} arguments
+                                              <><UsersRound size={12} /> {msg.metadata?.membersCount || 4} members · <ScrollText size={12} /> {msg.metadata?.postsCount || 5} arguments</>
                                             </span>
                                           </div>
                                         </div>
@@ -707,7 +707,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                                             );
                                           }}
                                         >
-                                          🏛️ Open & Join Circle →
+                                          <><Landmark size={14} /> Open & Join Circle →</>
                                         </button>
                                       </div>
                                     );
@@ -724,14 +724,14 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                                       onOpenThreadDrawer?.(entityId);
                                     }}
                                   >
-                                    📜 Jump to Debate Thread
+                                    <><ScrollText size={14} /> Jump to Debate Thread</>
                                   </button>
                                 )}
 
                                 <div className="message-content-footer">
                                   <span className="message-time">{timeStr}</span>
                                   {isMe && <span className="message-ticks" aria-label={wasRead ? "Read" : "Sent"}>
-                                    {wasRead ? "✓✓" : "✓"}
+                                    {wasRead ? <CheckCheck size={13} /> : <Check size={13} />}
                                   </span>}
                                 </div>
                               </div>
@@ -775,7 +775,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                             transition: "all 0.2s ease",
                           }}
                         >
-                          🏛️
+                          <Landmark size={17} />
                         </button>
 
                         {isCirclePickerOpen && (
@@ -783,7 +783,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                             <div className="picker-header">
                               <strong>Share Circle Link</strong>
                               <button type="button" onClick={() => setIsCirclePickerOpen(false)}>
-                                ✕
+                                <X size={14} />
                               </button>
                             </div>
                             <div className="picker-list">
@@ -797,7 +797,7 @@ export const DirectMessageDrawer: React.FC<DirectMessageDrawerProps> = ({
                                     setIsCirclePickerOpen(false);
                                   }}
                                 >
-                                  <span className="picker-icon">🏛️</span>
+                                  <span className="picker-icon"><Landmark size={16} /></span>
                                   <div className="picker-info">
                                     <span className="picker-name">{circle.name}</span>
                                     <span className="picker-sub">{circle.primarySchool || circle.category}</span>

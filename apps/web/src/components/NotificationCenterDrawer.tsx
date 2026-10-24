@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophyNotification, type ConnectionRequest } from "../lib/api-client.js";
-import { MessageCircle } from "lucide-react";
-import { Bell } from "lucide-react";
+import { MessageCircle, Bell, Handshake, X, Check, CircleCheck, CircleX, ScrollText } from "lucide-react";
 export interface NotificationCenterDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -137,7 +136,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
             </p>
           </div>
           <button type="button" className="close-drawer-btn" onClick={onClose}>
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -157,14 +156,14 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
               className={`notif-tab-btn ${activeTab === "requests" ? "active" : ""}`}
               onClick={() => setActiveTab("requests")}
             >
-              🤝 Connection Invites {pendingRequests.length > 0 && (
+              <><Handshake size={14} /> Connection Invites {pendingRequests.length > 0 && (
                 <span className="unread-badge pending">{pendingRequests.length}</span>
-              )}
+              )}</>
             </button>
           </div>
 
           <button type="button" className="action-btn-sm" onClick={handleMarkAllRead}>
-            ✓ Mark All as Read
+            <><Check size={14} /> Mark All as Read</>
           </button>
         </div>
 
@@ -205,14 +204,14 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                         className="accept-req-btn"
                         onClick={() => handleAcceptRequest(req.id)}
                       >
-                        🟢 Accept Connection
+                        <><CircleCheck size={14} /> Accept Connection</>
                       </button>
                       <button
                         type="button"
                         className="decline-req-btn"
                         onClick={() => handleDeclineRequest(req.id)}
                       >
-                        🔴 Decline
+                        <><X size={14} /> Decline</>
                       </button>
                     </div>
                   </div>
@@ -243,7 +242,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                             handleMarkSingleRead(notif.id);
                           }}
                         >
-                          ✕
+                          <X size={14} />
                         </button>
                       </div>
                     </div>
@@ -254,7 +253,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                     {notif.type === "connection_accepted" && (
                       <div className="notif-inline-actions" style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
                         <span className="status-accepted-chip" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981", padding: "4px 10px", borderRadius: 6, fontSize: "0.82rem", fontWeight: 600 }}>
-                          ✓ Connected
+                          <><CircleCheck size={14} /> Connected</>
                         </span>
                       </div>
                     )}
@@ -262,9 +261,9 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                     {notif.type === "connection_request" && (
                       <div className="notif-inline-actions" style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
                         {notif.requestId && safeRequests.find((r) => r.id === notif.requestId)?.status === "accepted" ? (
-                          <span className="status-accepted-chip">✓ Connection Accepted</span>
+                          <span className="status-accepted-chip"><CircleCheck size={14} /> Connection Accepted</span>
                         ) : notif.requestId && connectionRequests.find((r) => r.id === notif.requestId)?.status === "declined" ? (
-                          <span className="status-declined-chip">✕ Request Declined</span>
+                          <span className="status-declined-chip"><CircleX size={14} /> Request Declined</span>
                         ) : (
                           <>
                             {notif.requestId && (
@@ -274,14 +273,14 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                                   className="accept-req-btn-sm"
                                   onClick={() => handleAcceptRequest(notif.requestId!)}
                                 >
-                                  🟢 Accept
+                                  <><CircleCheck size={14} /> Accept</>
                                 </button>
                                 <button
                                   type="button"
                                   className="decline-req-btn-sm"
                                   onClick={() => handleDeclineRequest(notif.requestId!)}
                                 >
-                                  🔴 Decline
+                                  <><X size={14} /> Decline</>
                                 </button>
                               </>
                             )}
@@ -296,7 +295,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                                   onNavigateToPeers();
                                 }}
                               >
-                                🤝 View in Peers Page
+                                <><Handshake size={14} /> View in Peers Page</>
                               </button>
                             )}
                           </>
@@ -332,7 +331,7 @@ export const NotificationCenterDrawer: React.FC<NotificationCenterDrawerProps> =
                             onOpenThreadDrawer(notif.entityId!, notif.commentId, notif.replyId);
                           }}
                         >
-                          📜 View Debate Thread
+                          <><ScrollText size={14} /> View Debate Thread</>
                         </button>
                       )}
                   </div>

@@ -1,4 +1,4 @@
-import { Hexagon } from "lucide-react";
+import { Hexagon, Wrench } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -160,7 +160,7 @@ export function LoginPage() {
                 <span className="h-px flex-1 bg-border" />
               </div>
               <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={onAdminLogin}>
-                🛠️ Log in as admin
+                <><Wrench size={14} /> Log in as admin</>
               </Button>
               <p className="text-sm text-muted">
                 Signs you in with the seeded demo <strong className="text-fg">operator</strong>{" "}

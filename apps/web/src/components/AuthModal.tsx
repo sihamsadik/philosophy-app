@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.js";
-import { Landmark, User as UserIcon } from "lucide-react";
+import { Landmark, User as UserIcon, X, CircleAlert, CircleCheck, CircleX } from "lucide-react";
 import type { User } from "@philosophy/contract";
 
 export interface AuthModalProps {
@@ -170,7 +170,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             Sign in or create your account to discover intellectual connections.
           </p>
           <button className="close-drawer-btn" onClick={onClose}>
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -278,10 +278,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 onChange={(e) => setSignUpPassword(e.target.value)}
               />
               {signUpPassword && signUpPassword.length < 8 && (
-                <span className="field-error-text">⚠️ Password must be at least 8 characters long</span>
+                <span className="field-error-text"><CircleAlert size={14} /> Password must be at least 8 characters long</span>
               )}
               {signUpPassword && signUpPassword.length >= 8 && (
-                <span className="field-success-text">✓ Password length requirement met</span>
+                <span className="field-success-text"><CircleCheck size={14} /> Password length requirement met</span>
               )}
             </div>
 
@@ -303,10 +303,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 onChange={(e) => setSignUpConfirmPassword(e.target.value)}
               />
               {signUpConfirmPassword && signUpPassword !== signUpConfirmPassword && (
-                <span className="field-error-text">❌ Passwords do not match</span>
+                <span className="field-error-text"><CircleX size={14} /> Passwords do not match</span>
               )}
               {signUpConfirmPassword && signUpPassword === signUpConfirmPassword && signUpPassword.length >= 8 && (
-                <span className="field-success-text">✓ Passwords match</span>
+                <span className="field-success-text"><CircleCheck size={14} /> Passwords match</span>
               )}
             </div>
 

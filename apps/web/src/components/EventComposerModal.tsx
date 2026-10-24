@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { EventType, PhilosophicalSpace, PhilosophyEvent } from "../lib/api-client.js";
 import { agoraClient, DEMO_SPACES } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
-import { MessageCircle } from "lucide-react";
+import { CalendarDays, X, CircleAlert, ScrollText, Crown, Video, Rocket } from "lucide-react";
 
 export interface EventComposerModalProps {
   isOpen: boolean;
@@ -158,7 +158,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: "1.8rem" }}>📅</span>
+            <span style={{ fontSize: "1.8rem" }}><CalendarDays size={28} /></span>
             <div>
               <h3 style={{ margin: 0, fontSize: "1.25rem", color: "#f8fafc" }}>Schedule Philosophical Event</h3>
               <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#94a3b8" }}>
@@ -171,13 +171,13 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
             onClick={onClose}
             style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
         {errorMsg && (
           <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: 12, padding: "10px 14px", color: "#fca5a5", fontSize: "0.85rem", marginBottom: 16 }}>
-            ⚠️ {errorMsg}
+            <><CircleAlert size={14} /> {errorMsg}</>
           </div>
         )}
 
@@ -207,10 +207,10 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
           <div style={{ flex: 1 }}>
             <span style={{ fontSize: "0.72rem", color: "#60a5fa", fontWeight: 700, letterSpacing: "0.05em", display: "block" }}>EVENT CREATOR & HOST</span>
             <h4 style={{ margin: "2px 0 0 0", fontSize: "0.95rem", color: "#f8fafc" }}>{activeHostName} <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: "0.82rem" }}>@{activeHostHandle}</span></h4>
-            <span style={{ fontSize: "0.78rem", color: "#cbd5e1" }}>📜 {activeHostSchool}</span>
+            <span style={{ fontSize: "0.78rem", color: "#cbd5e1" }}><ScrollText size={12} /> {activeHostSchool}</span>
           </div>
           <span style={{ background: "rgba(74, 222, 128, 0.15)", color: "#4ade80", border: "1px solid rgba(74, 222, 128, 0.3)", borderRadius: 10, padding: "4px 10px", fontSize: "0.75rem", fontWeight: 700 }}>
-            👑 Organizer
+            <><Crown size={13} /> Organizer</>
           </span>
         </div>
 
@@ -259,7 +259,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                 }}
               >
                 <div style={{ fontWeight: 700, fontSize: "0.9rem", color: eventFormat === "video_meeting" ? "#f87171" : "#ffffff" }}>
-                  📹 External Video Meeting
+                  <><Video size={14} /> External Video Meeting</>
                 </div>
                 <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 4 }}>
                   Google Meet, Telegram Voice/Video, Zoom, or YouTube link required
@@ -310,10 +310,10 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                   boxSizing: "border-box",
                 }}
               >
-                <option value="live_debate">⚔️ Live Formal Debate</option>
-                <option value="symposium">🏛️ Virtual Symposium</option>
-                <option value="reading_group">📖 Reading Group</option>
-                <option value="workshop">🧪 Interactive Workshop</option>
+                <option value="live_debate">Live Formal Debate</option>
+                <option value="symposium">Virtual Symposium</option>
+                <option value="reading_group">Reading Group</option>
+                <option value="workshop">Interactive Workshop</option>
               </select>
             </div>
 
@@ -334,7 +334,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                   boxSizing: "border-box",
                 }}
               >
-                <option value="">🌐 General Agora Community</option>
+                <option value="">General Agora Community</option>
                 {spaces.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -415,7 +415,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                 }}
               />
               <span style={{ fontSize: "0.78rem", color: "#fca5a5" }}>
-                ⚠️ Required for Video Meetings: Host must paste Google Meet or Telegram live URL so attendees can join.
+                <><CircleAlert size={14} /> Required for Video Meetings: Host must paste Google Meet or Telegram live URL so attendees can join.</>
               </span>
             </div>
           ) : (
@@ -483,7 +483,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                 boxShadow: "0 4px 14px rgba(37, 99, 235, 0.4)",
               }}
             >
-              {isSubmitting ? "Publishing Event..." : "🚀 Schedule & Publish Event"}
+              {isSubmitting ? "Publishing Event..." : <><Rocket size={14} /> Schedule & Publish Event</>}
             </button>
           </div>
         </form>

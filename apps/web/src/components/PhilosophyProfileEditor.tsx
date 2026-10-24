@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { User, PhilosophyProfile, ConnectionIntent } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Brain, Handshake, Heart, Zap, UsersRound, Pencil, Landmark, ScrollText, CircleHelp, BookOpen, Check, Star, X } from "lucide-react";
 
 const POPULAR_SCHOOLS = [
   "Existentialism",
@@ -25,11 +25,11 @@ const POPULAR_THINKERS = [
   "Maurice Merleau-Ponty",
 ];
 
-const INTENTS: { id: ConnectionIntent; label: string; icon: string }[] = [
-  { id: "discussion", label: "Discussions & Debates", icon: "<MessageCircle size={10} strokeWidth={2} />" },
-  { id: "intellectual", label: "Intellectual Growth", icon: "🧠" },
-  { id: "friendship", label: "Philosophical Friendship", icon: "🤝" },
-  { id: "dating", label: "Philosophical Dating", icon: "❤️" },
+const INTENTS: { id: ConnectionIntent; label: string; icon: React.ReactNode }[] = [
+  { id: "discussion", label: "Discussions & Debates", icon: <MessageCircle size={14} strokeWidth={2} /> },
+  { id: "intellectual", label: "Intellectual Growth", icon: <Brain size={14} /> },
+  { id: "friendship", label: "Philosophical Friendship", icon: <Handshake size={14} /> },
+  { id: "dating", label: "Philosophical Dating", icon: <Heart size={14} /> },
 ];
 
 export interface PhilosophyProfileEditorProps {
@@ -193,7 +193,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
                 <div className="profile-name-row" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <h1 className="profile-display-name">{displayName}</h1>
                   <span className="profile-reputation-badge" title="Philosophy Reputation Score">
-                    ⚡ {reputation} Rep
+                    <><Zap size={13} /> {reputation} Rep</>
                   </span>
                   <span
                     className="profile-reputation-badge"
@@ -204,7 +204,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
                     }}
                     title="Total Established Connections"
                   >
-                    🤝 {connectionCount} {connectionCount === 1 ? "Connection" : "Connections"}
+                    <><Handshake size={13} /> {connectionCount} {connectionCount === 1 ? "Connection" : "Connections"}</>
                   </span>
                 </div>
                 <p className="profile-handle-text">{handleTag}</p>
@@ -218,7 +218,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
                 className="edit-profile-action-btn"
                 onClick={() => setIsEditing(true)}
               >
-                ✏️ Edit Profile
+                <><Pencil size={14} /> Edit Profile</>
               </button>
             </div>
           </div>
@@ -244,7 +244,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
         {/* Worldview Summary Section */}
         <div className="profile-section-card">
           <div className="section-card-header">
-            <h3>🧠 Personal Worldview & Stance</h3>
+            <h3><Brain size={16} /> Personal Worldview & Stance</h3>
           </div>
           <div className="worldview-quote-box">
             {worldviewSummary ? (
@@ -262,13 +262,13 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
           {/* Schools of Thought */}
           <div className="profile-section-card">
             <div className="section-card-header">
-              <h3>🏛️ Primary Schools of Thought</h3>
+              <h3><Landmark size={16} /> Primary Schools of Thought</h3>
             </div>
             <div className="profile-chip-group">
               {primarySchools.length > 0 ? (
                 primarySchools.map((school) => (
                   <span key={school} className="profile-school-chip">
-                    ✓ {school}
+                    <><Check size={13} /> {school}</>
                   </span>
                 ))
               ) : (
@@ -280,13 +280,13 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
           {/* Key Thinkers */}
           <div className="profile-section-card">
             <div className="section-card-header">
-              <h3>📜 Influential Thinkers</h3>
+              <h3><ScrollText size={16} /> Influential Thinkers</h3>
             </div>
             <div className="profile-chip-group">
               {keyThinkers.length > 0 ? (
                 keyThinkers.map((thinker) => (
                   <span key={thinker} className="profile-thinker-chip">
-                    ★ {thinker}
+                    <><Star size={13} /> {thinker}</>
                   </span>
                 ))
               ) : (
@@ -299,7 +299,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
         {/* Core Questions Section */}
         <div className="profile-section-card">
           <div className="section-card-header">
-            <h3>❓ Core Philosophical Inquiries</h3>
+            <h3><CircleHelp size={16} /> Core Philosophical Inquiries</h3>
           </div>
           {coreQuestions.length > 0 ? (
             <div className="questions-card-list">
@@ -318,13 +318,13 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
         {/* Favorite Texts & Works */}
         <div className="profile-section-card">
           <div className="section-card-header">
-            <h3>📖 Favorite Philosophical Texts</h3>
+            <h3><BookOpen size={16} /> Favorite Philosophical Texts</h3>
           </div>
           {favoriteTexts.length > 0 ? (
             <div className="profile-chip-group">
               {favoriteTexts.map((text, idx) => (
                 <span key={idx} className="profile-text-chip">
-                  📖 {text}
+                  <><BookOpen size={13} /> {text}</>
                 </span>
               ))}
             </div>
@@ -336,7 +336,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
         {/* Connection Intents */}
         <div className="profile-section-card">
           <div className="section-card-header">
-            <h3>🤝 Connection Intents</h3>
+            <h3><Handshake size={16} /> Connection Intents</h3>
           </div>
           <div className="intents-view-grid">
             {INTENTS.map((intent) => {
@@ -361,7 +361,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
     <div className="philosophy-editor-card">
       <div className="editor-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>✏️ Edit Philosophical Identity & Worldview</h2>
+          <h2><Pencil size={18} /> Edit Philosophical Identity & Worldview</h2>
           <p className="editor-subtitle">
             Update your foundational schools of thought, favorite thinkers, and core inquiries.
           </p>
@@ -421,7 +421,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
                   className={`pill-btn ${active ? "active" : ""}`}
                   onClick={() => setPrimarySchools(toggleArrayItem(primarySchools, school))}
                 >
-                  {active ? "✓ " : "+ "}
+                  {active ? <Check size={13} /> : "+ "}
                   {school}
                 </button>
               );
@@ -465,7 +465,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
                   className={`pill-btn ${active ? "active-thinker" : ""}`}
                   onClick={() => setKeyThinkers(toggleArrayItem(keyThinkers, thinker))}
                 >
-                  {active ? "★ " : "+ "}
+                  {active ? <Star size={13} /> : "+ "}
                   {thinker}
                 </button>
               );
@@ -508,7 +508,7 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
                   className="remove-btn"
                   onClick={() => setCoreQuestions(coreQuestions.filter((_, i) => i !== idx))}
                 >
-                  ✕
+                  <X size={14} />
                 </button>
               </li>
             ))}
@@ -543,13 +543,13 @@ export const PhilosophyProfileEditor: React.FC<PhilosophyProfileEditorProps> = (
           <ul className="question-list">
             {favoriteTexts.map((text, idx) => (
               <li key={idx} className="list-item">
-                <span>📖 {text}</span>
+                <span><BookOpen size={13} /> {text}</span>
                 <button
                   type="button"
                   className="remove-btn"
                   onClick={() => setFavoriteTexts(favoriteTexts.filter((_, i) => i !== idx))}
                 >
-                  ✕
+                  <X size={14} />
                 </button>
               </li>
             ))}

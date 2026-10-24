@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { agoraClient } from "../lib/api-client.js";
+import { Search, Lightbulb, Globe, UserRound, ScrollText, Landmark } from "lucide-react";
 
 export interface SemanticSearchProps {
   onOpenProfile?: (user: any) => void;
@@ -38,7 +39,7 @@ export const SemanticSearch: React.FC<SemanticSearchProps> = ({ onOpenProfile })
   return (
     <div className="semantic-search-container">
       <div className="search-header">
-        <h2>🔍 Semantic Concept Search</h2>
+        <h2><Search size={20} /> Semantic Concept Search</h2>
         <p className="search-subtitle">
           Search by philosophical concepts, inquiries, and ideas rather than exact keyword matches.
         </p>
@@ -75,7 +76,7 @@ export const SemanticSearch: React.FC<SemanticSearchProps> = ({ onOpenProfile })
                 setQuery(promptText);
               }}
             >
-              💡 {promptText}
+              <><Lightbulb size={14} /> {promptText}</>
             </button>
           ))}
         </div>
@@ -88,13 +89,10 @@ export const SemanticSearch: React.FC<SemanticSearchProps> = ({ onOpenProfile })
               className={`type-tab-btn ${searchType === t ? "active" : ""}`}
               onClick={() => setSearchType(t)}
             >
-              {t === "all"
-                ? "🌐 All Content"
-                : t === "users"
-                ? "👤 Thinkers"
-                : t === "entities"
-                ? "📜 Arguments & Posts"
-                : "🏛️ Philosophy Spaces"}
+              {t === "all" ? <><Globe size={14} /> All Content</>
+                : t === "users" ? <><UserRound size={14} /> Thinkers</>
+                : t === "entities" ? <><ScrollText size={14} /> Arguments & Posts</>
+                : <><Landmark size={14} /> Philosophy Spaces</>}
             </button>
           ))}
         </div>
@@ -122,7 +120,7 @@ export const SemanticSearch: React.FC<SemanticSearchProps> = ({ onOpenProfile })
               <div key={index} className="search-result-card">
                 <div className="result-card-header">
                   <span className={`result-type-tag ${type}`}>
-                    {type === "profile" ? "👤 Thinker Profile" : type === "space" ? "🏛️ Philosophy Space" : "📜 Philosophical Argument"}
+                    {type === "profile" ? <><UserRound size={13} /> Thinker Profile</> : type === "space" ? <><Landmark size={13} /> Philosophy Space</> : <><ScrollText size={13} /> Philosophical Argument</>}
                   </span>
                   <span className="similarity-badge">
                     {percentage}% Similarity
@@ -155,7 +153,7 @@ export const SemanticSearch: React.FC<SemanticSearchProps> = ({ onOpenProfile })
 
                   {type === "space" && (
                     <div>
-                      <h4 className="result-title">🏛️ {record.name}</h4>
+                      <h4 className="result-title"><Landmark size={15} /> {record.name}</h4>
                       <p className="result-snippet">{record.description || "Philosophy community space."}</p>
                     </div>
                   )}
