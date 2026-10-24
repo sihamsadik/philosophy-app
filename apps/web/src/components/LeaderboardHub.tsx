@@ -10,6 +10,7 @@ export interface LeaderboardHubProps {
 export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<string>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<"week" | "month" | "lifetime">("lifetime");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [badges, setBadges] = useState<PhilosophicalBadge[]>(ALL_PLATFORM_BADGES);
@@ -18,7 +19,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await agoraClient.getLeaderboard(selectedSchool);
+      const res = await agoraClient.getLeaderboard(selectedSchool, selectedPeriod);
       setEntries(res.entries);
       const currentUserId = agoraClient.getCurrentUserId();
       const targetUserId = (currentUserId && currentUserId !== "guest") ? currentUserId : res.entries[0]?.user?.id;
@@ -43,7 +44,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
 
   useEffect(() => {
     loadLeaderboard();
-  }, [selectedSchool]);
+  }, [selectedSchool, selectedPeriod]);
 
   const topThree = entries.slice(0, 3);
   const remainingEntries = entries.slice(3);
@@ -65,11 +66,29 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
     <div className="leaderboard-hub-container">
       {/* Hero Banner Header */}
       <div className="leaderboard-hero-banner">
-        <div className="hero-badge"><Trophy size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> INTELLECTUAL REPUTATION & BADGES</div>
+        <div className="hero-badge"><Trophy size={14} style={{ marginRight: 6, verticalAlign: "middle" }} /> COMMUNITY ACTIVITY & BADGES</div>
         <h2>Community Philosophy Leaderboard</h2>
         <p>
-          Recognizing the most impactful thinkers, debate dialecticians, and symposium stewards across the global Agora network.
+          Ranking thinkers by arguments published and symposiums hosted during the selected period.
         </p>
+
+        <div className="tradition-tabs-bar" aria-label="Ranking time period">
+          {([
+            ["week", "This Week"],
+            ["month", "This Month"],
+            ["lifetime", "Lifetime"],
+          ] as const).map(([period, label]) => (
+            <button
+              key={period}
+              type="button"
+              className={`tab-btn ${selectedPeriod === period ? "active" : ""}`}
+              aria-pressed={selectedPeriod === period}
+              onClick={() => setSelectedPeriod(period)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         {/* Tradition Filter Tabs */}
         <div className="tradition-tabs-bar">
@@ -172,7 +191,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   <span className="podium-school">{topThree[1].primarySchool}</span>
 
                   <div className="rep-score-chip">
-                    <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {topThree[1].reputationPoints.toLocaleString()} Rep
+                    <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {topThree[1].activityPoints.toLocaleString()} Activity
                   </div>
 
                   <div className="podium-badges-row">
@@ -236,7 +255,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   <span className="podium-school">{topThree[0].primarySchool}</span>
 
                   <div className="rep-score-chip gold-rep">
-                    <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {topThree[0].reputationPoints.toLocaleString()} Rep
+                    <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {topThree[0].activityPoints.toLocaleString()} Activity
                   </div>
 
                   <div className="podium-badges-row">
@@ -299,7 +318,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                   <span className="podium-school">{topThree[2].primarySchool}</span>
 
                   <div className="rep-score-chip">
-                    <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {topThree[2].reputationPoints.toLocaleString()} Rep
+                    <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} /> {topThree[2].activityPoints.toLocaleString()} Activity
                   </div>
 
                   <div className="podium-badges-row">
@@ -338,7 +357,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                     <th>School / Tradition</th>
                     <th>Arguments</th>
                     <th>Symposiums</th>
-                    <th>Reputation</th>
+                    <th>Activity</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -387,7 +406,7 @@ export const LeaderboardHub: React.FC<LeaderboardHubProps> = ({ onOpenDM }) => {
                       <td className="stats-cell">{entry.symposiumsHosted}</td>
 
                       <td className="rep-cell">
-                        <span className="rep-badge"><Zap size={12} style={{ marginRight: 3, verticalAlign: "middle" }} /> {entry.reputationPoints.toLocaleString()}</span>
+                        <span className="rep-badge"><Zap size={12} style={{ marginRight: 3, verticalAlign: "middle" }} /> {entry.activityPoints.toLocaleString()}</span>
                       </td>
 
                       <td className="action-cell">

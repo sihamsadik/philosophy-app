@@ -1,7 +1,7 @@
 // Small grouped domains mounted at the project root: oauth, projects, crypto (testing), utils.
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
-import { and, eq, desc, isNull, inArray, count } from "drizzle-orm";
+import { and, eq, desc, isNull, inArray, count, sql } from "drizzle-orm";
 import { shapeUser } from "../lib/shape.js";
 import { importPKCS8, SignJWT } from "jose";
 import type { Provider } from "@supabase/supabase-js";
@@ -31,12 +31,13 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
   // ── Leaderboard ──────────────────────────────────────────────────────────────
   .get("/leaderboard", async (c) => {
     const school = c.req.query("school");
+    const periodParam = c.req.query("period") ?? "lifetime";
+    const period = ["week", "month", "lifetime"].includes(periodParam) ? periodParam : "lifetime";
     const rows = await getDb()
       .select()
       .from(profiles)
       .where(eq(profiles.projectId, c.var.projectId))
-      .orderBy(desc(profiles.reputation))
-      .limit(50);
+      .orderBy(desc(profiles.reputation));
 
     const userIds = rows.map((r) => r.id);
     let argMap = new Map<string, number>();
@@ -44,10 +45,16 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
     let spaceMap = new Map<string, number>();
 
     if (userIds.length > 0) {
+      const periodEntityFilter = period === "week"
+        ? sql`${entities.createdAt} >= date_trunc('week', now())`
+        : period === "month" ? sql`${entities.createdAt} >= date_trunc('month', now())` : undefined;
+      const periodHostFilter = period === "week"
+        ? sql`${eventHosts.createdAt} >= date_trunc('week', now())`
+        : period === "month" ? sql`${eventHosts.createdAt} >= date_trunc('month', now())` : undefined;
       const argCounts = await getDb()
         .select({ userId: entities.userId, n: count() })
         .from(entities)
-        .where(and(eq(entities.projectId, c.var.projectId), inArray(entities.userId, userIds), isNull(entities.deletedAt)))
+        .where(and(eq(entities.projectId, c.var.projectId), inArray(entities.userId, userIds), isNull(entities.deletedAt), eq(entities.isDraft, false), ...(periodEntityFilter ? [periodEntityFilter] : [])))
         .groupBy(entities.userId);
       argMap = new Map(
         argCounts
@@ -58,7 +65,7 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
       const hostCounts = await getDb()
         .select({ userId: eventHosts.userId, n: count() })
         .from(eventHosts)
-        .where(and(eq(eventHosts.projectId, c.var.projectId), inArray(eventHosts.userId, userIds)))
+        .where(and(eq(eventHosts.projectId, c.var.projectId), inArray(eventHosts.userId, userIds), ...(periodHostFilter ? [periodHostFilter] : [])))
         .groupBy(eventHosts.userId);
       hostMap = new Map(hostCounts.map((r) => [r.userId, Number(r.n)]));
 
@@ -74,6 +81,7 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
       const argsCount = argMap.get(u.id) ?? 0;
       const sympCount = hostMap.get(u.id) ?? 0;
       const spacesJoined = spaceMap.get(u.id) ?? 0;
+      const activityPoints = argsCount + sympCount;
       const rep = u.reputation ?? 0;
       const badges = computeBadgesFromStats({
         reputation: rep,
@@ -84,6 +92,7 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
 
       return {
         user: shapeUser(u),
+        activityPoints,
         reputationPoints: rep,
         primarySchool: (u.metadata as any)?.philosophyProfile?.primarySchools?.[0] || (u.metadata as any)?.primarySchool || "General Philosophy",
         argumentsCount: argsCount,
@@ -93,20 +102,15 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
       };
     });
 
-    mapped.sort((a, b) => b.reputationPoints - a.reputationPoints || b.argumentsCount - a.argumentsCount);
+    mapped.sort((a, b) => b.activityPoints - a.activityPoints || b.argumentsCount - a.argumentsCount);
 
-    const entries = mapped.map((item, idx) => ({
-      ...item,
-      rank: idx + 1,
-    }));
-
-    let filtered = entries;
+    let filtered = mapped;
     if (school && school !== "all") {
       filtered = entries.filter((e) =>
         e.primarySchool.toLowerCase().includes(school.toLowerCase())
       );
     }
-    return c.json({ entries: filtered });
+    return c.json({ entries: filtered.slice(0, 50).map((item, idx) => ({ ...item, rank: idx + 1 })), period });
   })
   // ── oauth identities (the auth user's linked providers) ─────────────────────
   .get("/oauth/identities", requireAuth, async (c) => {

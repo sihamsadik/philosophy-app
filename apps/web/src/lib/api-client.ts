@@ -1626,8 +1626,11 @@ export class AgoraPhilosophyClient {
   /**
    * Community Intellectual Leaderboard & Achievement Badges
    */
-  async getLeaderboard(school?: string): Promise<{ entries: LeaderboardEntry[] }> {
-    const query = school && school !== "all" ? `?school=${encodeURIComponent(school)}` : "";
+  async getLeaderboard(school?: string, period: "week" | "month" | "lifetime" = "lifetime"): Promise<{ entries: LeaderboardEntry[] }> {
+    const params = new URLSearchParams();
+    if (school && school !== "all") params.set("school", school);
+    params.set("period", period);
+    const query = `?${params.toString()}`;
     let res: any = null;
     try {
       res = await this.request<any>(`/leaderboard${query}`);
@@ -1666,6 +1669,7 @@ export class AgoraPhilosophyClient {
           keyThinkers: u.metadata?.keyThinkers || [],
         },
       } as User,
+      activityPoints: u.activityPoints ?? u.reputationPoints ?? u.reputation ?? u.user?.reputation ?? 0,
       reputationPoints: u.reputationPoints ?? u.reputation ?? u.user?.reputation ?? 0,
       primarySchool: u.primarySchool || u.metadata?.primarySchools?.[0] || "General Philosophy",
       argumentsCount: u.argumentsCount ?? u.argumentsPublished ?? 0,
@@ -1674,7 +1678,7 @@ export class AgoraPhilosophyClient {
       badges: u.badges || ALL_PLATFORM_BADGES.slice(0, (idx % 3) + 1),
     }));
 
-    mapped.sort((a, b) => b.reputationPoints - a.reputationPoints || b.argumentsCount - a.argumentsCount);
+    mapped.sort((a, b) => b.activityPoints - a.activityPoints || b.argumentsCount - a.argumentsCount);
     mapped.forEach((item, idx) => {
       item.rank = idx + 1;
     });
@@ -2463,6 +2467,7 @@ export interface PhilosophicalBadge {
 export interface LeaderboardEntry {
   rank: number;
   user: User;
+  activityPoints: number;
   reputationPoints: number;
   primarySchool: string;
   argumentsCount: number;
