@@ -42,6 +42,9 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
   const [userReactions, setUserReactions] = useState<Record<string, string>>({});
   const [activeViewers, setActiveViewers] = useState<number>(event?.activeViewers || 1);
   const [liveStatusState, setLiveStatusState] = useState<string>("active");
+  const [videoRoom, setVideoRoom] = useState<{ url: string; token: string } | null>(null);
+  const [joiningVideo, setJoiningVideo] = useState(false);
+  const [videoRoomError, setVideoRoomError] = useState<string | null>(null);
   const chatStreamRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -244,8 +247,8 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
     return <><Zap size={14} /> Starts in {mins}m {secs}s</>;
   };
 
-  // Accurate check for external video meeting URLs (Google Meet, Telegram, Zoom, YouTube)
-  const isVideoMeeting = !!(
+  // New events store their format explicitly; retain support for older URL-based video events.
+  const isVideoMeeting = currentEvent.videoFormat === "video_meeting" || !!(
     currentEvent.locationUrl &&
     currentEvent.locationUrl !== "https://agora.philosophy/symposium/live" &&
     !currentEvent.locationUrl.includes("agora.philosophy") &&
@@ -513,8 +516,8 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
             </div>
             <p style={{ margin: 0, fontSize: "0.82rem", color: "#fef3c7", lineHeight: 1.45 }}>
               {isHost
-                ? "As the host, you can restart this live session within 2 hours after ending. Use the Restart Live Event button to re-open text chat and video meeting links."
-                : `This event ended ${endedElapsedHours > 0 ? `${endedElapsedHours} hours` : `${endedElapsedMins} minutes`} ago. If the host does not restart the live event within 2 hours, other members cannot send live chat or join the video call.`}
+                ? "As the host, you can restart this live session within 2 hours after ending. Use the Restart Live Event button to re-open the live room."
+                : `This event ended ${endedElapsedHours > 0 ? `${endedElapsedHours} hours` : `${endedElapsedMins} minutes`} ago. If the host does not restart the live event within 2 hours, members cannot join the live session.`}
             </p>
           </div>
         )}
@@ -524,11 +527,11 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
           <span style={{ fontSize: "1.2rem" }}>{isVideoMeeting ? <Video size={18} /> : <MessageCircle size={18} strokeWidth={2} />}</span>
           <div style={{ flex: 1 }}>
             <span style={{ fontSize: "0.78rem", fontWeight: 700, color: isVideoMeeting ? "#f87171" : "#60a5fa", display: "block" }}>
-              {isVideoMeeting ? "EXTERNAL VIDEO MEETING SESSION" : "IN-PLATFORM LIVE TEXT DEBATE CHAT ROOM"}
+              {isVideoMeeting ? "IN-APP LIVE VIDEO CALL" : "IN-PLATFORM LIVE TEXT DEBATE CHAT ROOM"}
             </span>
             <span style={{ fontSize: "0.78rem", color: "#cbd5e1" }}>
               {isVideoMeeting
-                ? "Hosted via external video link (Google Meet / Telegram / Zoom)."
+                ? "Join with your camera and microphone inside Philosophy Agora. The call is not recorded."
                 : "Real-time group text debate chat directly inside Philosophy Agora."}
             </span>
           </div>
@@ -781,21 +784,31 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
                 cursor: "not-allowed",
               }}
             >
-              <><LockKeyhole size={14} /> {isVideoMeeting ? "Video Link Unavailable (Event Concluded — Waiting for Host to Restart)" : "Session Concluded (Waiting for Host to Restart)"}</>
+              <><LockKeyhole size={14} /> {isVideoMeeting ? "Video Call Unavailable (Event Concluded — Waiting for Host to Restart)" : "Session Concluded (Waiting for Host to Restart)"}</>
             </div>
           ) : isVideoMeeting ? (
-            <a
-              href={currentEvent.locationUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="join-external-video-btn"
-              onClick={() => {
-                setTimeout(() => onClose(), 300);
-              }}
-              style={{ padding: "12px", borderRadius: 12, background: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)", color: "#ffffff", fontWeight: 700, textDecoration: "none", textAlign: "center", boxShadow: "0 4px 14px rgba(239, 68, 68, 0.4)", display: "block" }}
-            >
-              <><Video size={15} /> Join Video Call (Google Meet / Telegram / Zoom)</>
-            </a>
+            <div>
+              <button
+                type="button"
+                className="join-in-app-video-btn"
+                disabled={joiningVideo}
+                onClick={async () => {
+                  setJoiningVideo(true);
+                  setVideoRoomError(null);
+                  try {
+                    setVideoRoom(await agoraClient.joinEventVideoRoom(currentEvent.id));
+                  } catch (error: any) {
+                    setVideoRoomError(error?.message || "Could not join the in-app video call.");
+                  } finally {
+                    setJoiningVideo(false);
+                  }
+                }}
+                style={{ width: "100%", padding: "12px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)", color: "#ffffff", fontWeight: 700, textAlign: "center", boxShadow: "0 4px 14px rgba(37, 99, 235, 0.4)", cursor: joiningVideo ? "wait" : "pointer" }}
+              >
+                <><Video size={15} /> {joiningVideo ? "Connecting…" : "Join In-App Video Call"}</>
+              </button>
+              {videoRoomError && <p role="alert" style={{ color: "#fca5a5", fontSize: "0.8rem", margin: "8px 2px 0" }}>{videoRoomError}</p>}
+            </div>
           ) : (
             <button
               type="button"
@@ -815,6 +828,15 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
           </button>
         </div>
       </div>
+      {videoRoom && (
+        <div role="dialog" aria-label="In-app video call" aria-modal="true" style={{ position: "fixed", inset: 0, zIndex: 10000, background: "#080d18", display: "flex", flexDirection: "column" }}>
+          <div style={{ minHeight: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", color: "white", borderBottom: "1px solid rgba(255,255,255,.12)" }}>
+            <strong>{currentEvent.title}</strong>
+            <button type="button" onClick={() => setVideoRoom(null)} aria-label="Leave video call" style={{ border: 0, borderRadius: 8, padding: "8px 12px", color: "white", background: "#334155", cursor: "pointer" }}><X size={16} /> Leave call</button>
+          </div>
+          <iframe title={`${currentEvent.title} video call`} src={`${videoRoom.url}?t=${encodeURIComponent(videoRoom.token)}`} allow="camera; microphone; fullscreen; display-capture; autoplay" style={{ flex: 1, width: "100%", border: 0 }} />
+        </div>
+      )}
     </div>
   );
 };

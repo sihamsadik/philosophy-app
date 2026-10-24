@@ -191,6 +191,59 @@ function parseMultipartEventFields(form: Record<string, unknown>): Record<string
 }
 
 export const eventRoutes = new Hono<{ Variables: Variables }>()
+  .post("/:eventId/video-room/join", requireAuth, async (c) => {
+    const row = await getEventOr404(c, c.req.param("eventId"));
+    await assertCanViewEvent(c, row);
+    const isLegacyVideoLink = !!row.url && !row.url.includes("agora.philosophy") && /meet|zoom|video|youtube|t\.me/i.test(row.url);
+    if ((row.metadata as Record<string, unknown> | null)?.videoFormat !== "video_meeting" && !isLegacyVideoLink) {
+      throw Errors.badRequest("events/not-video", "This event does not have a video call");
+    }
+    if (!env.DAILY_API_KEY) throw Errors.unavailable("events/video-not-configured", "In-app video calls are not configured yet");
+
+    const roomName = `philosophy-${row.id.replaceAll("-", "")}`;
+    const now = Math.floor(Date.now() / 1000);
+    const eventEnd = Math.floor((row.endTime ?? new Date(row.startTime.getTime() + 2 * 3600_000)).getTime() / 1000);
+    const roomExpiry = Math.max(eventEnd + 86400, now + 3600);
+    const api = "https://api.daily.co/v1";
+    const headers = { Authorization: `Bearer ${env.DAILY_API_KEY}`, "Content-Type": "application/json" };
+    let roomResponse = await fetch(`${api}/rooms/${roomName}`, { headers });
+    if (roomResponse.status === 404) {
+      roomResponse = await fetch(`${api}/rooms`, {
+        method: "POST", headers,
+        body: JSON.stringify({
+          name: roomName,
+          privacy: "private",
+          properties: { exp: roomExpiry, enable_recording: false, eject_at_room_exp: true },
+        }),
+      });
+      // Another attendee may create the deterministic room at the same time.
+      if (roomResponse.status === 400 || roomResponse.status === 409) {
+        roomResponse = await fetch(`${api}/rooms/${roomName}`, { headers });
+      }
+    }
+    if (!roomResponse.ok) {
+      logger.error({ status: roomResponse.status, eventId: row.id }, "daily: room provisioning failed");
+      throw Errors.badRequest("events/video-provider-error", "Could not start the video room");
+    }
+    const room = await roomResponse.json() as { url: string };
+    const isOwner = (await loadHostIds(row.id)).includes(c.var.auth!.userId) || isProjectAdmin(c.var.auth!);
+    const tokenResponse = await fetch(`${api}/meeting-tokens`, {
+      method: "POST", headers,
+      body: JSON.stringify({ properties: {
+        room_name: roomName,
+        user_name: String((c.var.auth as any).name || "Philosophy member").slice(0, 80),
+        is_owner: isOwner,
+        exp: Math.min(now + 4 * 3600, roomExpiry),
+        eject_after_elapsed: 4 * 3600,
+      } }),
+    });
+    if (!tokenResponse.ok) {
+      logger.error({ status: tokenResponse.status, eventId: row.id }, "daily: meeting token creation failed");
+      throw Errors.badRequest("events/video-provider-error", "Could not create video access");
+    }
+    const token = await tokenResponse.json() as { token: string };
+    return c.json({ url: room.url, token: token.token });
+  })
   .post("/", requireAuth, async (c) => {
     const projectId = c.var.projectId;
     const userId = c.var.auth!.userId;

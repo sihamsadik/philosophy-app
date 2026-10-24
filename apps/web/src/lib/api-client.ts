@@ -1165,6 +1165,7 @@ export class AgoraPhilosophyClient {
         startTime: e.startTime || e.start_time,
         endTime: e.endTime || e.end_time,
         locationUrl: e.url || "https://agora.philosophy/symposium/live",
+        videoFormat: e.metadata?.videoFormat,
         hostUser: hostUserObj,
         spaceId: e.spaceId,
         spaceName: e.metadata?.spaceName || "Philosophy Circle",
@@ -1222,6 +1223,7 @@ export class AgoraPhilosophyClient {
     startTime: string;
     endTime?: string;
     locationUrl?: string;
+    videoFormat?: "text_debate" | "video_meeting";
     maxCapacity?: number;
     spaceId?: string;
     spaceName?: string;
@@ -1262,6 +1264,7 @@ export class AgoraPhilosophyClient {
           hostName,
           hostHandle,
           hostAvatar,
+          videoFormat: data.videoFormat,
         },
       };
 
@@ -1279,6 +1282,7 @@ export class AgoraPhilosophyClient {
         startTime: e.startTime || data.startTime,
         endTime: e.endTime || data.endTime,
         locationUrl: e.url || data.locationUrl || "https://agora.philosophy/symposium/live",
+        videoFormat: e.metadata?.videoFormat || data.videoFormat,
         hostUser: e.user || e.hostUser || defaultHost,
         spaceId: e.spaceId || data.spaceId,
         spaceName: e.metadata?.spaceName || data.spaceName || "Philosophy Circle",
@@ -1312,6 +1316,7 @@ export class AgoraPhilosophyClient {
         startTime: data.startTime,
         endTime: data.endTime,
         locationUrl: data.locationUrl || "https://agora.philosophy/symposium/live",
+        videoFormat: data.videoFormat,
         hostUser: defaultHost,
         spaceId: data.spaceId,
         spaceName: data.spaceName,
@@ -1398,6 +1403,7 @@ export class AgoraPhilosophyClient {
         startTime: res.startTime || res.start_time,
         endTime: res.endTime || res.end_time,
         locationUrl: res.url || "https://agora.philosophy/symposium/live",
+        videoFormat: res.metadata?.videoFormat,
         hostUser: res.user || res.hostUser || {
           id: res.userId || "usr-creator",
           name: res.metadata?.hostName || "Host",
@@ -1464,6 +1470,10 @@ export class AgoraPhilosophyClient {
         activeViewers: 1,
       },
     };
+  }
+
+  async joinEventVideoRoom(eventId: string): Promise<{ url: string; token: string }> {
+    return this.request<{ url: string; token: string }>(`/events/${eventId}/video-room/join`, { method: "POST" });
   }
 
   async updateEventLiveStatus(eventId: string, data: {
@@ -2432,6 +2442,7 @@ export interface PhilosophyEvent {
   startTime: string;
   endTime?: string;
   locationUrl?: string;
+  videoFormat?: "text_debate" | "video_meeting";
   hostUser: User;
   spaceId?: string;
   spaceName?: string;

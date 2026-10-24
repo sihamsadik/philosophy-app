@@ -45,6 +45,8 @@ const schema = z.object({
   // where the raw request origin is the internal http://<internal-host>. When unset the server
   // falls back to X-Forwarded-Proto/Host, then the raw request origin. Set this in production.
   PUBLIC_BASE_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
+  // Daily video rooms are created on demand; call media is never recorded.
+  DAILY_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   // Shared secret gating the POST /internal/cron/* triggers (digests, score recompute, token purge)
   // for external schedulers. Optional: when unset those endpoints are disabled (503) and the work
   // runs only via the standalone scripts/*.mjs.

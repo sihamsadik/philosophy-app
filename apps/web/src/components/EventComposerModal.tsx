@@ -23,7 +23,6 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
   const [type, setType] = useState<EventType>("live_debate");
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("");
-  const [locationUrl, setLocationUrl] = useState("");
   const [maxCapacity, setMaxCapacity] = useState<number>(30);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>(initialSpaceId || "");
   const [tagsInput, setTagsInput] = useState("");
@@ -55,11 +54,6 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim() || !startTime) return;
-    if (eventFormat === "video_meeting" && !locationUrl.trim()) {
-      alert("Please provide an external meeting URL (e.g., Google Meet, Telegram, or Zoom link) for video meeting events.");
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       setErrorMsg(null);
@@ -80,17 +74,13 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
         },
       };
 
-      const finalUrl =
-        eventFormat === "video_meeting"
-          ? locationUrl.trim()
-          : locationUrl.trim() || "https://agora.philosophy/symposium/live";
-
       const created = await agoraClient.createEvent({
         title: title.trim(),
         type,
         description: description.trim(),
         startTime: new Date(startTime).toISOString(),
-        locationUrl: finalUrl,
+        locationUrl: "https://agora.philosophy/symposium/live",
+        videoFormat: eventFormat,
         maxCapacity: Number(maxCapacity) || 30,
         spaceId: chosenSpace?.id,
         spaceName: chosenSpace?.name,
@@ -106,7 +96,6 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
       setTitle("");
       setDescription("");
       setTagsInput("");
-      setLocationUrl("");
     } catch (err: any) {
       console.error("Failed to create event:", err);
       setErrorMsg(err.message || "Failed to create event");
@@ -215,7 +204,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Hosting Format Selector (Live Text Debate vs External Video Meeting) */}
+          {/* Hosting Format Selector (Live Text Debate vs In-App Video Call) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#38bdf8" }}>Hosting Medium & Format *</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -223,7 +212,6 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                 type="button"
                 onClick={() => {
                   setEventFormat("text_debate");
-                  setLocationUrl("");
                 }}
                 style={{
                   padding: "12px",
@@ -239,7 +227,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                  Live Text Debate Room
                 </div>
                 <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 4 }}>
-                  In-platform real-time chat debate (No Google Meet / Telegram needed)
+                  In-platform real-time chat debate
                 </div>
               </button>
 
@@ -259,10 +247,10 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
                 }}
               >
                 <div style={{ fontWeight: 700, fontSize: "0.9rem", color: eventFormat === "video_meeting" ? "#f87171" : "#ffffff" }}>
-                  <><Video size={14} /> External Video Meeting</>
+                  <><Video size={14} /> In-App Video Call</>
                 </div>
                 <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 4 }}>
-                  Google Meet, Telegram Voice/Video, Zoom, or YouTube link required
+                  Live camera and microphone call inside the app
                 </div>
               </button>
             </div>
@@ -390,41 +378,11 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
             </div>
           </div>
 
-          {/* Conditional External Video Room Input */}
-          {eventFormat === "video_meeting" ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#f87171" }}>
-                External Meeting URL * (Google Meet, Telegram, Zoom, or YouTube)
-              </label>
-              <input
-                type="url"
-                placeholder="e.g. https://meet.google.com/abc-defg-hij or https://t.me/yourchannel"
-                value={locationUrl}
-                onChange={(e) => setLocationUrl(e.target.value)}
-                required
-                style={{
-                  width: "100%",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(239, 68, 68, 0.4)",
-                  background: "rgba(239, 68, 68, 0.05)",
-                  color: "#ffffff",
-                  fontSize: "0.92rem",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-              <span style={{ fontSize: "0.78rem", color: "#fca5a5" }}>
-                <><CircleAlert size={14} /> Required for Video Meetings: Host must paste Google Meet or Telegram live URL so attendees can join.</>
-              </span>
-            </div>
-          ) : (
-            <div style={{ background: "rgba(59, 130, 246, 0.08)", border: "1px dashed rgba(59, 130, 246, 0.3)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: "0.8rem", color: "#93c5fd" }}>
-                Live Text Chat Debate will run directly inside Philosophy Agora. No external URL required!
-              </span>
-            </div>
-          )}
+          <div style={{ background: "rgba(59, 130, 246, 0.08)", border: "1px dashed rgba(59, 130, 246, 0.3)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: "0.8rem", color: "#93c5fd" }}>
+              {eventFormat === "video_meeting" ? "A private live room will open inside the app. Calls are not recorded." : "Live text chat debate runs directly inside Philosophy Agora."}
+            </span>
+          </div>
 
           {/* Description & Agenda */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
