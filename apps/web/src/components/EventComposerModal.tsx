@@ -19,6 +19,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
 }) => {
   const { user } = useAuth();
   const [eventFormat, setEventFormat] = useState<"text_debate" | "video_meeting">("text_debate");
+  const [videoVisibility, setVideoVisibility] = useState<"public" | "private">("private");
   const [title, setTitle] = useState("");
   const [type, setType] = useState<EventType>("live_debate");
   const [description, setDescription] = useState("");
@@ -33,6 +34,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setErrorMsg(null);
+      setVideoVisibility("private");
       // Default datetime: set to current time for easy live testing!
       const now = new Date();
       now.setMinutes(now.getMinutes() - 2); // Set start time 2 mins ago so it becomes LIVE immediately!
@@ -81,6 +83,7 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
         startTime: new Date(startTime).toISOString(),
         locationUrl: "https://agora.philosophy/symposium/live",
         videoFormat: eventFormat,
+        videoVisibility: eventFormat === "video_meeting" ? videoVisibility : undefined,
         maxCapacity: Number(maxCapacity) || 30,
         spaceId: chosenSpace?.id,
         spaceName: chosenSpace?.name,
@@ -378,11 +381,26 @@ export const EventComposerModal: React.FC<EventComposerModalProps> = ({
             </div>
           </div>
 
+          {eventFormat === "video_meeting" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,.12)" }}>
+              <span style={{ color: "#cbd5e1", fontSize: "0.82rem", fontWeight: 700 }}>Who can join the video call?</span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {(["public", "private"] as const).map((visibility) => (
+                  <button key={visibility} type="button" onClick={() => setVideoVisibility(visibility)} aria-pressed={videoVisibility === visibility} style={{ textAlign: "left", padding: "10px 12px", borderRadius: 10, border: videoVisibility === visibility ? "1px solid #60a5fa" : "1px solid rgba(255,255,255,.12)", background: videoVisibility === visibility ? "rgba(59,130,246,.16)" : "rgba(255,255,255,.04)", color: "white", cursor: "pointer" }}>
+                    <strong style={{ display: "block", textTransform: "capitalize", fontSize: "0.84rem" }}>{visibility}</strong>
+                    <span style={{ display: "block", color: "#94a3b8", fontSize: "0.72rem", marginTop: 4 }}>{visibility === "public" ? "Any signed-in member who can view the event" : "Your mutual connections and DM contacts"}</span>
+                  </button>
+                ))}
+              </div>
+              <span style={{ color: "#94a3b8", fontSize: "0.74rem" }}>Calls are not recorded.</span>
+            </div>
+          ) : (
           <div style={{ background: "rgba(59, 130, 246, 0.08)", border: "1px dashed rgba(59, 130, 246, 0.3)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: "0.8rem", color: "#93c5fd" }}>
-              {eventFormat === "video_meeting" ? "A private live room will open inside the app. Calls are not recorded." : "Live text chat debate runs directly inside Philosophy Agora."}
+              Live text chat debate runs directly inside Philosophy Agora.
             </span>
           </div>
+          )}
 
           {/* Description & Agenda */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

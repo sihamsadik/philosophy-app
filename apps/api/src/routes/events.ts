@@ -1,11 +1,12 @@
 // /v7/:projectId/events/* — events, RSVPs, invites, hosts (SDK v7.6.2). Pure REST (no sockets).
 import { Hono } from "hono";
-import { and, eq, isNull, inArray, sql, count, asc, desc, type SQL } from "drizzle-orm";
+import { and, eq, isNull, inArray, sql, count, asc, desc, or, type SQL } from "drizzle-orm";
+import { aliasedTable } from "drizzle-orm/alias";
 import type { Variables } from "../http/context.js";
 import { Errors } from "../http/errors.js";
 import { requireAuth } from "../middleware/auth.js";
 import { getDb } from "../db/index.js";
-import { events, eventHosts, eventRsvps, eventInvites, spaceMembers, spaces, profiles } from "../db/schema/index.js";
+import { events, eventHosts, eventRsvps, eventInvites, spaceMembers, spaces, profiles, connections, conversations, conversationMembers } from "../db/schema/index.js";
 import { readPagination, paginate } from "../http/envelope.js";
 import { parseBody } from "../lib/validation.js";
 import { createEventSchema, updateEventSchema, rsvpSchema, eventUserIdSchema, eventTypeEnum, eventStatusEnum, rsvpStatusEnum } from "@philosophy/contract";
@@ -200,6 +201,38 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
     }
     if (!env.DAILY_API_KEY) throw Errors.unavailable("events/video-not-configured", "In-app video calls are not configured yet");
 
+    const hostIds = await loadHostIds(row.id);
+    const userId = c.var.auth!.userId;
+    const isOwner = hostIds.includes(userId) || isProjectAdmin(c.var.auth!);
+    const videoVisibility = (row.metadata as Record<string, unknown> | null)?.videoVisibility === "public" ? "public" : "private";
+    if (videoVisibility === "private" && !isOwner) {
+      const [connection] = await getDb().select({ id: connections.id }).from(connections).where(and(
+        eq(connections.projectId, c.var.projectId),
+        eq(connections.status, "connected"),
+        or(
+          and(inArray(connections.requesterId, hostIds), eq(connections.addresseeId, userId)),
+          and(eq(connections.requesterId, userId), inArray(connections.addresseeId, hostIds)),
+        ),
+      )).limit(1);
+      const hostMember = aliasedTable(conversationMembers, "video_host_member");
+      const [directMessage] = await getDb().select({ id: conversationMembers.id })
+        .from(conversationMembers)
+        .innerJoin(hostMember, eq(conversationMembers.conversationId, hostMember.conversationId))
+        .innerJoin(conversations, eq(conversationMembers.conversationId, conversations.id))
+        .where(and(
+          eq(conversationMembers.projectId, c.var.projectId),
+          eq(conversationMembers.userId, userId),
+          eq(conversationMembers.isActive, true),
+          inArray(hostMember.userId, hostIds),
+          eq(hostMember.isActive, true),
+          eq(conversations.projectId, c.var.projectId),
+          eq(conversations.type, "direct"),
+        )).limit(1);
+      if (!connection && !directMessage) {
+        throw Errors.forbidden("events/private-video", "This private call is limited to event hosts, their mutual connections, and their direct-message contacts");
+      }
+    }
+
     const roomName = `philosophy-${row.id.replaceAll("-", "")}`;
     const now = Math.floor(Date.now() / 1000);
     const eventEnd = Math.floor((row.endTime ?? new Date(row.startTime.getTime() + 2 * 3600_000)).getTime() / 1000);
@@ -212,7 +245,7 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
         method: "POST", headers,
         body: JSON.stringify({
           name: roomName,
-          privacy: "private",
+          privacy: videoVisibility,
           properties: { exp: roomExpiry, enable_recording: false, eject_at_room_exp: true },
         }),
       });
@@ -226,7 +259,6 @@ export const eventRoutes = new Hono<{ Variables: Variables }>()
       throw Errors.badRequest("events/video-provider-error", "Could not start the video room");
     }
     const room = await roomResponse.json() as { url: string };
-    const isOwner = (await loadHostIds(row.id)).includes(c.var.auth!.userId) || isProjectAdmin(c.var.auth!);
     const tokenResponse = await fetch(`${api}/meeting-tokens`, {
       method: "POST", headers,
       body: JSON.stringify({ properties: {

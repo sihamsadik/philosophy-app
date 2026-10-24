@@ -1166,6 +1166,7 @@ export class AgoraPhilosophyClient {
         endTime: e.endTime || e.end_time,
         locationUrl: e.url || "https://agora.philosophy/symposium/live",
         videoFormat: e.metadata?.videoFormat,
+        videoVisibility: e.metadata?.videoVisibility,
         hostUser: hostUserObj,
         spaceId: e.spaceId,
         spaceName: e.metadata?.spaceName || "Philosophy Circle",
@@ -1224,6 +1225,7 @@ export class AgoraPhilosophyClient {
     endTime?: string;
     locationUrl?: string;
     videoFormat?: "text_debate" | "video_meeting";
+    videoVisibility?: "public" | "private";
     maxCapacity?: number;
     spaceId?: string;
     spaceName?: string;
@@ -1265,6 +1267,7 @@ export class AgoraPhilosophyClient {
           hostHandle,
           hostAvatar,
           videoFormat: data.videoFormat,
+          videoVisibility: data.videoVisibility,
         },
       };
 
@@ -1283,6 +1286,7 @@ export class AgoraPhilosophyClient {
         endTime: e.endTime || data.endTime,
         locationUrl: e.url || data.locationUrl || "https://agora.philosophy/symposium/live",
         videoFormat: e.metadata?.videoFormat || data.videoFormat,
+        videoVisibility: e.metadata?.videoVisibility || data.videoVisibility,
         hostUser: e.user || e.hostUser || defaultHost,
         spaceId: e.spaceId || data.spaceId,
         spaceName: e.metadata?.spaceName || data.spaceName || "Philosophy Circle",
@@ -1317,6 +1321,7 @@ export class AgoraPhilosophyClient {
         endTime: data.endTime,
         locationUrl: data.locationUrl || "https://agora.philosophy/symposium/live",
         videoFormat: data.videoFormat,
+        videoVisibility: data.videoVisibility,
         hostUser: defaultHost,
         spaceId: data.spaceId,
         spaceName: data.spaceName,
@@ -1404,6 +1409,7 @@ export class AgoraPhilosophyClient {
         endTime: res.endTime || res.end_time,
         locationUrl: res.url || "https://agora.philosophy/symposium/live",
         videoFormat: res.metadata?.videoFormat,
+        videoVisibility: res.metadata?.videoVisibility,
         hostUser: res.user || res.hostUser || {
           id: res.userId || "usr-creator",
           name: res.metadata?.hostName || "Host",
@@ -2443,6 +2449,7 @@ export interface PhilosophyEvent {
   endTime?: string;
   locationUrl?: string;
   videoFormat?: "text_debate" | "video_meeting";
+  videoVisibility?: "public" | "private";
   hostUser: User;
   spaceId?: string;
   spaceName?: string;

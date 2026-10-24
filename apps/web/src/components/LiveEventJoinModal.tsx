@@ -531,7 +531,7 @@ export const LiveEventJoinModal: React.FC<LiveEventJoinModalProps> = ({
             </span>
             <span style={{ fontSize: "0.78rem", color: "#cbd5e1" }}>
               {isVideoMeeting
-                ? "Join with your camera and microphone inside Philosophy Agora. The call is not recorded."
+                ? `${currentEvent.videoVisibility === "public" ? "Open to anyone who can view this event." : "Private: event hosts, their mutual connections, and their DM contacts can join."} The call is not recorded.`
                 : "Real-time group text debate chat directly inside Philosophy Agora."}
             </span>
           </div>
