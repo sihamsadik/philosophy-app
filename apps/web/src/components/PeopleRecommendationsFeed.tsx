@@ -442,6 +442,8 @@ export const PeopleRecommendationsFeed: React.FC<PeopleRecommendationsFeedProps>
                         className="action-btn"
                         style={{ fontSize: "0.85rem" }}
                         onClick={() => onOpenDM && onOpenDM(user)}
+                        title={isConnected ? "Send a direct message" : "Send a message request"}
+                        aria-label={isConnected ? `Message ${user.name || user.username}` : `Send a message request to ${user.name || user.username}`}
                       >
                         <MessageCircle size={10} strokeWidth={2} />
                       </button>

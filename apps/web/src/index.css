@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Keep the dense app UI readable while fitting more content on screen. */
+html {
+  font-size: 14px;
+}
+
 :root {
   --bg-dark: #0b0f19;
   --bg-card: rgba(18, 26, 43, 0.75);
@@ -36,6 +41,13 @@ body {
     radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
   background-attachment: fixed;
   min-height: 100vh;
+}
+
+.app-container h1,
+.app-container h2,
+.app-container h3,
+.app-container h4 {
+  font-weight: 600;
 }
 
 /* App Header & Nav */
