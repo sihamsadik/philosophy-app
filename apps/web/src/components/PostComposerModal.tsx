@@ -122,21 +122,20 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
         <form onSubmit={handleSubmit} className="settings-form-body">
           {errorMsg && <div className="auth-error-alert">{errorMsg}</div>}
 
-          {/* Post Type Selector */}
+          {/* Post Type Selector — LinkedIn-style icon toolbar */}
           <div className="form-group">
-            <label className="section-label">Select Post Type</label>
-            <div className="intent-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+            <label className="section-label">Post Type</label>
+            <div className="post-type-toolbar">
               {POST_TYPES.map((type) => (
                 <button
                   type="button"
                   key={type.id}
-                  className={`intent-card ${postType === type.id ? "active" : ""}`}
+                  className={`post-type-tool-btn ${postType === type.id ? "active" : ""}`}
                   onClick={() => setPostType(type.id)}
+                  title={type.label}
                 >
-                  <span className="intent-icon">{type.icon}</span>
-                  <span className="intent-label" style={{ fontSize: "0.82rem" }}>
-                    {type.label}
-                  </span>
+                  <span className="tool-icon">{type.icon}</span>
+                  <span className="tool-label">{type.label}</span>
                 </button>
               ))}
             </div>

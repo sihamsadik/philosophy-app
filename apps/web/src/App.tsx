@@ -271,7 +271,7 @@ export const App: React.FC = () => {
             onClick={() => handleOpenDM(null)}
             title="Direct Messages"
           >
-            <MessageCircle size={10} strokeWidth={2} />
+            <MessageCircle size={18} strokeWidth={2} />
             {unreadDmCount > 0 && <span className="top-notif-badge">{unreadDmCount}</span>}
           </button>
 
@@ -305,7 +305,7 @@ export const App: React.FC = () => {
                     className="dropdown-item-btn"
                     onClick={() => handleOpenDM(null)}
                   >
-                    <MessageCircle size={10} strokeWidth={2} /> 
+                    <MessageCircle size={14} strokeWidth={2} /> Direct Messages
                   </button>
                   <button
                     type="button"

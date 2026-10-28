@@ -3576,6 +3576,80 @@ html.modal-open {
 }
 
 /* ==========================================================================
+   Post Type Toolbar — LinkedIn-style icon + label column buttons
+   ========================================================================== */
+.post-type-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-top: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.post-type-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.post-type-tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.post-type-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+}
+
+.post-type-tool-btn.active {
+  color: #818cf8;
+}
+
+.post-type-tool-btn.active .tool-icon {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #818cf8;
+}
+
+.tool-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.tool-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
    PWA Install App Banner (Matching Screenshot Design)
    ========================================================================== */
 .install-app-banner-overlay {
@@ -3983,6 +4057,146 @@ html.modal-open {
 
   .brand-logo-text {
     font-size: 1.6rem;
+  }
+}
+
+/* ==========================================================================
+   Mobile Polish — tighten spacing, reduce sizes on small screens
+   ========================================================================== */
+@media (max-width: 480px) {
+  html {
+    font-size: 13px;
+  }
+
+  .app-container {
+    padding: 0 12px 90px 12px;
+  }
+
+  /* Header */
+  .app-top-header {
+    padding: 8px 12px;
+  }
+
+  .brand-logo-text {
+    font-size: 1.2rem;
+  }
+
+  .top-action-circle-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 0.85rem;
+  }
+
+  .top-header-right {
+    gap: 6px;
+  }
+
+  /* Moments carousel */
+  .moment-avatar-ring {
+    width: 48px;
+    height: 48px;
+  }
+
+  .moment-label {
+    font-size: 0.68rem;
+    max-width: 52px;
+  }
+
+  /* Feed */
+  .feed-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .feed-subtitle {
+    font-size: 0.82rem;
+    margin-bottom: 14px;
+  }
+
+  .search-result-card,
+  .post-feed-card {
+    padding: 14px;
+  }
+
+  .result-title {
+    font-size: 1.05rem !important;
+  }
+
+  .result-snippet {
+    font-size: 0.85rem;
+  }
+
+  .author-name-text {
+    font-size: 0.88rem;
+  }
+
+  .author-avatar-img,
+  .author-avatar-circle {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .filter-btn {
+    padding: 5px 9px;
+    font-size: 0.72rem;
+  }
+
+  /* Action buttons in post cards */
+  .card-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .action-btn,
+  .ai-summary-trigger-btn {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+
+  .connect-btn {
+    font-size: 0.78rem;
+    padding: 6px 12px;
+  }
+
+  /* Post composer modal */
+  .settings-modal-pane {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .post-type-pill {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+
+  /* Bottom dock */
+  .dock-tab-btn {
+    padding: 3px 6px;
+  }
+
+  .dock-label {
+    font-size: 0.62rem;
+  }
+
+  /* Drawers */
+  .drawer-content-pane {
+    padding: 20px 16px;
+  }
+
+  /* Chips */
+  .chip {
+    font-size: 0.72rem;
+    padding: 3px 7px;
+  }
+
+  /* Thinker pills */
+  .thinkers-pills-row {
+    gap: 5px;
   }
 }
 
