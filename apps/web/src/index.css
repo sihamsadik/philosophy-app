@@ -5233,4 +5233,57 @@ html.modal-open {
   animation: fadeIn 0.2s ease;
 }
 
+/* ═══════════════════════════════════════════
+   LinkedIn-Style Reaction Picker
+   ═══════════════════════════════════════════ */
+
+.linkedin-reaction-wrapper {
+  user-select: none;
+}
+
+.linkedin-like-btn {
+  border-radius: 6px !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.linkedin-like-btn:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.linkedin-like-btn.active {
+  animation: linkedin-react-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes linkedin-react-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.linkedin-emoji-btn {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease !important;
+}
+
+.linkedin-emoji-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.linkedin-emoji-btn:active {
+  transform: scale(1.6) !important;
+}
+
+.linkedin-reaction-popover {
+  will-change: transform, opacity;
+}
+
+.linkedin-reaction-summary span {
+  transition: transform 0.15s ease;
+}
+
 

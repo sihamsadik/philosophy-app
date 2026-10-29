@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { agoraClient } from "../lib/api-client.js";
-import { Heart, ThumbsUp, Eye, Smile, ThumbsDown } from "lucide-react";
+import { ThumbsUp, Heart, Lightbulb, Smile, ThumbsDown } from "lucide-react";
 
 export type ReactionType = "love" | "upvote" | "wow" | "funny" | "downvote";
 
@@ -16,49 +16,49 @@ export interface ReactionConfig {
 
 export const REACTION_CONFIGS: ReactionConfig[] = [
   {
+    key: "upvote",
+    icon: ThumbsUp,
+    label: "Like",
+    pointsLabel: "+1 Rep",
+    activeColor: "#0a66c2",
+    activeBg: "rgba(10, 102, 194, 0.12)",
+    activeBorder: "rgba(10, 102, 194, 0.4)",
+  },
+  {
     key: "love",
     icon: Heart,
     label: "Love",
     pointsLabel: "+2 Rep",
-    activeColor: "#f43f5e",
-    activeBg: "rgba(244, 63, 94, 0.15)",
-    activeBorder: "rgba(244, 63, 94, 0.5)",
-  },
-  {
-    key: "upvote",
-    icon: ThumbsUp,
-    label: "Upvote",
-    pointsLabel: "+1 Rep",
-    activeColor: "#3b82f6",
-    activeBg: "rgba(59, 130, 246, 0.15)",
-    activeBorder: "rgba(59, 130, 246, 0.5)",
+    activeColor: "#df4f48",
+    activeBg: "rgba(223, 79, 72, 0.12)",
+    activeBorder: "rgba(223, 79, 72, 0.4)",
   },
   {
     key: "wow",
-    icon: Eye,
+    icon: Lightbulb,
     label: "Insightful",
     pointsLabel: "+1 Rep",
-    activeColor: "#f59e0b",
-    activeBg: "rgba(245, 158, 11, 0.15)",
-    activeBorder: "rgba(245, 158, 11, 0.5)",
+    activeColor: "#e7a33e",
+    activeBg: "rgba(231, 163, 62, 0.12)",
+    activeBorder: "rgba(231, 163, 62, 0.4)",
   },
   {
     key: "funny",
     icon: Smile,
     label: "Wit",
     pointsLabel: "+1 Rep",
-    activeColor: "#10b981",
-    activeBg: "rgba(16, 185, 129, 0.15)",
-    activeBorder: "rgba(16, 185, 129, 0.5)",
+    activeColor: "#44b35c",
+    activeBg: "rgba(68, 179, 92, 0.12)",
+    activeBorder: "rgba(68, 179, 92, 0.4)",
   },
   {
     key: "downvote",
     icon: ThumbsDown,
-    label: "Disagree",
+    label: "Thoughtful",
     pointsLabel: "0 Rep",
-    activeColor: "#94a3b8",
-    activeBg: "rgba(148, 163, 184, 0.15)",
-    activeBorder: "rgba(148, 163, 184, 0.4)",
+    activeColor: "#8f5ccf",
+    activeBg: "rgba(143, 92, 207, 0.12)",
+    activeBorder: "rgba(143, 92, 207, 0.4)",
   },
 ];
 
@@ -81,6 +81,10 @@ export const RichReactionPicker: React.FC<RichReactionPickerProps> = ({
 }) => {
   const [activeReaction, setActiveReaction] = useState<string | null>(userReaction);
   const [counts, setCounts] = useState<Record<string, number>>({ ...reactionCounts });
+  const [showPopover, setShowPopover] = useState(false);
+  const [hoveredIcon, setHoveredIcon] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setActiveReaction(userReaction);
@@ -89,6 +93,13 @@ export const RichReactionPicker: React.FC<RichReactionPickerProps> = ({
   useEffect(() => {
     setCounts({ ...reactionCounts });
   }, [JSON.stringify(reactionCounts)]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    };
+  }, []);
 
   const handleToggleReaction = async (typeKey: ReactionType) => {
     const prevReaction = activeReaction;
@@ -106,6 +117,7 @@ export const RichReactionPicker: React.FC<RichReactionPickerProps> = ({
 
     setActiveReaction(newActive);
     setCounts(nextCounts);
+    setShowPopover(false);
     if (onReactionChange) {
       onReactionChange(newActive, nextCounts);
     }
@@ -138,75 +150,247 @@ export const RichReactionPicker: React.FC<RichReactionPickerProps> = ({
     }
   };
 
+  const handleMouseEnter = () => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    setShowPopover(true);
+  };
+
+  const handleMouseLeave = () => {
+    hideTimeoutRef.current = setTimeout(() => {
+      setShowPopover(false);
+      setHoveredIcon(null);
+    }, 400);
+  };
+
+  const handlePrimaryClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // If already reacted, toggle it off. Otherwise default to "upvote" (Like).
+    if (activeReaction) {
+      handleToggleReaction(activeReaction as ReactionType);
+    } else {
+      handleToggleReaction("upvote");
+    }
+  };
+
+  const activeConfig = activeReaction
+    ? REACTION_CONFIGS.find((c) => c.key === activeReaction)
+    : null;
+
+  const totalCount = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
+
+  // Build the top icons summary strip (like LinkedIn shows overlapping icon bubbles)
+  const topIcons = REACTION_CONFIGS
+    .filter((c) => (counts[c.key] || 0) > 0)
+    .sort((a, b) => (counts[b.key] || 0) - (counts[a.key] || 0))
+    .slice(0, 3);
+
   const isSmall = size === "sm";
+  const iconSizePopover = isSmall ? 18 : 22;
+  const iconSizePrimary = isSmall ? 14 : 16;
+  const iconSizeSummary = isSmall ? 10 : 12;
 
   return (
     <div
-      className={`rich-reaction-picker-bar ${isSmall ? "size-sm" : "size-md"}`}
+      ref={containerRef}
+      className="linkedin-reaction-wrapper"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
+        position: "relative",
         display: "inline-flex",
         alignItems: "center",
-        gap: isSmall ? 4 : 6,
-        background: "rgba(15, 23, 42, 0.4)",
-        backdropFilter: "blur(8px)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
-        borderRadius: isSmall ? 20 : 24,
-        padding: isSmall ? "2px 6px" : "4px 8px",
-        flexWrap: "wrap",
+        gap: isSmall ? 6 : 8,
       }}
     >
-      {REACTION_CONFIGS.map((config) => {
-        const isActive = activeReaction === config.key;
-        const countVal = counts[config.key] || 0;
+      {/* ─── Floating Icon Popover ─── */}
+      <div
+        className={`linkedin-reaction-popover ${showPopover ? "visible" : ""}`}
+        style={{
+          position: "absolute",
+          bottom: "calc(100% + 8px)",
+          left: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          background: "rgba(15, 23, 42, 0.92)",
+          backdropFilter: "blur(16px) saturate(180%)",
+          WebkitBackdropFilter: "blur(16px) saturate(180%)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          borderRadius: 28,
+          padding: "6px 8px",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25)",
+          opacity: showPopover ? 1 : 0,
+          transform: showPopover ? "translateY(0) scale(1)" : "translateY(8px) scale(0.9)",
+          transition: "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          pointerEvents: showPopover ? "auto" : "none",
+          zIndex: 1000,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {REACTION_CONFIGS.map((config, index) => {
+          const isThis = activeReaction === config.key;
+          const isHovered = hoveredIcon === config.key;
+          const IconComponent = config.icon;
+          return (
+            <button
+              key={config.key}
+              type="button"
+              className="linkedin-emoji-btn"
+              title={`${config.label} (${config.pointsLabel})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleReaction(config.key);
+              }}
+              onMouseEnter={() => setHoveredIcon(config.key)}
+              onMouseLeave={() => setHoveredIcon(null)}
+              style={{
+                background: isThis ? config.activeBg : "transparent",
+                border: "none",
+                borderRadius: "50%",
+                width: isSmall ? 36 : 42,
+                height: isSmall ? 36 : 42,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: isThis || isHovered ? config.activeColor : "#94a3b8",
+                transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, color 0.15s ease",
+                transform: showPopover
+                  ? `scale(${isHovered ? 1.45 : isThis ? 1.1 : 1})`
+                  : "scale(0)",
+                transitionDelay: showPopover ? `${index * 40}ms` : "0ms",
+                position: "relative",
+              }}
+            >
+              <IconComponent
+                size={iconSizePopover}
+                fill={isThis ? config.activeColor : "none"}
+                strokeWidth={isThis ? 2.5 : 2}
+              />
+            </button>
+          );
+        })}
 
-        return (
-          <button
-            key={config.key}
-            type="button"
-            className={`reaction-pill-btn ${isActive ? "active" : ""}`}
-            title={`${config.label} (${config.pointsLabel})`}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleReaction(config.key);
-            }}
+        {/* Tooltip label for hovered icon */}
+        <div
+          className="emoji-tooltip-label"
+          style={{
+            position: "absolute",
+            top: "-28px",
+            left: "50%",
+            transform: `translateX(-50%) ${hoveredIcon ? "translateY(0) scale(1)" : "translateY(4px) scale(0.85)"}`,
+            background: "rgba(0, 0, 0, 0.85)",
+            color: "#fff",
+            fontSize: "0.7rem",
+            fontWeight: 700,
+            padding: "3px 10px",
+            borderRadius: 12,
+            whiteSpace: "nowrap",
+            opacity: hoveredIcon ? 1 : 0,
+            transition: "all 0.15s ease",
+            pointerEvents: "none",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {hoveredIcon ? REACTION_CONFIGS.find((c) => c.key === hoveredIcon)?.label : ""}
+        </div>
+      </div>
+
+      {/* ─── Primary "Like" Button (LinkedIn Style) ─── */}
+      <button
+        type="button"
+        className={`linkedin-like-btn ${activeReaction ? "active" : ""}`}
+        onClick={handlePrimaryClick}
+        style={{
+          background: "none",
+          border: "none",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: isSmall ? 4 : 6,
+          cursor: "pointer",
+          padding: isSmall ? "4px 8px" : "6px 10px",
+          borderRadius: 6,
+          transition: "background 0.15s ease",
+          color: activeConfig ? activeConfig.activeColor : "#94a3b8",
+          fontWeight: 700,
+          fontSize: isSmall ? "0.78rem" : "0.85rem",
+        }}
+      >
+        {activeConfig ? (
+          <activeConfig.icon
+            size={iconSizePrimary}
+            fill={activeConfig.activeColor}
+            strokeWidth={2.5}
+            style={{ transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+          />
+        ) : (
+          <ThumbsUp size={iconSizePrimary} />
+        )}
+        <span>{activeConfig ? activeConfig.label : "Like"}</span>
+      </button>
+
+      {/* ─── Aggregated Count Display (LinkedIn overlapping icon bubbles) ─── */}
+      {totalCount > 0 && (
+        <div
+          className="linkedin-reaction-summary"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            cursor: "default",
+            padding: "2px 0",
+          }}
+        >
+          {/* Overlapping icon circles */}
+          <div
             style={{
-              background: isActive ? config.activeBg : "rgba(255, 255, 255, 0.04)",
-              border: `1px solid ${isActive ? config.activeBorder : "rgba(255, 255, 255, 0.08)"}`,
-              color: isActive ? config.activeColor : "#cbd5e1",
-              borderRadius: isSmall ? 14 : 18,
-              padding: isSmall ? "2px 7px" : "4px 10px",
-              fontSize: isSmall ? "0.74rem" : "0.82rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
+              display: "flex",
               alignItems: "center",
-              gap: isSmall ? 3 : 5,
-              transition: "all 0.18s cubic-bezier(0.4, 0, 0.2, 1)",
-              transform: isActive ? "scale(1.04)" : "scale(1)",
-              boxShadow: isActive ? `0 2px 10px ${config.activeBg}` : "none",
+              flexDirection: "row-reverse",
             }}
           >
-            <config.icon size={isSmall ? 14 : 16} style={{ verticalAlign: "middle" }} />
-            {countVal > 0 && (
-              <span
-                className="reaction-count-chip"
-                style={{
-                  background: isActive ? config.activeColor : "rgba(255, 255, 255, 0.12)",
-                  color: isActive ? "#ffffff" : "#94a3b8",
-                  borderRadius: "10px",
-                  padding: "0 5px",
-                  fontSize: isSmall ? "0.68rem" : "0.73rem",
-                  fontWeight: 700,
-                  minWidth: 16,
-                  textAlign: "center",
-                }}
-              >
-                {countVal}
-              </span>
-            )}
-          </button>
-        );
-      })}
+            {topIcons.map((config, i) => {
+              const IconComp = config.icon;
+              return (
+                <span
+                  key={config.key}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: isSmall ? 18 : 22,
+                    height: isSmall ? 18 : 22,
+                    borderRadius: "50%",
+                    background: config.activeBg,
+                    border: "2px solid rgba(15, 23, 42, 0.9)",
+                    color: config.activeColor,
+                    marginRight: i > 0 ? (isSmall ? -6 : -7) : 0,
+                    zIndex: topIcons.length - i,
+                    position: "relative",
+                  }}
+                >
+                  <IconComp size={iconSizeSummary} fill={config.activeColor} strokeWidth={2.5} />
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Total count */}
+          <span
+            style={{
+              fontSize: isSmall ? "0.73rem" : "0.82rem",
+              fontWeight: 600,
+              color: "#94a3b8",
+              marginLeft: 2,
+            }}
+          >
+            {totalCount}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
