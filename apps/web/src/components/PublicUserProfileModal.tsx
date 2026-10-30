@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { User as UserIcon, X, Zap, Handshake, PenLine, Check, MessageCircle, Clock, Landmark, ScrollText, FileText } from "lucide-react";
+import { User as UserIcon, X, Zap, Handshake, PenLine, Check, MessageCircle, Clock, Landmark, ScrollText, FileText, BookOpen, Compass, Flame, Sparkles, BookMarked, Map, ArrowRight } from "lucide-react";
 import type { User, ConnectionIntent } from "@philosophy/contract";
+import { getThinkerMeta, getIntellectualCompass, getPhilosophicalHabits, ERA_COLORS, BOOK_SPINE_COLORS } from "../lib/philosopherProfileHelpers.js";
 import type { PhilosophicalPost, ConnectionRequest } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { DualAxisCompatibilityGauge } from "./DualAxisCompatibilityGauge.js";
@@ -450,6 +451,143 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ✨ Philosopher's Ethos Statement */}
+            {prof?.worldviewSummary && (
+              <div className="profile-section-card philosopher-ethos-section philosopher-section-animate" style={{ marginBottom: 16 }}>
+                <div className="ethos-label">✨ Philosopher's Ethos</div>
+                <div className="ethos-hero-block">
+                  <div className="ethos-ornament">❝</div>
+                  <p className="ethos-text">{prof.worldviewSummary}</p>
+                  <div className="ethos-ornament" style={{ textAlign: "right" }}>❞</div>
+                </div>
+              </div>
+            )}
+
+            {/* 📚 Philosophical Bookshelf */}
+            {prof?.favoriteTexts && prof.favoriteTexts.length > 0 && (
+              <div className="profile-section-card philosopher-section-animate" style={{ marginBottom: 16 }}>
+                <div className="section-card-header">
+                  <h3><BookMarked size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Philosophical Bookshelf</h3>
+                </div>
+                <div className="bookshelf-grid">
+                  {prof.favoriteTexts.map((text, idx) => (
+                    <div
+                      key={idx}
+                      className="bookshelf-card"
+                      style={{
+                        borderLeftColor: BOOK_SPINE_COLORS[idx % BOOK_SPINE_COLORS.length],
+                        animationDelay: `${idx * 0.08}s`,
+                      }}
+                    >
+                      <div
+                        className="bookshelf-card-icon"
+                        style={{ background: `${BOOK_SPINE_COLORS[idx % BOOK_SPINE_COLORS.length]}22` }}
+                      >
+                        <BookOpen size={18} style={{ color: BOOK_SPINE_COLORS[idx % BOOK_SPINE_COLORS.length] }} />
+                      </div>
+                      <span className="bookshelf-card-title">{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 🏛️ Philosophical Lineage */}
+            {prof?.keyThinkers && prof.keyThinkers.length > 0 && (
+              <div className="profile-section-card philosopher-section-animate" style={{ marginBottom: 16 }}>
+                <div className="section-card-header">
+                  <h3><Landmark size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Philosophical Lineage — Your Intellectual Mentors</h3>
+                </div>
+                <div className="lineage-grid">
+                  {prof.keyThinkers.map((thinker, idx) => {
+                    const meta = getThinkerMeta(thinker);
+                    const eraColor = (ERA_COLORS[meta.era] || ERA_COLORS["Contemporary"])!;
+                    return (
+                      <div key={idx} className="lineage-card">
+                        <div
+                          className="lineage-portrait"
+                          style={{ background: `linear-gradient(135deg, ${eraColor.border}, ${eraColor.bg})` }}
+                        >
+                          {thinker.charAt(0)}
+                        </div>
+                        <div className="lineage-info">
+                          <span className="lineage-name">{thinker}</span>
+                          <span className="lineage-tradition">{meta.tradition}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                            <span
+                              className="lineage-era-badge"
+                              style={{ background: eraColor.bg, border: `1px solid ${eraColor.border}`, color: eraColor.text }}
+                            >
+                              {meta.era}
+                            </span>
+                            {meta.years && <span className="lineage-years">{meta.years}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 🧭 Intellectual Compass */}
+            {prof?.primarySchools && prof.primarySchools.length > 0 && (
+              <div className="profile-section-card philosopher-compass philosopher-section-animate" style={{ marginBottom: 16 }}>
+                <div className="section-card-header">
+                  <h3><Compass size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Intellectual Compass</h3>
+                </div>
+                <div className="compass-grid">
+                  {getIntellectualCompass(prof.primarySchools).map((entry, idx) => (
+                    <div key={idx} className="compass-entry">
+                      <span className="compass-domain">{entry.domain}</span>
+                      <ArrowRight size={14} className="compass-arrow" />
+                      <span className="compass-school">{entry.school}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 🔥 Daily Philosophical Habits */}
+            {prof?.primarySchools && prof.primarySchools.length > 0 && (
+              <div className="profile-section-card philosopher-section-animate" style={{ marginBottom: 16 }}>
+                <div className="section-card-header">
+                  <h3><Flame size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Daily Philosophical Habits</h3>
+                </div>
+                <div className="habits-grid">
+                  {getPhilosophicalHabits(prof.primarySchools, prof.connectionIntents || []).map((habit, idx) => (
+                    <div key={idx} className="habit-badge">
+                      <span className="habit-emoji">{habit.emoji}</span>
+                      <span className="habit-label">{habit.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 📖 Philosophical Reading Journey */}
+            {prof && ((prof.keyThinkers?.length || 0) > 0 || (prof.favoriteTexts?.length || 0) > 0) && (
+              <div className="profile-section-card philosopher-section-animate" style={{ marginBottom: 16 }}>
+                <div className="section-card-header">
+                  <h3><Map size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Philosophical Reading Journey</h3>
+                </div>
+                <div className="journey-timeline">
+                  {(prof.keyThinkers || []).map((thinker, idx) => (
+                    <div key={`t-${idx}`} className="journey-node">
+                      <span className="journey-node-type" style={{ color: "#a78bfa" }}>Thinker</span>
+                      <span className="journey-node-title">{thinker}</span>
+                    </div>
+                  ))}
+                  {(prof.favoriteTexts || []).map((text, idx) => (
+                    <div key={`x-${idx}`} className="journey-node">
+                      <span className="journey-node-type" style={{ color: "#38bdf8" }}>Text</span>
+                      <span className="journey-node-title">{text}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
