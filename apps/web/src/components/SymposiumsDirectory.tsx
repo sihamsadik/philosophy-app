@@ -170,9 +170,12 @@ export const SymposiumsDirectory: React.FC<SymposiumsDirectoryProps> = ({
         const start = new Date(e.startTime).getTime();
         const end = e.endTime ? new Date(e.endTime).getTime() : start + 2 * 3600 * 1000;
         if (nowTime < start || nowTime > end) return false;
-      } else if (activeTypeTab !== "all") {
-        if (e.type !== activeTypeTab) return false;
+      } else {
+        // Hide fully expired events (past the 2h restart window) from all non-live tabs
+        if (getEventPriorityScore(e, nowTime) === 4) return false;
+        if (activeTypeTab !== "all" && e.type !== activeTypeTab) return false;
       }
+
 
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
