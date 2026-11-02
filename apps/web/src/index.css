@@ -6,20 +6,23 @@ html {
 }
 
 :root {
-  --bg-dark: #0b0f19;
-  --bg-card: rgba(18, 26, 43, 0.75);
-  --bg-card-hover: rgba(28, 40, 65, 0.85);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-glow: rgba(99, 102, 241, 0.3);
+  /* Backgrounds — deep navy from the icon */
+  --bg-dark: #0c1a2e;
+  --bg-card: rgba(15, 28, 48, 0.82);
+  --bg-card-hover: rgba(22, 40, 65, 0.9);
+  --border-color: rgba(255, 220, 140, 0.1);
+  --border-glow: rgba(255, 199, 128, 0.25);
 
-  --primary-accent: #6366f1;
-  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --tension-gradient: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
-  --shared-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  /* Accents — warm amber/gold from the icon highlights */
+  --primary-accent: #e8a84a;
+  --primary-gradient: linear-gradient(135deg, #e8a84a 0%, #f6c780 100%);
+  --tension-gradient: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+  --shared-gradient: linear-gradient(135deg, #1a7a5e 0%, #27ae60 100%);
 
-  --text-main: #f3f4f6;
-  --text-muted: #9ca3af;
-  --text-highlight: #c084fc;
+  /* Text — warm off-white and muted stone */
+  --text-main: #f0e8d8;
+  --text-muted: #8a9bb0;
+  --text-highlight: #f6c780;
 
   --font-heading: 'Outfit', -apple-system, sans-serif;
   --font-body: 'Inter', -apple-system, sans-serif;
@@ -37,8 +40,9 @@ body {
   font-family: var(--font-body);
   line-height: 1.5;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+    radial-gradient(at 20% 10%, rgba(232, 168, 74, 0.1) 0px, transparent 50%),
+    radial-gradient(at 80% 90%, rgba(21, 38, 58, 0.8) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(11, 29, 53, 0.4) 0px, transparent 70%);
   background-attachment: fixed;
   min-height: 100vh;
 }
@@ -103,7 +107,7 @@ body {
 .nav-tab-btn.active {
   background: var(--primary-gradient);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 14px rgba(232, 168, 74, 0.4);
 }
 
 /* Common Card & Form Styles */
@@ -194,7 +198,7 @@ body {
 }
 
 .pill-btn.active {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.2);
   border-color: var(--primary-accent);
   color: #a5b4fc;
 }
@@ -258,7 +262,7 @@ body {
 }
 
 .intent-card.active {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.2);
   border-color: var(--primary-accent);
   color: #fff;
 }
@@ -611,7 +615,7 @@ html.modal-open {
 
 .user-profile-menu-btn:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: rgba(232, 168, 74, 0.4);
 }
 
 .navbar-avatar-img {
@@ -626,7 +630,7 @@ html.modal-open {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #e8a84a, #d4924a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -731,7 +735,7 @@ html.modal-open {
   width: 54px;
   height: 54px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #e8a84a, #d4924a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -783,8 +787,8 @@ html.modal-open {
 }
 
 .avatar-pick-btn.selected {
-  border-color: #6366f1;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  border-color: #e8a84a;
+  box-shadow: 0 0 10px rgba(232, 168, 74, 0.5);
 }
 
 .avatar-pick-btn img {
@@ -801,7 +805,7 @@ html.modal-open {
 }
 
 .save-submit-btn {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #e8a84a, #d4924a);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -853,8 +857,8 @@ html.modal-open {
 }
 
 .intent-card.active {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: #6366f1;
+  background: rgba(232, 168, 74, 0.15);
+  border-color: #e8a84a;
 }
 
 .intent-icon {
@@ -975,7 +979,7 @@ html.modal-open {
 }
 
 .reply-activity-item.unread {
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(232, 168, 74, 0.08);
 }
 
 .reply-activity-heading {
@@ -1050,8 +1054,8 @@ html.modal-open {
 }
 
 .conv-item-btn.active {
-  background: rgba(99, 102, 241, 0.15);
-  border-left: 3px solid #6366f1;
+  background: rgba(232, 168, 74, 0.15);
+  border-left: 3px solid #e8a84a;
 }
 
 .conv-avatar-img {
@@ -1066,7 +1070,7 @@ html.modal-open {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #e8a84a, #d4924a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1240,7 +1244,7 @@ html.modal-open {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #e8a84a, #d4924a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1333,13 +1337,13 @@ html.modal-open {
 .message-bubble.them-bubble {
   background: #ffffff !important;
   border: 1px solid #cbd5e1 !important;
-  color: #0f172a !important;
+  color: #0d1e33 !important;
   border-bottom-left-radius: 3px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .message-bubble-wrapper.them .message-text {
-  color: #0f172a !important;
+  color: #0d1e33 !important;
   font-weight: 500;
 }
 
@@ -1399,7 +1403,7 @@ html.modal-open {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #e8a84a, #d4924a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1435,8 +1439,8 @@ html.modal-open {
 }
 
 .upvote-btn.active {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: #6366f1;
+  background: rgba(232, 168, 74, 0.2);
+  border-color: #e8a84a;
   color: #a5b4fc;
 }
 
@@ -1470,8 +1474,8 @@ html.modal-open {
 }
 
 .filter-btn.active {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: #6366f1;
+  background: rgba(232, 168, 74, 0.2);
+  border-color: #e8a84a;
   color: #ffffff;
 }
 
@@ -1546,11 +1550,11 @@ html.modal-open {
 .toggle-mode-btn.active {
   background: var(--primary-gradient);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(232, 168, 74, 0.3);
 }
 
 .ai-summary-trigger-btn {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(232, 168, 74, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
   border: 1px solid rgba(168, 85, 247, 0.4);
   color: #e9d5ff;
   padding: 7px 14px;
@@ -1563,7 +1567,7 @@ html.modal-open {
 }
 
 .ai-summary-trigger-btn:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(168, 85, 247, 0.35) 100%);
+  background: linear-gradient(135deg, rgba(232, 168, 74, 0.35) 0%, rgba(168, 85, 247, 0.35) 100%);
   border-color: rgba(168, 85, 247, 0.7);
   box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
 }
@@ -1634,7 +1638,7 @@ html.modal-open {
 .stance-badge.synthesis {
   background: rgba(168, 85, 247, 0.15);
   border: 1px solid rgba(168, 85, 247, 0.3);
-  color: #c084fc;
+  color: #f6c780;
 }
 
 /* Comment Form & Cards */
@@ -1729,8 +1733,8 @@ html.modal-open {
 }
 
 .upvote-btn-sm.active {
-  background: rgba(99, 102, 241, 0.25);
-  border-color: #6366f1;
+  background: rgba(232, 168, 74, 0.25);
+  border-color: #e8a84a;
   color: #a5b4fc;
 }
 
@@ -1970,7 +1974,7 @@ html.modal-open {
   background: var(--primary-gradient);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(232, 168, 74, 0.3);
 }
 
 /* Spaces Grid & Cards */
@@ -2002,7 +2006,7 @@ html.modal-open {
   height: 100px;
   background-size: cover;
   background-position: center;
-  background-color: rgba(99, 102, 241, 0.2);
+  background-color: rgba(232, 168, 74, 0.2);
   position: relative;
 }
 
@@ -2057,9 +2061,9 @@ html.modal-open {
 }
 
 .space-cat-badge.school {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.2);
   color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  border: 1px solid rgba(232, 168, 74, 0.3);
 }
 
 .space-cat-badge.thinker {
@@ -2291,7 +2295,7 @@ html.modal-open {
 }
 
 .space-tab-btn.active {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.2);
   color: #a5b4fc;
 }
 
@@ -2364,8 +2368,8 @@ html.modal-open {
 }
 
 .connect-btn-sm {
-  background: rgba(99, 102, 241, 0.2);
-  border: 1px solid #6366f1;
+  background: rgba(232, 168, 74, 0.2);
+  border: 1px solid #e8a84a;
   color: #a5b4fc;
   padding: 5px 12px;
   border-radius: 8px;
@@ -2474,12 +2478,12 @@ html.modal-open {
 }
 
 .notif-tab-btn.active {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.2);
   color: #a5b4fc;
 }
 
 .unread-badge {
-  background: #6366f1;
+  background: #e8a84a;
   color: #fff;
   font-size: 0.7rem;
   padding: 1px 6px;
@@ -2513,7 +2517,7 @@ html.modal-open {
 }
 
 .notification-item-card.unread {
-  border-left: 3px solid #6366f1;
+  border-left: 3px solid #e8a84a;
   background: rgba(28, 40, 65, 0.85);
 }
 
@@ -2577,7 +2581,7 @@ html.modal-open {
   color: #e5e7eb;
   font-style: italic;
   background: rgba(10, 15, 26, 0.5);
-  border-left: 2px solid #6366f1;
+  border-left: 2px solid #e8a84a;
   padding: 10px 14px;
   border-radius: 8px;
   margin: 10px 0 14px 0;
@@ -2742,11 +2746,11 @@ html.modal-open {
 }
 
 .directory-search-input:focus {
-  border-color: #6366f1;
+  border-color: #e8a84a;
 }
 
 .schedule-hero-btn {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #e8a84a, #d4924a);
   border: none;
   color: white;
   padding: 10px 20px;
@@ -2754,13 +2758,13 @@ html.modal-open {
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px rgba(232, 168, 74, 0.35);
   transition: all 0.2s ease;
 }
 
 .schedule-hero-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 20px rgba(232, 168, 74, 0.5);
 }
 
 /* Category Filter Tabs */
@@ -2790,8 +2794,8 @@ html.modal-open {
 }
 
 .directory-tabs-bar .tab-btn.active {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: #6366f1;
+  background: rgba(232, 168, 74, 0.2);
+  border-color: #e8a84a;
   color: #a5b4fc;
   font-weight: 600;
 }
@@ -2816,7 +2820,7 @@ html.modal-open {
 }
 
 .event-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: rgba(232, 168, 74, 0.4);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
@@ -2838,9 +2842,9 @@ html.modal-open {
 }
 
 .badge-symposium {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.2);
   color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  border: 1px solid rgba(232, 168, 74, 0.3);
 }
 
 .badge-debate {
@@ -2905,8 +2909,8 @@ html.modal-open {
   display: inline-block;
   align-self: flex-start;
   font-size: 0.75rem;
-  color: #818cf8;
-  background: rgba(99, 102, 241, 0.1);
+  color: #e8b86a;
+  background: rgba(232, 168, 74, 0.1);
   padding: 3px 8px;
   border-radius: 6px;
 }
@@ -2969,7 +2973,7 @@ html.modal-open {
 }
 
 .link-item .room-link {
-  color: #6366f1;
+  color: #e8a84a;
   text-decoration: none;
   font-weight: 500;
 }
@@ -2987,7 +2991,7 @@ html.modal-open {
 .event-tag-pill {
   font-size: 0.72rem;
   color: #a5b4fc;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(232, 168, 74, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -3081,7 +3085,7 @@ html.modal-open {
 }
 
 .roster-tab.active {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.2);
   color: #a5b4fc;
   font-weight: 600;
 }
@@ -3327,8 +3331,8 @@ html.modal-open {
 }
 
 .rep-score-chip {
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: rgba(232, 168, 74, 0.15);
+  border: 1px solid rgba(232, 168, 74, 0.3);
   color: #a5b4fc;
   font-weight: 700;
   font-size: 0.85rem;
@@ -3469,7 +3473,7 @@ html.modal-open {
 }
 
 .school-tag {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(232, 168, 74, 0.1);
   color: #a5b4fc;
   font-size: 0.78rem;
   padding: 3px 8px;
@@ -3565,7 +3569,7 @@ html.modal-open {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(232, 168, 74, 0.15);
   color: #a5b4fc;
 }
 
@@ -3617,13 +3621,13 @@ html.modal-open {
 }
 
 .post-type-tool-btn.active {
-  color: #818cf8;
+  color: #e8b86a;
 }
 
 .post-type-tool-btn.active .tool-icon {
-  background: rgba(99, 102, 241, 0.18);
-  border-color: rgba(99, 102, 241, 0.4);
-  color: #818cf8;
+  background: rgba(232, 168, 74, 0.18);
+  border-color: rgba(232, 168, 74, 0.4);
+  color: #e8b86a;
 }
 
 .tool-icon {
@@ -3680,7 +3684,7 @@ html.modal-open {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(232, 168, 74, 0.15);
   border-radius: 20px;
   padding: 18px 20px;
   display: flex;
@@ -3718,8 +3722,8 @@ html.modal-open {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: rgba(232, 168, 74, 0.15);
+  border: 1px solid rgba(232, 168, 74, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3762,7 +3766,7 @@ html.modal-open {
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px rgba(232, 168, 74, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3771,7 +3775,7 @@ html.modal-open {
 
 .install-confirm-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 18px rgba(232, 168, 74, 0.5);
 }
 
 .install-dismiss-btn {
@@ -3811,10 +3815,10 @@ html.modal-open {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(11, 15, 25, 0.88);
+  background: rgba(10, 22, 40, 0.92);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(232, 168, 74, 0.15);
   margin: 0 -16px 12px -16px;
 }
 
@@ -3830,7 +3834,10 @@ html.modal-open {
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: -0.5px;
-  color: #ffffff;
+  background: linear-gradient(135deg, #f6c780 0%, #e8a84a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   cursor: pointer;
   user-select: none;
 }
@@ -3870,7 +3877,7 @@ html.modal-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #0b0f19;
+  border: 2px solid #0c1a2e;
 }
 
 /* Thinkers Moments Carousel Bar */
@@ -3916,7 +3923,7 @@ html.modal-open {
 }
 
 .moment-avatar-ring.active-ring {
-  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #6366f1 100%);
+  background: linear-gradient(135deg, #ec4899 0%, #d4924a 50%, #e8a84a 100%);
 }
 
 .moment-avatar-ring.inactive-ring {
@@ -3933,7 +3940,7 @@ html.modal-open {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #0b0f19;
+  border: 2px solid #0c1a2e;
 }
 
 .moment-avatar-placeholder {
@@ -3946,7 +3953,7 @@ html.modal-open {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  border: 2px solid #0b0f19;
+  border: 2px solid #0c1a2e;
 }
 
 .add-moment-badge {
@@ -3963,7 +3970,7 @@ html.modal-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #0b0f19;
+  border: 2px solid #0c1a2e;
 }
 
 .moment-label {
@@ -4016,7 +4023,7 @@ html.modal-open {
 }
 
 .dock-tab-btn.active {
-  color: #6366f1;
+  color: #e8a84a;
 }
 
 .dock-icon-wrapper {
@@ -4063,6 +4070,65 @@ html.modal-open {
 /* ==========================================================================
    Mobile Polish — tighten spacing, reduce sizes on small screens
    ========================================================================== */
+/* ── People / Thinker feed filter bar ───────────────────────────────────── */
+
+.feed-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.intent-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.intent-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  white-space: nowrap;
+}
+
+.intent-tab-btn:hover {
+  background: rgba(232, 168, 74, 0.12);
+  color: #c4b5fd;
+  border-color: rgba(232, 168, 74, 0.4);
+}
+
+.intent-tab-btn.active {
+  background: rgba(232, 168, 74, 0.2);
+  color: #f6c780;
+  border-color: rgba(232, 168, 74, 0.6);
+}
+
+.search-filter-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-filter-inputs .filter-input {
+  flex: 1;
+  min-width: 140px;
+}
+
+.search-filter-inputs .filter-submit-btn {
+  flex-shrink: 0;
+}
+
 @media (max-width: 480px) {
   html {
     font-size: 13px;
@@ -4198,6 +4264,36 @@ html.modal-open {
   .thinkers-pills-row {
     gap: 5px;
   }
+
+  /* People feed filter bar */
+  .feed-filter-bar {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .intent-tabs {
+    gap: 6px;
+  }
+
+  .intent-tab-btn {
+    padding: 6px 11px;
+    font-size: 0.78rem;
+    gap: 4px;
+  }
+
+  .search-filter-inputs {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .search-filter-inputs .filter-input {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .search-filter-inputs .filter-submit-btn {
+    width: 100%;
+  }
 }
 
 /* ==========================================================================
@@ -4209,7 +4305,7 @@ html.modal-open {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(232, 168, 74, 0.2);
   border-radius: 24px;
   width: calc(100% - 32px);
   max-width: 580px;
@@ -4283,8 +4379,8 @@ html.modal-open {
 }
 
 .live-topic-box {
-  background: rgba(99, 102, 241, 0.08);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.08);
+  border-bottom: 1px solid rgba(232, 168, 74, 0.2);
   padding: 14px 20px;
 }
 
@@ -4333,7 +4429,7 @@ html.modal-open {
 }
 
 .live-argument-bubble.synthesis {
-  border-left: 3px solid #8b5cf6;
+  border-left: 3px solid #d4924a;
 }
 
 .bubble-header {
@@ -4366,8 +4462,8 @@ html.modal-open {
 }
 
 .stance-badge-pill.synthesis {
-  background: rgba(139, 92, 246, 0.15);
-  color: #c084fc;
+  background: rgba(212, 146, 74, 0.15);
+  color: #f6c780;
 }
 
 .bubble-time {
@@ -4428,9 +4524,9 @@ html.modal-open {
 }
 
 .stance-select-btn.active.synthesis {
-  background: rgba(139, 92, 246, 0.2);
-  color: #c084fc;
-  border-color: #8b5cf6;
+  background: rgba(212, 146, 74, 0.2);
+  color: #f6c780;
+  border-color: #d4924a;
 }
 
 .live-input-row {
@@ -4462,7 +4558,7 @@ html.modal-open {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(232, 168, 74, 0.2);
   border-radius: 24px;
   width: calc(100% - 32px);
   max-width: 540px;
@@ -4553,7 +4649,7 @@ html.modal-open {
 
 .host-school-tag {
   font-size: 0.74rem;
-  color: #c084fc;
+  color: #f6c780;
   font-weight: 600;
 }
 
@@ -4623,13 +4719,13 @@ html.modal-open {
   border-radius: 14px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 16px rgba(232, 168, 74, 0.35);
   transition: all 0.2s ease;
 }
 
 .join-in-platform-text-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 20px rgba(232, 168, 74, 0.5);
 }
 
 /* Auth Security & Password Confirmation Styles */
@@ -4637,8 +4733,8 @@ html.modal-open {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.08);
+  border: 1px solid rgba(232, 168, 74, 0.2);
   border-radius: 10px;
   padding: 10px 14px;
   margin-top: 4px;
@@ -4688,7 +4784,7 @@ html.modal-open {
 
 .profile-hero-banner {
   height: 140px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.3) 50%, rgba(15, 23, 42, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(232, 168, 74, 0.4) 0%, rgba(168, 85, 247, 0.3) 50%, rgba(15, 23, 42, 0.9) 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -4732,7 +4828,7 @@ html.modal-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #e8a84a 0%, #d4924a 100%);
   color: #ffffff;
   font-family: var(--font-heading);
   font-size: 2.5rem;
@@ -4761,8 +4857,8 @@ html.modal-open {
 }
 
 .profile-reputation-badge {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, rgba(232, 168, 74, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%);
+  border: 1px solid rgba(232, 168, 74, 0.4);
   color: #a5b4fc;
   padding: 4px 12px;
   border-radius: 20px;
@@ -4790,7 +4886,7 @@ html.modal-open {
 }
 
 .edit-profile-action-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #e8a84a 100%);
   color: #ffffff;
   border: none;
   padding: 10px 20px;
@@ -4799,13 +4895,13 @@ html.modal-open {
   font-weight: 700;
   font-size: 0.9rem;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px rgba(232, 168, 74, 0.35);
   transition: all 0.2s ease;
 }
 
 .edit-profile-action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 20px rgba(232, 168, 74, 0.5);
 }
 
 .profile-section-card {
@@ -4858,8 +4954,8 @@ html.modal-open {
 }
 
 .profile-school-chip {
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: rgba(232, 168, 74, 0.15);
+  border: 1px solid rgba(232, 168, 74, 0.35);
   color: #c7d2fe;
   padding: 6px 14px;
   border-radius: 20px;
@@ -4907,8 +5003,8 @@ html.modal-open {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(99, 102, 241, 0.2);
-  color: #818cf8;
+  background: rgba(232, 168, 74, 0.2);
+  color: #e8b86a;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4941,8 +5037,8 @@ html.modal-open {
 }
 
 .intent-view-badge.active {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(232, 168, 74, 0.2);
+  border-color: rgba(232, 168, 74, 0.4);
   color: #ffffff;
 }
 
@@ -4988,9 +5084,9 @@ html.modal-open {
 
 /* Telegram-Style Reply Notification Highlight */
 .highlighted-reply-comment {
-  border: 1.5px solid #6366f1 !important;
-  background: rgba(99, 102, 241, 0.18) !important;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4), inset 0 0 10px rgba(99, 102, 241, 0.15) !important;
+  border: 1.5px solid #e8a84a !important;
+  background: rgba(232, 168, 74, 0.18) !important;
+  box-shadow: 0 0 20px rgba(232, 168, 74, 0.4), inset 0 0 10px rgba(232, 168, 74, 0.15) !important;
   border-radius: 12px;
   animation: replyPulse 2s ease-in-out infinite alternate;
   padding: 8px 12px !important;
@@ -4998,10 +5094,10 @@ html.modal-open {
 
 @keyframes replyPulse {
   0% {
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 12px rgba(232, 168, 74, 0.3);
   }
   100% {
-    box-shadow: 0 0 24px rgba(99, 102, 241, 0.6);
+    box-shadow: 0 0 24px rgba(232, 168, 74, 0.6);
   }
 }
 
@@ -5009,20 +5105,20 @@ html.modal-open {
 .joined-circles-top-section {
   position: relative;
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95)) !important;
-  border: 1px solid rgba(99, 102, 241, 0.4) !important;
+  border: 1px solid rgba(232, 168, 74, 0.4) !important;
   border-radius: 18px !important;
   padding: 24px !important;
   box-shadow: 0 10px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
 .joined-space-card {
-  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+  border: 1px solid rgba(232, 168, 74, 0.35) !important;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .joined-space-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25) !important;
+  box-shadow: 0 8px 24px rgba(232, 168, 74, 0.25) !important;
 }
 
 .circle-avatar-dot {
@@ -5055,7 +5151,7 @@ html.modal-open {
   width: 280px;
   max-height: 320px;
   background: #1e293b;
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  border: 1px solid rgba(232, 168, 74, 0.4);
   border-radius: 14px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   z-index: 100;
@@ -5106,7 +5202,7 @@ html.modal-open {
 }
 
 .picker-circle-item:hover {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(232, 168, 74, 0.2);
 }
 
 .picker-circle-item .picker-info {
@@ -5128,7 +5224,7 @@ html.modal-open {
 .message-shared-circle-card {
   margin-top: 8px;
   background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(232, 168, 74, 0.35);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -5154,7 +5250,7 @@ html.modal-open {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  background: linear-gradient(135deg, #3b82f6, #e8a84a);
   color: #fff;
   display: flex;
   align-items: center;
@@ -5222,8 +5318,8 @@ html.modal-open {
 }
 
 .share-modal-card {
-  background: #0f172a;
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: #0d1e33;
+  border: 1px solid rgba(232, 168, 74, 0.4);
   border-radius: 20px;
   width: 90%;
   max-width: 440px;
@@ -5296,13 +5392,13 @@ html.modal-open {
 .philosopher-ethos-section {
   position: relative;
   background-color: var(--bg-card);
-  background-image: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+  background-image: radial-gradient(ellipse at top, rgba(232, 168, 74, 0.08) 0%, transparent 70%);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 32px 24px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25), 0 0 24px rgba(99, 102, 241, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25), 0 0 24px rgba(232, 168, 74, 0.08);
   overflow: hidden;
 }
 
@@ -5413,7 +5509,7 @@ html.modal-open {
 
 .bookshelf-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.5), 0 0 16px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.5), 0 0 16px rgba(232, 168, 74, 0.15);
   border-color: rgba(255, 255, 255, 0.16);
 }
 
@@ -5431,7 +5527,7 @@ html.modal-open {
   height: 36px;
   min-width: 36px;
   border-radius: 50%;
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(232, 168, 74, 0.15);
   color: #a5b4fc;
   display: flex;
   align-items: center;
@@ -5489,8 +5585,8 @@ html.modal-open {
 
 .lineage-card:hover {
   transform: scale(1.02);
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 102, 241, 0.2);
+  border-color: rgba(232, 168, 74, 0.4);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), 0 0 20px rgba(232, 168, 74, 0.2);
 }
 
 .lineage-portrait {
@@ -5498,7 +5594,7 @@ html.modal-open {
   height: 56px;
   min-width: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(168, 85, 247, 0.3) 100%);
+  background: linear-gradient(135deg, rgba(232, 168, 74, 0.3) 0%, rgba(168, 85, 247, 0.3) 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
@@ -5625,7 +5721,7 @@ html.modal-open {
 .compass-entry:hover {
   transform: translateY(-2px);
   background: rgba(28, 40, 65, 0.6);
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: rgba(232, 168, 74, 0.3);
   box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.3);
 }
 
@@ -5642,7 +5738,7 @@ html.modal-open {
 .compass-arrow {
   display: inline-flex;
   align-items: center;
-  color: #6366f1;
+  color: #e8a84a;
   margin: 2px 0;
 }
 
@@ -5697,7 +5793,7 @@ html.modal-open {
 
 .habit-badge:hover {
   transform: scale(1.04);
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: rgba(232, 168, 74, 0.4);
   animation: glowPulse 2s infinite ease-in-out;
 }
 
@@ -5744,7 +5840,7 @@ html.modal-open {
   bottom: 0;
   left: 15px;
   width: 2px;
-  background: linear-gradient(180deg, #6366f1 0%, #a855f7 100%);
+  background: linear-gradient(180deg, #e8a84a 0%, #a855f7 100%);
   border-radius: 1px;
 }
 
@@ -5766,7 +5862,7 @@ html.modal-open {
 
 .journey-node:hover {
   transform: translateX(4px);
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(232, 168, 74, 0.35);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
@@ -5778,10 +5874,10 @@ html.modal-open {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #6366f1;
+  background: #e8a84a;
   border: 3px solid #0d1322;
   box-sizing: content-box;
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 8px rgba(232, 168, 74, 0.4);
 }
 
 .journey-node-type {
@@ -5846,10 +5942,10 @@ html.modal-open {
 
 @keyframes glowPulse {
   0%, 100% {
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 12px rgba(232, 168, 74, 0.2);
   }
   50% {
-    box-shadow: 0 0 24px rgba(99, 102, 241, 0.45);
+    box-shadow: 0 0 24px rgba(232, 168, 74, 0.45);
   }
 }
 
