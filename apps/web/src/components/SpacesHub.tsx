@@ -91,7 +91,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   };
 
   const handleCopyCircleLink = (space: PhilosophicalSpace) => {
-    const link = `https://dialectica.app/spaces/${space.slug || space.id}`;
+    const link = `https://philo.app/spaces/${space.slug || space.id}`;
     if (navigator.clipboard) {
       void navigator.clipboard.writeText(link);
     }
@@ -102,7 +102,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   const handleSendCircleToFriend = async (space: PhilosophicalSpace, friend: User) => {
     try {
       const conv = await agoraClient.createDirectConversation(friend.id, friend);
-      const content = `Hey! Check out this circle: ${space.name} - ${space.description.slice(0, 80)}... https://dialectica.app/spaces/${space.slug || space.id}`;
+      const content = `Hey! Check out this circle: ${space.name} - ${space.description.slice(0, 80)}... https://philo.app/spaces/${space.slug || space.id}`;
       const metadata = {
         spaceId: space.id,
         spaceSlug: space.slug,
@@ -1500,7 +1500,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 <input
                   type="text"
                   readOnly
-                  value={`https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`}
+                  value={`https://philo.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`}
                   style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#60a5fa", fontSize: "0.85rem" }}
                 />
                 <button
@@ -1521,7 +1521,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      const url = `https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`;
+                      const url = `https://philo.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`;
                       void navigator.share({ title: shareTargetSpace.name, text: shareTargetSpace.description, url });
                     }}
                     style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.07)", color: "#f8fafc", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
@@ -1532,8 +1532,8 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const url = encodeURIComponent(`https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
-                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Dialectica`);
+                    const url = encodeURIComponent(`https://philo.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
+                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Philo`);
                     window.open(`https://wa.me/?text=${text}%20${url}`, "_blank");
                   }}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(37,211,102,0.4)", background: "rgba(37,211,102,0.08)", color: "#25d366", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
@@ -1543,8 +1543,8 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const url = encodeURIComponent(`https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
-                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Dialectica`);
+                    const url = encodeURIComponent(`https://philo.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
+                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Philo`);
                     window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
                   }}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(0,136,204,0.4)", background: "rgba(0,136,204,0.08)", color: "#0088cc", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
@@ -1554,8 +1554,8 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const url = encodeURIComponent(`https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
-                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Dialectica`);
+                    const url = encodeURIComponent(`https://philo.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
+                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Philo`);
                     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
                   }}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(29,161,242,0.4)", background: "rgba(29,161,242,0.08)", color: "#1da1f2", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
@@ -1565,8 +1565,8 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const url = `https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`;
-                    const subject = encodeURIComponent(`Join "${shareTargetSpace.name}" on Dialectica`);
+                    const url = `https://philo.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`;
+                    const subject = encodeURIComponent(`Join "${shareTargetSpace.name}" on Philo`);
                     const body = encodeURIComponent(`${shareTargetSpace.description}\n\n${url}`);
                     window.open(`mailto:?subject=${subject}&body=${body}`);
                   }}
