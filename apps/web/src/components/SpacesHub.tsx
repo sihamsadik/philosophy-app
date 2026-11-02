@@ -47,7 +47,11 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   const [newSpaceDesc, setNewSpaceDesc] = useState("");
   const [newSpaceSchool, setNewSpaceSchool] = useState("");
   const [newSpaceThinkers, setNewSpaceThinkers] = useState("");
+  const [newSpaceAvatar, setNewSpaceAvatar] = useState("");
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+  // Edit avatar for existing circle
+  const [editAvatarSpaceId, setEditAvatarSpaceId] = useState<string | null>(null);
+  const [editAvatarUrl, setEditAvatarUrl] = useState("");
 
   // Share Circle Modal state
   const [shareTargetSpace, setShareTargetSpace] = useState<PhilosophicalSpace | null>(null);
@@ -348,6 +352,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
         category: newSpaceCategory,
         primarySchool: newSpaceSchool.trim() || newSpaceName.trim(),
         keyThinkers: thinkersArray,
+        avatarImage: newSpaceAvatar.trim() || undefined,
       });
 
       setSpaces((prev) => [created, ...prev]);
@@ -356,6 +361,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
       setNewSpaceDesc("");
       setNewSpaceSchool("");
       setNewSpaceThinkers("");
+      setNewSpaceAvatar("");
       setSelectedSpace(created);
     } catch (err: any) {
       console.error("Failed to create circle:", err);
@@ -812,8 +818,8 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
             }}
           >
             <div className="hero-content">
-              <div className="hero-top-row">
-                <div className="hero-avatar">
+              <div className="hero-top-row" style={{ position: "relative" }}>
+                <div className="hero-avatar" style={{ position: "relative" }}>
                   {selectedSpace.avatarImage ? (
                     <img src={selectedSpace.avatarImage} alt="Space Avatar" className="hero-avatar-img" />
                   ) : (
@@ -821,7 +827,38 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                       {selectedSpace.name.charAt(0).toUpperCase()}
                     </div>
                   )}
+                  <button
+                    type="button"
+                    title="Change circle avatar"
+                    onClick={() => { setEditAvatarSpaceId(selectedSpace.id); setEditAvatarUrl(selectedSpace.avatarImage || ""); }}
+                    style={{ position: "absolute", bottom: 0, right: 0, width: 24, height: 24, borderRadius: "50%", background: "#6366f1", border: "2px solid #0f172a", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                  >
+                    <Pencil size={11} />
+                  </button>
                 </div>
+
+                {editAvatarSpaceId === selectedSpace.id && (
+                  <div style={{ position: "absolute", top: 8, left: 8, zIndex: 20, background: "#1e293b", border: "1px solid rgba(99,102,241,0.5)", borderRadius: 10, padding: 12, display: "flex", gap: 8, alignItems: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+                    {editAvatarUrl && <img src={editAvatarUrl} alt="preview" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
+                    <input
+                      type="url"
+                      autoFocus
+                      placeholder="Paste image URL…"
+                      value={editAvatarUrl}
+                      onChange={(e) => setEditAvatarUrl(e.target.value)}
+                      style={{ width: 200, padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.82rem" }}
+                    />
+                    <button type="button" onClick={() => {
+                      const url = editAvatarUrl.trim();
+                      setSpaces((prev) => prev.map((s) => s.id === selectedSpace.id ? { ...s, avatarImage: url || s.avatarImage } : s));
+                      setSelectedSpace((prev) => prev ? { ...prev, avatarImage: url || prev.avatarImage } : prev);
+                      setEditAvatarSpaceId(null);
+                    }} style={{ padding: "6px 12px", borderRadius: 7, border: "none", background: "#6366f1", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>
+                      <CircleCheck size={13} />
+                    </button>
+                    <button type="button" onClick={() => setEditAvatarSpaceId(null)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><X size={14} /></button>
+                  </div>
+                )}
 
                 <div className="hero-title-block">
                   <div className="hero-badges">
@@ -1394,6 +1431,22 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 />
               </div>
 
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Circle Avatar Image URL (optional)</label>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  {newSpaceAvatar && (
+                    <img src={newSpaceAvatar} alt="preview" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(99,102,241,0.5)", flexShrink: 0 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  )}
+                  <input
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={newSpaceAvatar}
+                    onChange={(e) => setNewSpaceAvatar(e.target.value)}
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#fff" }}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
                 <button
                   type="button"
@@ -1441,10 +1494,8 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
             </div>
 
             {/* Copy Link Section */}
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, marginBottom: 6, color: "#94a3b8" }}>
-                DIRECT CIRCLE LINK
-              </label>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, marginBottom: 6, color: "#94a3b8" }}>DIRECT CIRCLE LINK</label>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   type="text"
@@ -1458,6 +1509,70 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}
                 >
                   {copiedToast ? <><ClipboardCheck size={14} /> Copied!</> : <><Copy size={14} /> Copy</>}
+                </button>
+              </div>
+            </div>
+
+            {/* External Share Buttons */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, marginBottom: 8, color: "#94a3b8" }}>SHARE TO OTHER APPS</label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {typeof navigator !== "undefined" && "share" in navigator && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = `https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`;
+                      void navigator.share({ title: shareTargetSpace.name, text: shareTargetSpace.description, url });
+                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.07)", color: "#f8fafc", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
+                  >
+                    <Globe size={14} /> Share via…
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = encodeURIComponent(`https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
+                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Dialectica`);
+                    window.open(`https://wa.me/?text=${text}%20${url}`, "_blank");
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(37,211,102,0.4)", background: "rgba(37,211,102,0.08)", color: "#25d366", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
+                >
+                  WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = encodeURIComponent(`https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
+                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Dialectica`);
+                    window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(0,136,204,0.4)", background: "rgba(0,136,204,0.08)", color: "#0088cc", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
+                >
+                  Telegram
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = encodeURIComponent(`https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`);
+                    const text = encodeURIComponent(`Join the "${shareTargetSpace.name}" philosophical circle on Dialectica`);
+                    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(29,161,242,0.4)", background: "rgba(29,161,242,0.08)", color: "#1da1f2", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
+                >
+                  Twitter / X
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = `https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`;
+                    const subject = encodeURIComponent(`Join "${shareTargetSpace.name}" on Dialectica`);
+                    const body = encodeURIComponent(`${shareTargetSpace.description}\n\n${url}`);
+                    window.open(`mailto:?subject=${subject}&body=${body}`);
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.3)", background: "rgba(148,163,184,0.07)", color: "#94a3b8", fontWeight: 700, cursor: "pointer", fontSize: "0.83rem" }}
+                >
+                  Email
                 </button>
               </div>
             </div>

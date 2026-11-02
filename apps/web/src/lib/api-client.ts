@@ -11,6 +11,7 @@ export interface ApiClientOptions {
   baseUrl?: string;
   projectId?: string;
   authToken?: string;
+  refreshToken?: string;
 }
 
 export interface AuthSessionResponse {
@@ -20,6 +21,7 @@ export interface AuthSessionResponse {
     refreshToken?: string;
   };
   accessToken?: string;
+  refreshToken?: string;
 }
 
 /**
@@ -130,7 +132,10 @@ export class AgoraPhilosophyClient {
   private baseUrl: string;
   private projectId: string;
   private authToken: string;
+  private refreshToken: string;
   private currentUserId: string = "";
+  private isRefreshing = false;
+  private refreshPromise: Promise<boolean> | null = null;
 
   constructor(options?: ApiClientOptions) {
     this.baseUrl = options?.baseUrl || "/api";
@@ -138,11 +143,14 @@ export class AgoraPhilosophyClient {
     
     // Restore saved token from localStorage if available
     let storedToken = "";
+    let storedRefresh = "";
     if (typeof window !== "undefined") {
       storedToken = localStorage.getItem("philosophy_auth_token") || "";
+      storedRefresh = localStorage.getItem("philosophy_refresh_token") || "";
       this.currentUserId = localStorage.getItem("philosophy_current_user_id") || "";
     }
     this.authToken = options?.authToken || storedToken || "";
+    this.refreshToken = options?.refreshToken || storedRefresh || "";
   }
 
   setCurrentUserId(id: string) {
@@ -182,8 +190,21 @@ export class AgoraPhilosophyClient {
         localStorage.setItem("philosophy_auth_token", token);
       } else {
         localStorage.removeItem("philosophy_auth_token");
+        localStorage.removeItem("philosophy_refresh_token");
         localStorage.removeItem("philosophy_current_user_id");
         this.currentUserId = "";
+        this.refreshToken = "";
+      }
+    }
+  }
+
+  setRefreshToken(token: string) {
+    this.refreshToken = token;
+    if (typeof window !== "undefined") {
+      if (token) {
+        localStorage.setItem("philosophy_refresh_token", token);
+      } else {
+        localStorage.removeItem("philosophy_refresh_token");
       }
     }
   }
@@ -204,6 +225,42 @@ export class AgoraPhilosophyClient {
     return Boolean(this.authToken && this.authToken !== "mock-auth-token" && this.authToken.length > 20);
   }
 
+  /** Silently refresh the access token using the stored refresh token.
+   *  Returns true if a new access token was obtained, false otherwise. */
+  async refreshSession(): Promise<boolean> {
+    if (!this.refreshToken) return false;
+    // Deduplicate concurrent refresh calls
+    if (this.isRefreshing && this.refreshPromise) return this.refreshPromise;
+    this.isRefreshing = true;
+    this.refreshPromise = (async () => {
+      try {
+        const isCleanApi = this.baseUrl === "/api" || this.baseUrl === "/philosophy/api" || !this.baseUrl.includes("/v7");
+        const url = isCleanApi
+          ? `${this.baseUrl}/auth/refresh`
+          : `${this.baseUrl}/${this.projectId}/auth/refresh`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: this.refreshToken }),
+        });
+        if (!res.ok) return false;
+        const data = await res.json();
+        const newAccess = data.accessToken || data.token?.accessToken;
+        const newRefresh = data.refreshToken || data.token?.refreshToken;
+        if (!newAccess) return false;
+        this.setAuthToken(newAccess);
+        if (newRefresh) this.setRefreshToken(newRefresh);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+    return this.refreshPromise;
+  }
+
   isUUID(id: string): boolean {
     return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i.test(id ?? "");
   }
@@ -211,16 +268,29 @@ export class AgoraPhilosophyClient {
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const isCleanApi = this.baseUrl === "/api" || this.baseUrl === "/philosophy/api" || !this.baseUrl.includes("/v7");
     const url = isCleanApi ? `${this.baseUrl}${path}` : `${this.baseUrl}/${this.projectId}${path}`;
-    const headers: Record<string, string> = {
+    const buildHeaders = () => ({
       "Content-Type": "application/json",
       ...(this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {}),
       ...(init?.headers as Record<string, string>),
-    };
-
-    const response = await fetch(url, {
-      ...init,
-      headers,
     });
+
+    let response = await fetch(url, { ...init, headers: buildHeaders() });
+
+    // On 401 — try a silent token refresh once, then retry
+    if (response.status === 401 && this.refreshToken && this.authToken !== "mock-auth-token") {
+      const refreshed = await this.refreshSession();
+      if (refreshed) {
+        response = await fetch(url, { ...init, headers: buildHeaders() });
+      }
+      // If still 401 after refresh (or refresh failed), force sign-out
+      if (response.status === 401) {
+        this.setAuthToken("");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("auth_session_expired"));
+        }
+        throw new Error("Your session has expired. Please sign in again.");
+      }
+    }
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
@@ -262,9 +332,9 @@ export class AgoraPhilosophyClient {
       body: JSON.stringify(data),
     });
     const token = res.accessToken || res.token?.accessToken;
-    if (token) {
-      this.setAuthToken(token);
-    }
+    const refresh = res.refreshToken || res.token?.refreshToken;
+    if (token) this.setAuthToken(token);
+    if (refresh) this.setRefreshToken(refresh);
     return res;
   }
 
@@ -277,9 +347,9 @@ export class AgoraPhilosophyClient {
       body: JSON.stringify(data),
     });
     const token = res.accessToken || res.token?.accessToken;
-    if (token) {
-      this.setAuthToken(token);
-    }
+    const refresh = res.refreshToken || res.token?.refreshToken;
+    if (token) this.setAuthToken(token);
+    if (refresh) this.setRefreshToken(refresh);
     return res;
   }
 
@@ -764,6 +834,7 @@ export class AgoraPhilosophyClient {
     category?: "school" | "thinker" | "domain" | "general";
     primarySchool?: string;
     keyThinkers?: string[];
+    avatarImage?: string;
   }): Promise<PhilosophicalSpace> {
     if (!this.authToken || this.authToken === "mock-auth-token") {
       const newSpace: PhilosophicalSpace = {
@@ -774,7 +845,7 @@ export class AgoraPhilosophyClient {
         category: spaceData.category || "school",
         primarySchool: spaceData.primarySchool || "General Philosophy",
         keyThinkers: spaceData.keyThinkers || [],
-        avatarImage: getAvatarUrl(null, spaceData.name),
+        avatarImage: spaceData.avatarImage || getAvatarUrl(null, spaceData.name),
         membersCount: 1,
         postsCount: 0,
         isJoined: true,

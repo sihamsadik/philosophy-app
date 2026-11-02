@@ -47,6 +47,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchCurrentUser();
   }, []);
 
+  // Auto sign-out when the backend returns 401 and token refresh fails
+  useEffect(() => {
+    const handleExpired = () => {
+      setUser(null);
+      agoraClient.setCurrentUserId("");
+      setIsLoading(false);
+      window.dispatchEvent(new CustomEvent("agora_notification_updated"));
+    };
+    window.addEventListener("auth_session_expired", handleExpired);
+    return () => window.removeEventListener("auth_session_expired", handleExpired);
+  }, []);
+
   const login = async (email: string, password?: string) => {
     setError(null);
     setIsLoading(true);
