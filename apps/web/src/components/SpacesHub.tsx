@@ -87,7 +87,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   };
 
   const handleCopyCircleLink = (space: PhilosophicalSpace) => {
-    const link = `https://agora.app/spaces/${space.slug || space.id}`;
+    const link = `https://dialectica.app/spaces/${space.slug || space.id}`;
     if (navigator.clipboard) {
       void navigator.clipboard.writeText(link);
     }
@@ -98,7 +98,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   const handleSendCircleToFriend = async (space: PhilosophicalSpace, friend: User) => {
     try {
       const conv = await agoraClient.createDirectConversation(friend.id, friend);
-      const content = `Hey! Check out this circle: ${space.name} - ${space.description.slice(0, 80)}... https://agora.app/spaces/${space.slug || space.id}`;
+      const content = `Hey! Check out this circle: ${space.name} - ${space.description.slice(0, 80)}... https://dialectica.app/spaces/${space.slug || space.id}`;
       const metadata = {
         spaceId: space.id,
         spaceSlug: space.slug,
@@ -1449,7 +1449,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                 <input
                   type="text"
                   readOnly
-                  value={`https://agora.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`}
+                  value={`https://dialectica.app/spaces/${shareTargetSpace.slug || shareTargetSpace.id}`}
                   style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#60a5fa", fontSize: "0.85rem" }}
                 />
                 <button

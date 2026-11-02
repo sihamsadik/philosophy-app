@@ -106,7 +106,7 @@ export const miscRoutes = new Hono<{ Variables: Variables }>()
 
     let filtered = mapped;
     if (school && school !== "all") {
-      filtered = entries.filter((e) =>
+      filtered = mapped.filter((e) =>
         e.primarySchool.toLowerCase().includes(school.toLowerCase())
       );
     }

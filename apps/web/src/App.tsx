@@ -241,7 +241,7 @@ export const App: React.FC = () => {
         </div>
 
         <div className="top-header-center" onClick={() => setActiveTab("debates")}>
-          <span className="brand-logo-text">agora</span>
+          <span className="brand-logo-text">dialectica</span>
         </div>
 
         <div className="top-header-right">

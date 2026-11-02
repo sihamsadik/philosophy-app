@@ -39,7 +39,7 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
           Where Deep Thinkers Debate, Connect & Discover Truth
         </h1>
         <p style={{ fontSize: "0.95rem", color: "#94a3b8", maxWidth: 720, margin: "0 auto 28px auto", lineHeight: 1.6 }}>
-          Agora brings together philosophers, ethicists, and rationalists. Explore structured arguments, participate in live symposiums, and measure worldview compatibility.
+          A gathering place for philosophers, ethicists, and rationalists. Explore structured arguments, participate in live symposiums, and measure worldview compatibility.
         </p>
         <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
           <button

@@ -247,7 +247,7 @@ export const LiveTextDebateModal: React.FC<LiveTextDebateModalProps> = ({
     topic: event
       ? `${event.title}${event.description ? ` — ${event.description}` : ""}`
       : `Live philosophical text debate hosted by ${activeHostName}`,
-    school: event?.spaceName || "Philosophy Agora Circle",
+    school: event?.spaceName || "Dialectical Circle",
     messages: [
       {
         id: "m1",
