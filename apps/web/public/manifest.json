@@ -6,8 +6,8 @@
   "description": "Discover thinkers, engage in structured philosophical debates, and join intellectual circles.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0f19",
-  "theme_color": "#0b0f19",
+  "background_color": "#04082a",
+  "theme_color": "#04082a",
   "orientation": "any",
   "icons": [
     {
