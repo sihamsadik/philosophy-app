@@ -7,7 +7,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (username: string, password?: string) => Promise<void>;
   register: (data: { email: string; password?: string; username?: string; name?: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -59,11 +59,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener("auth_session_expired", handleExpired);
   }, []);
 
-  const login = async (email: string, password?: string) => {
+  const login = async (username: string, password?: string) => {
     setError(null);
     setIsLoading(true);
     try {
-      const res = await agoraClient.signIn({ email, password });
+      const res = await agoraClient.signIn({ username, password });
       setUser(res.user);
       if (res.user?.id) agoraClient.setCurrentUserId(res.user.id);
       if (typeof window !== "undefined") {

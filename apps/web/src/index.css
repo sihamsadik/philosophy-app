@@ -111,7 +111,7 @@ body {
 
 .nav-tab-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
 }
 
 .nav-tab-btn.active {
@@ -166,7 +166,7 @@ body {
 .filter-input,
 .main-search-input {
   width: 100%;
-  background: rgba(10, 15, 26, 0.8);
+  background: rgba(8, 18, 48, 0.82);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 12px 16px;
@@ -193,7 +193,7 @@ body {
 }
 
 .pill-btn {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(27, 57, 103, 0.28);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 8px 14px;
@@ -235,7 +235,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(27, 57, 103, 0.25);
   border: 1px solid var(--border-color);
   padding: 8px 14px;
   border-radius: 8px;
@@ -260,7 +260,7 @@ body {
 }
 
 .intent-card {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(27, 57, 103, 0.28);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 14px;
@@ -325,8 +325,8 @@ body {
 
 /* Dual Axis Compatibility Gauge */
 .compatibility-gauge-card {
-  background: rgba(10, 15, 26, 0.5);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(8, 18, 48, 0.55);
+  border-color: rgba(213, 193, 153, 0.1);
   padding: 18px;
 }
 
@@ -376,7 +376,7 @@ body {
 
 .progress-track {
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -403,15 +403,15 @@ body {
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.8rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(27, 57, 103, 0.32);
 }
 
 .chip.school-chip { color: #a7f3d0; background: rgba(16, 185, 129, 0.15); }
 .chip.thinker-chip { color: #f472b6; background: rgba(244, 114, 182, 0.15); }
-.chip.question-chip { color: #93c5fd; background: rgba(147, 197, 253, 0.15); }
+.chip.question-chip { color: #f0c96a; background: rgba(240, 201, 106, 0.12); }
 .chip.text-chip { color: #fde047; background: rgba(250, 204, 21, 0.15); }
 .chip.thinker-chip { color: #f472b6; background: rgba(244, 114, 182, 0.15); }
-.chip.question-chip { color: #93c5fd; background: rgba(147, 197, 253, 0.15); }
+.chip.question-chip { color: #f0c96a; background: rgba(240, 201, 106, 0.12); }
 
 /* Drawer Styles */
 .drawer-overlay {
@@ -451,7 +451,7 @@ body {
 }
 
 .position-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(27, 57, 103, 0.25);
   border-left: 3px solid var(--primary-accent);
   padding: 14px;
   border-radius: 8px;
@@ -459,7 +459,7 @@ body {
 }
 
 .argument-box {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(27, 57, 103, 0.25);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 10px;
@@ -470,7 +470,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(27, 57, 103, 0.28);
   border: 1px solid var(--border-color);
   padding: 12px 16px;
   border-radius: 10px;
@@ -481,7 +481,7 @@ body {
 }
 
 .accordion-header-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
 }
 
 /* Auth Modal & Navigation User Menu */
@@ -513,7 +513,7 @@ body {
 .auth-tabs {
   display: flex;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(27, 57, 103, 0.28);
   padding: 4px;
   border-radius: 12px;
   margin-bottom: 20px;
@@ -615,7 +615,7 @@ html.modal-open {
 
 .demo-user-btn {
   flex: 1;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   color: var(--text-main);
   padding: 8px;
@@ -626,7 +626,7 @@ html.modal-open {
 }
 
 .demo-user-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
 }
 
 .user-profile-dropdown-wrapper {
@@ -637,7 +637,7 @@ html.modal-open {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   padding: 6px 14px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
@@ -647,7 +647,7 @@ html.modal-open {
 }
 
 .user-profile-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
   border-color: rgba(240, 201, 106, 0.4);
 }
 
@@ -709,7 +709,7 @@ html.modal-open {
 }
 
 .dropdown-item-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
 }
 
 .dropdown-item-btn.logout {
@@ -876,7 +876,7 @@ html.modal-open {
   align-items: center;
   gap: 10px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(27, 57, 103, 0.25);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   cursor: pointer;
@@ -886,7 +886,7 @@ html.modal-open {
 }
 
 .intent-card:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(27, 57, 103, 0.32);
 }
 
 .intent-card.active {
@@ -1000,7 +1000,7 @@ html.modal-open {
   gap: 6px;
   padding: 13px 15px;
   border: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(27, 57, 103, 0.32);
   background: transparent;
   color: var(--text-main);
   text-align: left;
@@ -1008,7 +1008,7 @@ html.modal-open {
 }
 
 .reply-activity-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
 }
 
 .reply-activity-item.unread {
@@ -1075,7 +1075,7 @@ html.modal-open {
   padding: 12px 16px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(27, 57, 103, 0.25);
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
@@ -1083,7 +1083,7 @@ html.modal-open {
 }
 
 .conv-item-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
 }
 
 .conv-item-btn.active {
@@ -1150,7 +1150,7 @@ html.modal-open {
 }
 
 .conv-unread-badge {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: var(--primary-gradient);
   color: #ffffff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -1158,7 +1158,7 @@ html.modal-open {
   border-radius: 12px;
   min-width: 18px;
   text-align: center;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+  box-shadow: var(--gold-glow);
   margin-left: 8px;
   line-height: 1.2;
 }
@@ -1323,7 +1323,7 @@ html.modal-open {
   font-weight: 600;
   padding: 4px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(213, 193, 153, 0.14);
   backdrop-filter: blur(8px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   letter-spacing: 0.02em;
@@ -1355,10 +1355,10 @@ html.modal-open {
 /* Owner Message: Vibrant Telegram Blue Bubble with White Text */
 .message-bubble-wrapper.me .message-bubble,
 .message-bubble.me-bubble {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  background: var(--primary-gradient) !important;
   color: #ffffff !important;
   border-bottom-right-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(213, 193, 153, 0.16) !important;
 }
 
 .message-bubble-wrapper.me .message-text {
@@ -1456,7 +1456,7 @@ html.modal-open {
 }
 
 .upvote-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   color: var(--text-main);
   padding: 6px 14px;
@@ -1468,7 +1468,7 @@ html.modal-open {
 }
 
 .upvote-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
 }
 
 .upvote-btn.active {
@@ -1492,7 +1492,7 @@ html.modal-open {
 }
 
 .filter-btn {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(27, 57, 103, 0.28);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 6px 12px;
@@ -1503,7 +1503,7 @@ html.modal-open {
 }
 
 .filter-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
 }
 
 .filter-btn.active {
@@ -1543,7 +1543,7 @@ html.modal-open {
 }
 
 .comments-count-pill {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
   border: 1px solid var(--border-color);
   padding: 3px 10px;
   border-radius: 12px;
@@ -1560,7 +1560,7 @@ html.modal-open {
 
 .view-mode-toggle-group {
   display: flex;
-  background: rgba(10, 15, 26, 0.6);
+  background: rgba(8, 18, 48, 0.65);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 3px;
@@ -1620,7 +1620,7 @@ html.modal-open {
 }
 
 .stance-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 5px 12px;
@@ -1676,7 +1676,7 @@ html.modal-open {
 
 /* Comment Form & Cards */
 .top-comment-form {
-  background: rgba(10, 15, 26, 0.5);
+  background: rgba(8, 18, 48, 0.55);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 16px;
@@ -1697,7 +1697,7 @@ html.modal-open {
 }
 
 .comment-card {
-  background: rgba(18, 26, 43, 0.6);
+  background: rgba(12, 22, 52, 0.65);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 14px 18px;
@@ -1750,7 +1750,7 @@ html.modal-open {
 }
 
 .upvote-btn-sm {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 3px 9px;
@@ -1762,7 +1762,7 @@ html.modal-open {
 }
 
 .upvote-btn-sm:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
 }
 
 .upvote-btn-sm.active {
@@ -1805,7 +1805,7 @@ html.modal-open {
 
 .nested-replies-container {
   margin-top: 12px;
-  border-left: 1px dashed rgba(255, 255, 255, 0.15);
+  border-left: 1px dashed rgba(213, 193, 153, 0.16);
   padding-left: 8px;
 }
 
@@ -1831,7 +1831,7 @@ html.modal-open {
 }
 
 .split-column {
-  background: rgba(10, 15, 26, 0.4);
+  background: rgba(8, 18, 48, 0.45);
   border: 1px solid var(--border-color);
   border-radius: 14px;
   padding: 18px;
@@ -1846,7 +1846,7 @@ html.modal-open {
 }
 
 .synthesis-panel {
-  background: rgba(10, 15, 26, 0.4);
+  background: rgba(8, 18, 48, 0.45);
   border: 1px solid var(--border-color);
   border-top: 3px solid #a855f7;
   border-radius: 14px;
@@ -1869,7 +1869,7 @@ html.modal-open {
 }
 
 .col-count-chip {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 0.75rem;
@@ -1889,7 +1889,7 @@ html.modal-open {
 }
 
 .split-comment-card {
-  background: rgba(18, 26, 43, 0.7);
+  background: rgba(12, 22, 52, 0.75);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 14px;
@@ -1922,7 +1922,7 @@ html.modal-open {
 
 .drawer-toolbar-bar {
   padding: 12px 24px;
-  background: rgba(10, 15, 26, 0.7);
+  background: rgba(8, 18, 48, 0.72);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
@@ -1986,7 +1986,7 @@ html.modal-open {
 }
 
 .category-tab-btn {
-  background: rgba(10, 15, 26, 0.6);
+  background: rgba(8, 18, 48, 0.65);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 8px 16px;
@@ -2000,7 +2000,7 @@ html.modal-open {
 
 .category-tab-btn:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
 }
 
 .category-tab-btn.active {
@@ -2112,7 +2112,7 @@ html.modal-open {
 }
 
 .space-cat-badge.general {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
   color: #e5e7eb;
   border: 1px solid var(--border-color);
 }
@@ -2153,7 +2153,7 @@ html.modal-open {
 
 .thinker-chip-sm {
   font-size: 0.72rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   padding: 2px 8px;
   border-radius: 6px;
@@ -2190,7 +2190,7 @@ html.modal-open {
 }
 
 .join-btn.joined {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
 }
@@ -2216,7 +2216,7 @@ html.modal-open {
 
 .back-btn:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
 }
 
 .space-hero-banner {
@@ -2341,7 +2341,7 @@ html.modal-open {
 }
 
 .thinker-roster-card {
-  background: rgba(18, 26, 43, 0.7);
+  background: rgba(12, 22, 52, 0.75);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 14px;
@@ -2362,7 +2362,7 @@ html.modal-open {
 }
 
 .steward-card {
-  background: rgba(18, 26, 43, 0.7);
+  background: rgba(12, 22, 52, 0.75);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 12px 18px;
@@ -2418,7 +2418,7 @@ html.modal-open {
 }
 
 .recipient-summary-box {
-  background: rgba(10, 15, 26, 0.6);
+  background: rgba(8, 18, 48, 0.65);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 16px;
@@ -2483,7 +2483,7 @@ html.modal-open {
 
 .notifications-toolbar {
   padding: 12px 20px;
-  background: rgba(10, 15, 26, 0.6);
+  background: rgba(8, 18, 48, 0.65);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
@@ -2543,7 +2543,7 @@ html.modal-open {
 
 .notification-item-card,
 .connection-request-card {
-  background: rgba(18, 26, 43, 0.7);
+  background: rgba(12, 22, 52, 0.75);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 16px;
@@ -2551,7 +2551,7 @@ html.modal-open {
 
 .notification-item-card.unread {
   border-left: 3px solid #c9973a;
-  background: rgba(28, 40, 65, 0.85);
+  background: rgba(20, 35, 72, 0.88);
 }
 
 .notif-top-bar {
@@ -2613,7 +2613,7 @@ html.modal-open {
   font-size: 0.88rem;
   color: #e5e7eb;
   font-style: italic;
-  background: rgba(10, 15, 26, 0.5);
+  background: rgba(8, 18, 48, 0.55);
   border-left: 2px solid #c9973a;
   padding: 10px 14px;
   border-radius: 8px;
@@ -2671,7 +2671,7 @@ html.modal-open {
 
 /* Navbar Notification Bell Button */
 .notif-bell-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   color: var(--text-main);
   padding: 6px 12px;
@@ -2683,7 +2683,7 @@ html.modal-open {
 }
 
 .notif-bell-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
 }
 
 .bell-badge {
@@ -2823,7 +2823,7 @@ html.modal-open {
 }
 
 .directory-tabs-bar .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
   color: var(--text-main);
 }
 
@@ -2920,9 +2920,9 @@ html.modal-open {
 }
 
 .status-countdown-chip.upcoming {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(27, 57, 103, 0.35);
+  color: #c8d8f0;
+  border: 1px solid rgba(240, 201, 106, 0.2);
 }
 
 .status-countdown-chip.past {
@@ -2961,8 +2961,8 @@ html.modal-open {
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(27, 57, 103, 0.3);
+  border-bottom: 1px solid rgba(27, 57, 103, 0.3);
 }
 
 .host-avatar {
@@ -3082,7 +3082,7 @@ html.modal-open {
 }
 
 .view-roster-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   color: var(--text-main);
   padding: 6px 12px;
@@ -3093,7 +3093,7 @@ html.modal-open {
 }
 
 .view-roster-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
 }
 
 /* Roster Drawer */
@@ -3257,7 +3257,7 @@ html.modal-open {
 }
 
 .tradition-tabs-bar .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
   color: var(--text-main);
 }
 
@@ -3326,7 +3326,7 @@ html.modal-open {
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(213, 193, 153, 0.1);
 }
 
 .gold-badge {
@@ -3393,7 +3393,7 @@ html.modal-open {
 }
 
 .btn-dm-podium {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   color: var(--text-main);
   padding: 6px 14px;
@@ -3405,7 +3405,7 @@ html.modal-open {
 }
 
 .btn-dm-podium:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
 }
 
 .gold-btn {
@@ -3459,12 +3459,12 @@ html.modal-open {
 }
 
 .leaderboard-row {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(27, 57, 103, 0.3);
   transition: background 0.2s ease;
 }
 
 .leaderboard-row:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(27, 57, 103, 0.25);
 }
 
 .leaderboard-table td {
@@ -3525,7 +3525,7 @@ html.modal-open {
 }
 
 .table-dm-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   color: var(--text-main);
   padding: 5px 10px;
@@ -3561,7 +3561,7 @@ html.modal-open {
 
 .badge-icon-wrapper {
   font-size: 2rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   border: 1px solid var(--border-color);
   padding: 10px;
   border-radius: 12px;
@@ -3650,7 +3650,7 @@ html.modal-open {
 }
 
 .post-type-tool-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(27, 57, 103, 0.32);
   color: var(--text-main);
 }
 
@@ -3668,8 +3668,8 @@ html.modal-open {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(27, 57, 103, 0.3);
+  border: 1px solid rgba(213, 193, 153, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3717,7 +3717,7 @@ html.modal-open {
   background: rgba(15, 23, 42, 0.92);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(213, 193, 153, 0.14);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(240, 201, 106, 0.15);
   border-radius: 20px;
   padding: 18px 20px;
@@ -3743,7 +3743,7 @@ html.modal-open {
 
 .banner-close-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
 }
 
 .banner-body {
@@ -3813,13 +3813,13 @@ html.modal-open {
 }
 
 .install-dismiss-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(27, 57, 103, 0.3);
   color: var(--text-muted);
   font-family: var(--font-heading);
   font-size: 0.85rem;
   font-weight: 600;
   padding: 10px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(213, 193, 153, 0.1);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3827,7 +3827,7 @@ html.modal-open {
 
 .install-dismiss-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(213, 193, 153, 0.12);
 }
 
 /* ==========================================================================
@@ -3849,7 +3849,7 @@ html.modal-open {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(4, 8, 42, 0.94);
+  background: rgba(4, 8, 42, 0.96);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border-bottom: 1px solid rgba(213, 193, 153, 0.18);
@@ -3883,8 +3883,8 @@ html.modal-open {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(27, 57, 103, 0.32);
+  border: 1px solid rgba(213, 193, 153, 0.12);
   color: var(--text-main);
   font-size: 1.1rem;
   display: flex;
@@ -3896,7 +3896,7 @@ html.modal-open {
 }
 
 .top-action-circle-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(213, 193, 153, 0.14);
   transform: scale(1.05);
 }
 
@@ -3921,7 +3921,7 @@ html.modal-open {
 .moments-carousel-wrapper {
   margin-bottom: 16px;
   padding: 4px 0 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(27, 57, 103, 0.3);
 }
 
 .moments-scroll-container {
@@ -3964,12 +3964,12 @@ html.modal-open {
 }
 
 .moment-avatar-ring.inactive-ring {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(213, 193, 153, 0.16);
 }
 
 .moment-avatar-ring.add-moment-ring {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px stroke rgba(255, 255, 255, 0.2);
+  background: rgba(213, 193, 153, 0.12);
+  border: 1px stroke rgba(213, 193, 153, 0.2);
 }
 
 .moment-avatar-img {
@@ -3984,7 +3984,7 @@ html.modal-open {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: #1e293b;
+  background: #0d1e3a;
   color: #fff;
   display: flex;
   align-items: center;
@@ -4026,10 +4026,10 @@ html.modal-open {
   left: 0;
   right: 0;
   z-index: 9000;
-  background: rgba(11, 15, 25, 0.92);
+  background: rgba(4, 8, 42, 0.96);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(240, 201, 106, 0.15);
   padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) 12px;
 }
 
@@ -4129,8 +4129,8 @@ html.modal-open {
   gap: 6px;
   padding: 8px 14px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(213, 193, 153, 0.16);
+  background: rgba(27, 57, 103, 0.28);
   color: #94a3b8;
   font-size: 0.85rem;
   font-weight: 600;
@@ -4342,7 +4342,7 @@ html.modal-open {
   background: rgba(15, 23, 42, 0.96);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(213, 193, 153, 0.14);
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(240, 201, 106, 0.2);
   border-radius: 24px;
   width: calc(100% - 32px);
@@ -4367,7 +4367,7 @@ html.modal-open {
 
 .live-debate-header {
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(213, 193, 153, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -4450,7 +4450,7 @@ html.modal-open {
 
 .live-argument-bubble {
   background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(213, 193, 153, 0.1);
   border-radius: 14px;
   padding: 12px 14px;
   display: flex;
@@ -4519,8 +4519,8 @@ html.modal-open {
 
 .live-argument-form {
   padding: 14px 20px;
-  background: rgba(11, 15, 25, 0.95);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(4, 8, 42, 0.96);
+  border-top: 1px solid rgba(213, 193, 153, 0.1);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -4534,8 +4534,8 @@ html.modal-open {
 }
 
 .stance-select-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(27, 57, 103, 0.3);
+  border: 1px solid rgba(213, 193, 153, 0.1);
   color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 600;
@@ -4574,8 +4574,8 @@ html.modal-open {
 
 .live-text-input {
   flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(27, 57, 103, 0.32);
+  border: 1px solid rgba(213, 193, 153, 0.14);
   border-radius: 12px;
   padding: 8px 14px;
   color: var(--text-main);
@@ -4595,7 +4595,7 @@ html.modal-open {
   background: rgba(15, 23, 42, 0.96);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(213, 193, 153, 0.14);
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(240, 201, 106, 0.2);
   border-radius: 24px;
   width: calc(100% - 32px);
@@ -4638,8 +4638,8 @@ html.modal-open {
 }
 
 .live-host-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(27, 57, 103, 0.28);
+  border: 1px solid rgba(213, 193, 153, 0.1);
   border-radius: 16px;
   padding: 14px 16px;
 }
@@ -4698,8 +4698,8 @@ html.modal-open {
 }
 
 .meta-card-item {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(27, 57, 103, 0.25);
+  border: 1px solid rgba(27, 57, 103, 0.32);
   border-radius: 12px;
   padding: 10px 12px;
 }
@@ -4823,7 +4823,7 @@ html.modal-open {
 .profile-hero-banner {
   height: 140px;
   background: linear-gradient(135deg, rgba(240, 201, 106, 0.4) 0%, rgba(201, 151, 58, 0.3) 50%, rgba(15, 23, 42, 0.9) 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(213, 193, 153, 0.1);
 }
 
 .profile-hero-content {
@@ -4850,7 +4850,7 @@ html.modal-open {
   border: 4px solid var(--bg-card);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   overflow: hidden;
-  background: #1e293b;
+  background: #0d1e3a;
   flex-shrink: 0;
 }
 
@@ -4924,7 +4924,7 @@ html.modal-open {
 }
 
 .edit-profile-action-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #c9973a 100%);
+  background: var(--primary-gradient);
   color: #ffffff;
   border: none;
   padding: 10px 20px;
@@ -5081,14 +5081,14 @@ html.modal-open {
 }
 
 .intent-view-badge.inactive {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(27, 57, 103, 0.25);
+  border-color: rgba(27, 57, 103, 0.32);
   color: var(--text-muted);
   opacity: 0.6;
 }
 
 .back-to-profile-btn {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(27, 57, 103, 0.32);
   border: 1px solid var(--border-color);
   color: #e2e8f0;
   padding: 8px 16px;
@@ -5100,12 +5100,12 @@ html.modal-open {
 }
 
 .back-to-profile-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(213, 193, 153, 0.14);
   color: #ffffff;
 }
 
 .secondary-cancel-btn {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(27, 57, 103, 0.32);
   border: 1px solid var(--border-color);
   color: #94a3b8;
   padding: 10px 18px;
@@ -5116,7 +5116,7 @@ html.modal-open {
 }
 
 .secondary-cancel-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(213, 193, 153, 0.14);
   color: #ffffff;
 }
 
@@ -5146,7 +5146,7 @@ html.modal-open {
   border: 1px solid rgba(240, 201, 106, 0.4) !important;
   border-radius: 18px !important;
   padding: 24px !important;
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(213, 193, 153, 0.12) !important;
 }
 
 .joined-space-card {
@@ -5188,7 +5188,7 @@ html.modal-open {
   left: 0;
   width: 280px;
   max-height: 320px;
-  background: #1e293b;
+  background: #0d1e3a;
   border: 1px solid rgba(240, 201, 106, 0.4);
   border-radius: 14px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -5201,7 +5201,7 @@ html.modal-open {
 .dm-circle-picker-popover .picker-header {
   padding: 10px 14px;
   background: rgba(15, 23, 42, 0.85);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(213, 193, 153, 0.12);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -5288,7 +5288,7 @@ html.modal-open {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #3b82f6, #c9973a);
+  background: var(--primary-gradient);
   color: #fff;
   display: flex;
   align-items: center;
@@ -5322,7 +5322,7 @@ html.modal-open {
 }
 
 .message-shared-circle-card .open-shared-circle-btn {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: var(--primary-gradient);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -5332,12 +5332,12 @@ html.modal-open {
   cursor: pointer;
   align-self: flex-start;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: var(--gold-glow);
 }
 
 .message-shared-circle-card .open-shared-circle-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+  box-shadow: var(--gold-glow-strong);
 }
 
 /* Modal Overlay for Share Circle */
@@ -5381,7 +5381,7 @@ html.modal-open {
 }
 
 .linkedin-like-btn:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(27, 57, 103, 0.32) !important;
 }
 
 .linkedin-like-btn.active {
@@ -5405,7 +5405,7 @@ html.modal-open {
 }
 
 .linkedin-emoji-btn:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(213, 193, 153, 0.1) !important;
 }
 
 .linkedin-emoji-btn:active {
@@ -5535,7 +5535,7 @@ html.modal-open {
   align-items: center;
   gap: 14px;
   background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(213, 193, 153, 0.1);
   border-left: 4px solid var(--primary-accent);
   border-radius: 12px;
   padding: 18px;
@@ -5613,7 +5613,7 @@ html.modal-open {
   align-items: center;
   gap: 16px;
   background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(213, 193, 153, 0.1);
   border-radius: 14px;
   padding: 20px;
   backdrop-filter: blur(8px);
@@ -5633,7 +5633,7 @@ html.modal-open {
   min-width: 56px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(240, 201, 106, 0.3) 0%, rgba(201, 151, 58, 0.3) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(213, 193, 153, 0.14);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5641,7 +5641,7 @@ html.modal-open {
   font-size: 1.4rem;
   font-weight: 700;
   color: #f1f5f9;
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 4px rgba(213, 193, 153, 0.12);
   flex-shrink: 0;
   user-select: none;
 }
@@ -5686,7 +5686,7 @@ html.modal-open {
   letter-spacing: 1px;
   border-radius: 20px;
   padding: 3px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(213, 193, 153, 0.16);
   margin-top: 2px;
   line-height: 1.2;
 }
@@ -5747,7 +5747,7 @@ html.modal-open {
   flex-direction: column;
   gap: 6px;
   background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(27, 57, 103, 0.3);
   border-left: 4px solid var(--primary-accent);
   border-radius: 10px;
   padding: 14px 18px;
@@ -5822,7 +5822,7 @@ html.modal-open {
   padding: 18px 14px;
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(27, 57, 103, 0.32);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
@@ -5887,7 +5887,7 @@ html.modal-open {
   margin-bottom: 24px;
   padding: 18px;
   background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(213, 193, 153, 0.1);
   border-radius: 12px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);

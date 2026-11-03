@@ -144,20 +144,27 @@ export const authRoutes = new Hono<{ Variables: Variables }>()
     try {
       const projectId = c.var.projectId;
       const body = parseBody(signInSchema, await c.req.json().catch(() => ({})), "auth");
-      const provider = await getAuthProvider(projectId);
-      const cred = await provider.verifyCredentials(projectId, body.email, body.password);
-      if (!cred) {
-        logger.info({ projectId, email: body.email }, "auth: sign-in failed (invalid credentials)");
-        throw Errors.unauthorized("auth/invalid-credentials", "Invalid email or password");
+      // Resolve username → profile to get the email for credential verification
+      const [profile] = await getDb().select().from(profiles)
+        .where(and(eq(profiles.projectId, projectId), eq(profiles.username, body.username))).limit(1);
+      if (!profile || !profile.email) {
+        logger.info({ projectId, username: body.username }, "auth: sign-in failed (unknown username)");
+        throw Errors.unauthorized("auth/invalid-credentials", "Invalid username or password");
       }
-      const profile = await ensureProfile(projectId, cred.authUserId, { email: body.email });
-      await getDb().update(profiles).set({ lastActive: new Date() }).where(eq(profiles.id, profile.id)).catch(() => {});
-      logger.info({ projectId, userId: profile.id, role: profile.role, operator: isOperator(profile) }, "auth: signed in");
-      return c.json(await sessionResponse(projectId, profile));
+      const provider = await getAuthProvider(projectId);
+      const cred = await provider.verifyCredentials(projectId, profile.email, body.password);
+      if (!cred) {
+        logger.info({ projectId, username: body.username }, "auth: sign-in failed (invalid credentials)");
+        throw Errors.unauthorized("auth/invalid-credentials", "Invalid username or password");
+      }
+      const freshProfile = await ensureProfile(projectId, cred.authUserId, { email: profile.email });
+      await getDb().update(profiles).set({ lastActive: new Date() }).where(eq(profiles.id, freshProfile.id)).catch(() => {});
+      logger.info({ projectId, userId: freshProfile.id, role: freshProfile.role, operator: isOperator(freshProfile) }, "auth: signed in");
+      return c.json(await sessionResponse(projectId, freshProfile));
     } catch (err: any) {
       if (err instanceof ApiError) throw err;
       logger.error({ err }, "auth: unexpected error during sign-in");
-      throw Errors.unauthorized("auth/sign-in-failed", "Invalid email or password");
+      throw Errors.unauthorized("auth/sign-in-failed", "Invalid username or password");
     }
   })
   // Sign-out is idempotent and must NOT require a valid access token: a stale/expired access token

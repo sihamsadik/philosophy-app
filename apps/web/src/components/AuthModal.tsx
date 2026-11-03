@@ -21,7 +21,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   }, [isOpen, initialMode]);
 
   // Sign In Form State
-  const [signInEmail, setSignInEmail] = useState("");
+  const [signInUsername, setSignInUsername] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
 
   // Sign Up Form State
@@ -63,7 +63,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      await login(signInEmail, signInPassword);
+      await login(signInUsername, signInPassword);
       onClose();
       if (onSuccess) onSuccess();
     } catch (err: any) {
@@ -196,14 +196,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         {mode === "signin" && (
           <form onSubmit={handleSignInSubmit} className="auth-form">
             <div className="form-group">
-              <label className="section-label">Email Address</label>
+              <label className="section-label">Username</label>
               <input
-                type="email"
+                type="text"
                 required
                 className="input-text"
-                placeholder="sartre@philosophy.app"
-                value={signInEmail}
-                onChange={(e) => setSignInEmail(e.target.value)}
+                placeholder="sartre"
+                value={signInUsername}
+                onChange={(e) => setSignInUsername(e.target.value)}
               />
             </div>
 

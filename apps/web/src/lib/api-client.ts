@@ -341,7 +341,7 @@ export class AgoraPhilosophyClient {
   /**
    * POST /v7/:projectId/auth/sign-in
    */
-  async signIn(data: { email: string; password?: string }): Promise<AuthSessionResponse> {
+  async signIn(data: { username: string; password?: string }): Promise<AuthSessionResponse> {
     const res = await this.request<AuthSessionResponse>("/auth/sign-in", {
       method: "POST",
       body: JSON.stringify(data),
@@ -883,6 +883,30 @@ export class AgoraPhilosophyClient {
       isJoined: true,
       createdAt: "Just now",
     };
+  }
+
+  async updateSpace(spaceId: string, data: {
+    name?: string;
+    description?: string;
+    category?: "school" | "thinker" | "domain" | "general";
+    primarySchool?: string;
+    keyThinkers?: string[];
+    avatarImage?: string;
+  }): Promise<PhilosophicalSpace> {
+    // Mock path
+    if (!this.authToken || this.authToken === "mock-auth-token") {
+      const idx = DEMO_SPACES.findIndex((s) => s.id === spaceId);
+      if (idx !== -1) {
+        DEMO_SPACES[idx] = { ...DEMO_SPACES[idx], ...data } as PhilosophicalSpace;
+        return DEMO_SPACES[idx];
+      }
+      throw new Error("Space not found");
+    }
+    const updated = await this.request<any>(`/spaces/${spaceId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+    return (updated.space || updated) as PhilosophicalSpace;
   }
 
   /**
@@ -2503,6 +2527,7 @@ export interface PhilosophicalSpace {
   hasUnreadMessages?: boolean;
   unreadCount?: number;
   createdAt: string;
+  createdById?: string;
 }
 
 export type EventType = "symposium" | "live_debate" | "reading_group" | "workshop";

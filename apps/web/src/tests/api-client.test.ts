@@ -21,7 +21,7 @@ describe("AgoraPhilosophyClient Integration & Data Flow Tests", () => {
     });
 
     it("should handle signIn fallback data cleanly", async () => {
-      const res = await client.signIn({ email: "sartre@agora.philosophy", password: "password123" });
+      const res = await client.signIn({ username: "sartre", password: "password123" });
       expect(res).toBeDefined();
       expect(res.user || res.accessToken).toBeDefined();
     });

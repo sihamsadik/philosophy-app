@@ -45,6 +45,7 @@ describe("auth sign-in and sign-up flow", () => {
   it("signs up a new user successfully and signs in with valid credentials", async () => {
     const email = `testuser_${Date.now()}@example.com`;
     const password = "Password123!";
+    const username = `user_${Date.now()}`;
     const basePath = `/v7/${projectId}`;
 
     // Sign up
@@ -52,7 +53,7 @@ describe("auth sign-in and sign-up flow", () => {
       email,
       password,
       name: "Test User",
-      username: `user_${Date.now()}`,
+      username,
     });
 
     expect(signUpRes.status).toBe(201);
@@ -60,9 +61,9 @@ describe("auth sign-in and sign-up flow", () => {
     expect(signUpRes.body.user).toBeTruthy();
     expect(signUpRes.body.user.email).toBe(email);
 
-    // Sign in
+    // Sign in with username
     const signInRes = await request("POST", `${basePath}/auth/sign-in`, {
-      email,
+      username,
       password,
     });
 
@@ -75,32 +76,34 @@ describe("auth sign-in and sign-up flow", () => {
   it("returns 401 Unauthorized for wrong password (never 500)", async () => {
     const email = `testuser_wrong_${Date.now()}@example.com`;
     const password = "Password123!";
+    const username = `user_wrong_${Date.now()}`;
     const basePath = `/v7/${projectId}`;
 
     await request("POST", `${basePath}/auth/sign-up`, {
       email,
       password,
       name: "Test User",
+      username,
     });
 
     const signInRes = await request("POST", `${basePath}/auth/sign-in`, {
-      email,
+      username,
       password: "WrongPassword123!",
     });
 
     expect(signInRes.status).toBe(401);
-    expect(signInRes.body.error).toBe("Invalid email or password");
+    expect(signInRes.body.error).toBe("Invalid username or password");
     expect(signInRes.body.code).toBe("auth/invalid-credentials");
   });
 
   it("returns 401 Unauthorized for non-existent account (never 500)", async () => {
     const basePath = `/v7/${projectId}`;
     const signInRes = await request("POST", `${basePath}/auth/sign-in`, {
-      email: "nonexistent_account_999@example.com",
+      username: "nonexistent_user_999",
       password: "Password123!",
     });
 
     expect(signInRes.status).toBe(401);
-    expect(signInRes.body.error).toBe("Invalid email or password");
+    expect(signInRes.body.error).toBe("Invalid username or password");
   });
 });

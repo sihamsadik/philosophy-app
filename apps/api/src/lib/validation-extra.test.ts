@@ -70,11 +70,11 @@ describe("collection + report schemas", () => {
 });
 
 describe("auth schemas", () => {
-  it("signUp/signIn validate email + password length", () => {
+  it("signUp validates email + password length, signIn validates username + password", () => {
     expect(ok(signUpSchema, { email: "a@b.co", password: "longenough8" })).toBe(true);
     expect(ok(signUpSchema, { email: "bad", password: "longenough8" })).toBe(false);
     expect(ok(signUpSchema, { email: "a@b.co", password: "short" })).toBe(false); // < 8
-    expect(ok(signInSchema, { email: "a@b.co", password: "x" })).toBe(true); // sign-in min 1
+    expect(ok(signInSchema, { username: "sartre", password: "x" })).toBe(true); // sign-in min 1
   });
 
   it("changePassword enforces newPassword >= 8", () => {

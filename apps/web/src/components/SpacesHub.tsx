@@ -3,7 +3,7 @@ import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophicalSpace, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
 import { useAuth } from "../context/AuthContext.js";
-import { MessageCircle, Landmark, Brain, Search, Globe, Target, CircleAlert, RefreshCw, Lightbulb, UsersRound, ScrollText, Flame, Link2, Plus, Sprout, Check, Pencil, Bot, X, Copy, ClipboardCheck, CircleCheck } from "lucide-react";
+import { MessageCircle, Landmark, Brain, Search, Globe, Target, CircleAlert, RefreshCw, Lightbulb, UsersRound, ScrollText, Flame, Link2, Plus, Sprout, Check, Pencil, Bot, X, Copy, ClipboardCheck, CircleCheck, Upload, ImagePlus } from "lucide-react";
 export interface SpacesHubProps {
   onOpenDM?: (user: User) => void;
   onOpenDebateSummary?: (postId: string) => void;
@@ -49,9 +49,67 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
   const [newSpaceThinkers, setNewSpaceThinkers] = useState("");
   const [newSpaceAvatar, setNewSpaceAvatar] = useState("");
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
-  // Edit avatar for existing circle
-  const [editAvatarSpaceId, setEditAvatarSpaceId] = useState<string | null>(null);
-  const [editAvatarUrl, setEditAvatarUrl] = useState("");
+  // Edit Circle Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editCategory, setEditCategory] = useState<"school" | "thinker" | "domain" | "general">("school");
+  const [editSchool, setEditSchool] = useState("");
+  const [editThinkers, setEditThinkers] = useState("");
+  const [editAvatarPreview, setEditAvatarPreview] = useState("");
+  const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const openEditModal = (space: PhilosophicalSpace) => {
+    setEditName(space.name);
+    setEditDesc(space.description);
+    setEditCategory(space.category);
+    setEditSchool(space.primarySchool || "");
+    setEditThinkers((space.keyThinkers || []).join(", "));
+    setEditAvatarPreview(space.avatarImage || "");
+    setEditAvatarFile(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEditAvatarFile(file);
+    setEditAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSpace || !editName.trim() || !editDesc.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      let avatarImage = editAvatarPreview;
+      // If a file was picked, convert to base64 data URL for storage
+      if (editAvatarFile) {
+        avatarImage = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(editAvatarFile);
+        });
+      }
+      const updated = await agoraClient.updateSpace(selectedSpace.id, {
+        name: editName.trim(),
+        description: editDesc.trim(),
+        category: editCategory,
+        primarySchool: editSchool.trim(),
+        keyThinkers: editThinkers.split(",").map((t) => t.trim()).filter(Boolean),
+        avatarImage,
+      });
+      const merged = { ...selectedSpace, ...updated, avatarImage };
+      setSpaces((prev) => prev.map((s) => s.id === selectedSpace.id ? merged : s));
+      setSelectedSpace(merged);
+      setIsEditModalOpen(false);
+    } catch (err: any) {
+      alert(`Could not save changes: ${err?.message || "Server error"}`);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   // Share Circle Modal state
   const [shareTargetSpace, setShareTargetSpace] = useState<PhilosophicalSpace | null>(null);
@@ -829,36 +887,13 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   )}
                   <button
                     type="button"
-                    title="Change circle avatar"
-                    onClick={() => { setEditAvatarSpaceId(selectedSpace.id); setEditAvatarUrl(selectedSpace.avatarImage || ""); }}
-                    style={{ position: "absolute", bottom: 0, right: 0, width: 24, height: 24, borderRadius: "50%", background: "#6366f1", border: "2px solid #0f172a", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                    title="Edit circle"
+                    onClick={() => openEditModal(selectedSpace)}
+                    style={{ position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderRadius: "50%", background: "var(--primary-gradient)", border: "2px solid #06102e", color: "#1a0e00", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, boxShadow: "var(--gold-glow)" }}
                   >
                     <Pencil size={11} />
                   </button>
                 </div>
-
-                {editAvatarSpaceId === selectedSpace.id && (
-                  <div style={{ position: "absolute", top: 8, left: 8, zIndex: 20, background: "#1e293b", border: "1px solid rgba(99,102,241,0.5)", borderRadius: 10, padding: 12, display: "flex", gap: 8, alignItems: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
-                    {editAvatarUrl && <img src={editAvatarUrl} alt="preview" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
-                    <input
-                      type="url"
-                      autoFocus
-                      placeholder="Paste image URL…"
-                      value={editAvatarUrl}
-                      onChange={(e) => setEditAvatarUrl(e.target.value)}
-                      style={{ width: 200, padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.82rem" }}
-                    />
-                    <button type="button" onClick={() => {
-                      const url = editAvatarUrl.trim();
-                      setSpaces((prev) => prev.map((s) => s.id === selectedSpace.id ? { ...s, avatarImage: url || s.avatarImage } : s));
-                      setSelectedSpace((prev) => prev ? { ...prev, avatarImage: url || prev.avatarImage } : prev);
-                      setEditAvatarSpaceId(null);
-                    }} style={{ padding: "6px 12px", borderRadius: 7, border: "none", background: "#6366f1", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>
-                      <CircleCheck size={13} />
-                    </button>
-                    <button type="button" onClick={() => setEditAvatarSpaceId(null)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><X size={14} /></button>
-                  </div>
-                )}
 
                 <div className="hero-title-block">
                   <div className="hero-badges">
@@ -887,21 +922,18 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   <button
                     type="button"
                     className="action-btn share-hero-btn"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.12)",
-                      color: "#f8fafc",
-                      border: "1px solid rgba(255, 255, 255, 0.25)",
-                      padding: "10px 18px",
-                      borderRadius: 10,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}
+                    style={{ background: "rgba(255, 255, 255, 0.12)", color: "#f8fafc", border: "1px solid rgba(255, 255, 255, 0.25)", padding: "10px 18px", borderRadius: 10, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
                     onClick={() => handleOpenShareModal(selectedSpace)}
                   >
                     <><Link2 size={14} /> Share Circle</>
+                  </button>
+
+                  <button
+                    type="button"
+                    style={{ background: "rgba(255,255,255,0.08)", color: "#f8fafc", border: "1px solid rgba(255,255,255,0.2)", padding: "10px 18px", borderRadius: 10, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
+                    onClick={() => openEditModal(selectedSpace)}
+                  >
+                    <><Pencil size={14} /> Edit Circle</>
                   </button>
 
                   <button
@@ -1432,18 +1464,18 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
               </div>
 
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Circle Avatar Image URL (optional)</label>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Circle Photo (optional)</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   {newSpaceAvatar && (
-                    <img src={newSpaceAvatar} alt="preview" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(99,102,241,0.5)", flexShrink: 0 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    <img src={newSpaceAvatar} alt="preview" style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(240,201,106,0.4)", flexShrink: 0 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                   )}
-                  <input
-                    type="url"
-                    placeholder="https://example.com/image.jpg"
-                    value={newSpaceAvatar}
-                    onChange={(e) => setNewSpaceAvatar(e.target.value)}
-                    style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.4)", color: "#fff" }}
-                  />
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(240,201,106,0.35)", background: "rgba(240,201,106,0.07)", color: "#f0c96a", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
+                    <Upload size={14} /> Upload Photo
+                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setNewSpaceAvatar(URL.createObjectURL(file));
+                    }} />
+                  </label>
                 </div>
               </div>
 
@@ -1461,6 +1493,117 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                   style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: isCreatingSpace ? 0.7 : 1 }}
                 >
                   {isCreatingSpace ? "Creating..." : "Create Circle"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Circle Modal */}
+      {isEditModalOpen && selectedSpace && (
+        <div className="modal-overlay" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: 16 }} onClick={() => setIsEditModalOpen(false)}>
+          <div style={{ background: "#0d1e3a", border: "1px solid rgba(240,201,106,0.2)", borderRadius: 18, width: "100%", maxWidth: 540, padding: 28, boxShadow: "0 24px 60px rgba(0,0,0,0.7)", maxHeight: "90vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+                <Pencil size={16} style={{ color: "#f0c96a" }} /> Edit Circle
+              </h3>
+              <button type="button" onClick={() => setIsEditModalOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}><X size={18} /></button>
+            </div>
+
+            <form onSubmit={handleEditSubmit}>
+
+              {/* Avatar upload */}
+              <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 24 }}>
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  {editAvatarPreview ? (
+                    <img src={editAvatarPreview} alt="avatar" style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(240,201,106,0.4)" }} />
+                  ) : (
+                    <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(240,201,106,0.1)", border: "3px solid rgba(240,201,106,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", fontWeight: 800, color: "#f0c96a" }}>
+                      {editName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: "0 0 8px 0", fontSize: "0.85rem", fontWeight: 700, color: "#f0c96a" }}>Circle Photo</p>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(240,201,106,0.35)", background: "rgba(240,201,106,0.07)", color: "#f0c96a", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
+                    <Upload size={14} /> Upload Photo
+                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleEditAvatarFile} />
+                  </label>
+                  <p style={{ margin: "6px 0 0 0", fontSize: "0.75rem", color: "#8a8fa8" }}>JPG, PNG, GIF, WebP — shown as the circle icon</p>
+                </div>
+              </div>
+
+              {/* Name */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Circle Name *</label>
+                <input
+                  type="text" required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(0,0,0,0.35)", color: "#fff", fontSize: "0.95rem" }}
+                />
+              </div>
+
+              {/* Description */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Description *</label>
+                <textarea
+                  required rows={3}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(0,0,0,0.35)", color: "#fff", fontSize: "0.9rem", resize: "vertical" }}
+                />
+              </div>
+
+              {/* Category */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Circle Type</label>
+                <select
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value as any)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "#0d1e3a", color: "#fff" }}
+                >
+                  <option value="school">School of Thought</option>
+                  <option value="thinker">Thinker Guild</option>
+                  <option value="domain">Domain of Inquiry</option>
+                  <option value="general">General Philosophical Circle</option>
+                </select>
+              </div>
+
+              {/* Primary School */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Primary School / Focus</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Phenomenology, Stoicism"
+                  value={editSchool}
+                  onChange={(e) => setEditSchool(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(0,0,0,0.35)", color: "#fff" }}
+                />
+              </div>
+
+              {/* Key Thinkers */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6, color: "#cbd5e1" }}>Key Thinkers (comma-separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Nietzsche, Heidegger, Camus"
+                  value={editThinkers}
+                  onChange={(e) => setEditThinkers(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(0,0,0,0.35)", color: "#fff" }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                <button type="button" onClick={() => setIsEditModalOpen(false)} style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#cbd5e1", cursor: "pointer", fontWeight: 600 }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={isSavingEdit} style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "var(--primary-gradient)", color: "#1a0e00", fontWeight: 800, cursor: "pointer", boxShadow: "var(--gold-glow)", opacity: isSavingEdit ? 0.7 : 1, fontSize: "0.95rem" }}>
+                  {isSavingEdit ? "Saving…" : "Save Changes"}
                 </button>
               </div>
             </form>
