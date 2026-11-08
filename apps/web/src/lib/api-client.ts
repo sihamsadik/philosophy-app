@@ -322,7 +322,7 @@ export class AgoraPhilosophyClient {
    * POST /v7/:projectId/auth/sign-up
    */
   async signUp(data: {
-    email?: string;
+    email: string;
     password?: string;
     username?: string;
     name?: string;
