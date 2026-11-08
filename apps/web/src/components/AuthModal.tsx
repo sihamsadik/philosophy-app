@@ -25,7 +25,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [signInPassword, setSignInPassword] = useState("");
 
   // Sign Up Form State
-  const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
   const [signUpUsername, setSignUpUsername] = useState("");
@@ -93,7 +92,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
     try {
       await register({
-        email: signUpEmail,
+
         password: signUpPassword,
         username: signUpUsername,
         name: signUpName,
@@ -254,17 +253,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               />
             </div>
 
-            <div className="form-group">
-              <label className="section-label">Email Address</label>
-              <input
-                type="email"
-                required
-                className="input-text"
-                placeholder="sartre@philosophy.app"
-                value={signUpEmail}
-                onChange={(e) => setSignUpEmail(e.target.value)}
-              />
-            </div>
+
 
             <div className="form-group">
               <label className="section-label">Password (Min. 8 characters)</label>
@@ -319,7 +308,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 isSubmitting ||
                 !signUpName ||
                 !signUpUsername ||
-                !signUpEmail ||
+
                 signUpPassword.length < 8 ||
                 !signUpConfirmPassword ||
                 signUpPassword !== signUpConfirmPassword
