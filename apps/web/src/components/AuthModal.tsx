@@ -28,6 +28,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
   const [signUpUsername, setSignUpUsername] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+
   const [signUpName, setSignUpName] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,7 +94,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
     try {
       await register({
-
         password: signUpPassword,
         username: signUpUsername,
         name: signUpName,
