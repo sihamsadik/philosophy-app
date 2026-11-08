@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { User } from "@philosophy/contract";
 import { agoraClient } from "../lib/api-client.js";
+import PasscodePrompt from "../components/PasscodePrompt";
 
 export interface AuthContextType {
   user: User | null;
@@ -118,6 +119,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const [isPasscodeVerified, setIsPasscodeVerified] = useState(false);
+  const passcodeHash = typeof window !== "undefined" ? localStorage.getItem('philosophy_passcode_hash') : null;
+
   return (
     <AuthContext.Provider
       value={{
@@ -132,7 +136,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDemoUser,
       }}
     >
-      {children}
+      {passcodeHash && !isPasscodeVerified ? (
+        <PasscodePrompt onSuccess={() => setIsPasscodeVerified(true)} />
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };
