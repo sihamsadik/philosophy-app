@@ -4,6 +4,7 @@ import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
 import { RichReactionPicker } from "./RichReactionPicker.js";
+import { PostContent } from "./PostContent";
 
 export interface PhilosophicalFeedProps {
   onOpenDebateSummary: (postId: string) => void;
@@ -203,7 +204,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                   {post.title}
                 </h3>
                 <p className="result-snippet" style={{ margin: "10px 0 16px 0", lineHeight: 1.5 }}>
-                  {post.content}
+                                      <PostContent content={post.content} />
                 </p>
 
                 {/* Key Thinkers Pills */}

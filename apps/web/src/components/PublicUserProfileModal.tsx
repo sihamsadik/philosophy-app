@@ -5,6 +5,7 @@ import { getThinkerMeta, getIntellectualCompass, getPhilosophicalHabits, ERA_COL
 import type { PhilosophicalPost, ConnectionRequest } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { DualAxisCompatibilityGauge } from "./DualAxisCompatibilityGauge.js";
+import { PostContent } from "./PostContent";
 
 export interface PublicUserProfileModalProps {
   isOpen: boolean;
@@ -636,9 +637,7 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                         <span style={{ fontSize: "0.82rem", color: "#64748b" }}>{post.createdAt}</span>
                       </div>
                       <h4 style={{ margin: "4px 0 8px 0", color: "#f8fafc", fontSize: "1.05rem" }}>{post.title}</h4>
-                      <p style={{ margin: 0, color: "#cbd5e1", fontSize: "0.92rem", lineClamp: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                        {post.content}
-                      </p>
+                      <PostContent content={post.content} truncateLength={150} />
                       <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: "0.85rem", color: "#94a3b8" }}>
                         <span><Zap size={12} style={{ marginRight: 3, verticalAlign: "middle" }} /> {post.upvotesCount}</span>
                         <span><MessageCircle size={12} style={{ marginRight: 3, verticalAlign: "middle" }} /> {post.commentsCount}</span>

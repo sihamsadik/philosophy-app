@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Landmark, UserPlus, LogIn, ScrollText, MessageCircle, ThumbsUp, Calendar, Radio } from "lucide-react";
 import { agoraClient, type PhilosophicalPost, type PhilosophyEvent } from "../lib/api-client.js";
-
+import { PostContent } from "./PostContent";
 export interface PublicLandingDashboardProps {
   onOpenAuth: (mode: "signin" | "signup") => void;
 }
@@ -99,7 +99,7 @@ export const PublicLandingDashboard: React.FC<PublicLandingDashboardProps> = ({ 
                   </div>
                   <h3 style={{ fontSize: "1.1rem", color: "#f8fafc", margin: "0 0 8px 0" }}>{post.title}</h3>
                   <p style={{ color: "#cbd5e1", fontSize: "0.9rem", lineHeight: 1.5, margin: "0 0 16px 0" }}>
-                    "{post.content.length > 150 ? post.content.substring(0, 150) + '...' : post.content}"
+                    <PostContent content={post.content} truncateLength={150} />
                   </p>
                 </div>
                 <button type="button" onClick={() => onOpenAuth("signup")} style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.1)", color: "#60a5fa", fontWeight: 600, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>

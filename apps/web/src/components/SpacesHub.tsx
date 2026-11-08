@@ -4,6 +4,7 @@ import { agoraClient, type PhilosophicalSpace, type PhilosophicalPost } from "..
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
 import { useAuth } from "../context/AuthContext.js";
 import { MessageCircle, Landmark, Brain, Search, Globe, Target, CircleAlert, RefreshCw, Lightbulb, UsersRound, ScrollText, Flame, Link2, Plus, Sprout, Check, Pencil, Bot, X, Copy, ClipboardCheck, CircleCheck, Upload, ImagePlus } from "lucide-react";
+import { PostContent } from "./PostContent";
 export interface SpacesHubProps {
   onOpenDM?: (user: User) => void;
   onOpenDebateSummary?: (postId: string) => void;
@@ -1263,9 +1264,7 @@ export const SpacesHub: React.FC<SpacesHubProps> = ({
                         <h3 className="result-title" style={{ marginTop: 12, fontSize: "1.25rem" }}>
                           {post.title}
                         </h3>
-                        <p className="result-snippet" style={{ margin: "10px 0 16px 0", lineHeight: 1.5 }}>
-                          {post.content}
-                        </p>
+                        <PostContent content={post.content} />
 
                         <div className="card-actions" style={{ justifyContent: "space-between" }}>
                           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
