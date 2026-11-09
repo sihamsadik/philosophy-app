@@ -268,11 +268,17 @@ export class AgoraPhilosophyClient {
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const isCleanApi = this.baseUrl === "/api" || this.baseUrl === "/philosophy/api" || !this.baseUrl.includes("/v7");
     const url = isCleanApi ? `${this.baseUrl}${path}` : `${this.baseUrl}/${this.projectId}${path}`;
-    const buildHeaders = () => ({
-      "Content-Type": "application/json",
-      ...(this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {}),
-      ...(init?.headers as Record<string, string>),
-    });
+    const buildHeaders = () => {
+      const h: Record<string, string> = {
+        ...(this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {}),
+        ...(init?.headers as Record<string, string>),
+      };
+      // Don't set Content-Type for FormData — the browser sets it with the boundary
+      if (!(init?.body instanceof FormData)) {
+        h["Content-Type"] = "application/json";
+      }
+      return h;
+    };
 
     let response = await fetch(url, { ...init, headers: buildHeaders() });
 
@@ -2143,6 +2149,9 @@ export class AgoraPhilosophyClient {
         createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "Recently",
         reactionCounts: p.reactionCounts || { love: 0, upvote: p.upvotesCount || 1, wow: 0, funny: 0, downvote: 0 },
         userReaction: p.userReaction || null,
+        imageUrl: Array.isArray(p.files) && p.files.length > 0
+          ? (p.files[0].originalPath || undefined)
+          : undefined,
       };
     });
     return { posts: mapped };
@@ -2198,6 +2207,7 @@ export class AgoraPhilosophyClient {
     authorName?: string;
     authorHandle?: string;
     authorAvatar?: string;
+    image?: File;
   }): Promise<PhilosophicalPost> {
     const authorName = postData.authorName || "You (Thinker)";
     const authorHandle = postData.authorHandle || "you";
@@ -2217,10 +2227,31 @@ export class AgoraPhilosophyClient {
       },
     };
 
+    // If an image is attached, send multipart/form-data; otherwise plain JSON.
+    const buildBody = (): BodyInit => {
+      if (!postData.image) return JSON.stringify(payload);
+      const fd = new FormData();
+      fd.append("title", payload.title);
+      if (payload.content) fd.append("content", payload.content);
+      if (payload.spaceId) fd.append("spaceId", payload.spaceId);
+      fd.append("metadata", JSON.stringify(payload.metadata));
+      fd.append("images.files", postData.image);
+      return fd;
+    };
+
+    const extractImageUrl = (res: any): string | undefined => {
+      const files = res?.files;
+      if (Array.isArray(files) && files.length > 0) {
+        return files[0].originalPath || files[0].image?.original?.publicPath;
+      }
+      return undefined;
+    };
+
     try {
+      const body = buildBody();
       const res = await this.request<any>("/entities", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body,
       });
       const meta = res?.metadata || payload.metadata;
       return {
@@ -2238,6 +2269,7 @@ export class AgoraPhilosophyClient {
         commentsCount: 0,
         createdAt: "Just now",
         spaceId: res?.spaceId || postData.spaceId,
+        imageUrl: extractImageUrl(res) || (postData.image ? URL.createObjectURL(postData.image) : undefined),
       };
     } catch (error) {
       if (this.isAuthenticated()) throw error;
@@ -2256,6 +2288,7 @@ export class AgoraPhilosophyClient {
         commentsCount: 0,
         createdAt: "Just now",
         spaceId: postData.spaceId,
+        imageUrl: postData.image ? URL.createObjectURL(postData.image) : undefined,
       };
       DEMO_POSTS.unshift(newPost);
       return newPost;
@@ -2608,6 +2641,7 @@ export interface PhilosophicalPost {
   userReaction?: string | null;
   commentsCount: number;
   createdAt: string;
+  imageUrl?: string;
 }
 
 export const DEMO_CONVERSATIONS: DirectConversation[] = [];

@@ -26,6 +26,7 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
   const [upvotedPostIds, setUpvotedPostIds] = useState<string[]>([]);
   const [expandedCommentsPostIds, setExpandedCommentsPostIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPosts = async () => {
@@ -206,6 +207,16 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                 <p className="result-snippet" style={{ margin: "10px 0 16px 0", lineHeight: 1.5 }}>
                                       <PostContent content={post.content} />
                 </p>
+                {post.imageUrl && (
+                  <div className="post-image-container">
+                    <img
+                      src={post.imageUrl}
+                      className="post-image"
+                      alt="Post attachment"
+                      onClick={() => setFullscreenImage(post.imageUrl!)}
+                    />
+                  </div>
+                )}
 
                 {/* Key Thinkers Pills */}
                 {post.keyThinkers && post.keyThinkers.length > 0 && (
@@ -303,4 +314,9 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
       )}
     </div>
   );
+{fullscreenImage && (
+        <div className="post-image-fullscreen-overlay" onClick={() => setFullscreenImage(null)}>
+          <img src={fullscreenImage} alt="Fullsize" />
+        </div>
+      )}
 };

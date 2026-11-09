@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Swords, FlaskConical, CircleQuestionMark, Pin, BookOpen, Landmark, Globe, PenLine, Rocket, X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Swords, FlaskConical, CircleQuestionMark, Pin, BookOpen, Landmark, Globe, PenLine, Rocket, X, ImagePlus } from "lucide-react";
 import type { PhilosophicalPost, PhilosophicalSpace } from "../lib/api-client.js";
 import { agoraClient } from "../lib/api-client.js";
 import { useAuth } from "../context/AuthContext.js";
@@ -41,6 +41,9 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
   const [availableSpaces, setAvailableSpaces] = useState<PhilosophicalSpace[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -52,15 +55,45 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
     }
   }, [isOpen, initialSpaceId]);
 
+  // Clean up object URLs when component unmounts or image changes
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+
   if (!isOpen) return null;
 
   const currentAuthorName = authorName || user?.name || user?.username || "You (Thinker)";
   const currentAuthorHandle = authorHandle || user?.username || "you";
   const currentAuthorAvatar = authorAvatar || user?.avatar || undefined;
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErrorMsg("Please select an image file (JPEG, PNG, WebP, etc.)");
+      return;
+    }
+    // Revoke old preview URL
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setErrorMsg(null);
+  };
+
+  const handleImageRemove = () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    // Title is always required; content is required only when no image is attached
+    if (!title.trim()) return;
+    if (!content.trim() && !imageFile) return;
 
     setIsPublishing(true);
     setErrorMsg(null);
@@ -83,6 +116,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
         authorName: currentAuthorName,
         authorHandle: currentAuthorHandle,
         authorAvatar: currentAuthorAvatar,
+        image: imageFile || undefined,
       });
 
       // Attach space metadata if selected
@@ -97,6 +131,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
       setPrimarySchool("");
       setKeyThinkersStr("");
       setSelectedSpaceId("");
+      handleImageRemove();
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to publish post");
@@ -156,15 +191,48 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
 
           {/* Post Body */}
           <div className="form-group">
-            <label className="section-label">Post Content & Argument Body</label>
+            <label className="section-label">Post Content & Argument Body {imageFile ? "(Optional with image)" : ""}</label>
             <textarea
               className="input-textarea"
               rows={5}
-              required
+              required={!imageFile}
               placeholder="Elaborate on your premises, conclusions, and philosophical context..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
+            {/* Image Attach Toolbar */}
+            <div className="image-attach-toolbar">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleImageSelect}
+              />
+              <button
+                type="button"
+                className="image-attach-btn"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach an image to your post"
+              >
+                <ImagePlus size={16} />
+                {imageFile ? "Change Image" : "Attach Image"}
+              </button>
+            </div>
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="image-preview-container">
+                <img src={imagePreview} alt="Attachment preview" className="image-preview-img" />
+                <button
+                  type="button"
+                  className="image-preview-remove"
+                  onClick={handleImageRemove}
+                  title="Remove image"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Space Selector */}
