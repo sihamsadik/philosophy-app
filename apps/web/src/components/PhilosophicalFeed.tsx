@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ScrollText, PenLine, TriangleAlert, RefreshCw, Brain, MessageCircle, Zap } from "lucide-react";
+import { ScrollText, PenLine, TriangleAlert, RefreshCw, Brain, MessageCircle, Zap, X } from "lucide-react";
 import type { User } from "@philosophy/contract";
 import { agoraClient, type PhilosophicalPost } from "../lib/api-client.js";
 import { PhilosophicalCommentsSection } from "./PhilosophicalCommentsSection.js";
@@ -67,6 +67,16 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
       window.removeEventListener("agora_comment_added", handleCommentAdded);
     };
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreenImage(null);
+    };
+    if (fullscreenImage) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [fullscreenImage]);
 
   const handleUpvote = (postId: string) => {
     const hasUpvoted = upvotedPostIds.includes(postId);
@@ -201,22 +211,58 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
                 </div>
 
                 {/* Post Title & Content */}
-                <h3 className="result-title" style={{ marginTop: 12, fontSize: "1.25rem" }}>
-                  {post.title}
-                </h3>
-                <p className="result-snippet" style={{ margin: "10px 0 16px 0", lineHeight: 1.5 }}>
-                                      <PostContent content={post.content} />
-                </p>
-                {post.imageUrl && (
-                  <div className="post-image-container">
-                    <img
-                      src={post.imageUrl}
-                      className="post-image"
-                      alt="Post attachment"
-                      onClick={() => setFullscreenImage(post.imageUrl!)}
-                    />
-                  </div>
-                )}
+                {post.title ? (
+                  <h3 className="result-title" style={{ marginTop: 12, fontSize: "1.25rem" }}>
+                    {post.title}
+                  </h3>
+                ) : null}
+                {post.content ? (
+                  <p className="result-snippet" style={{ margin: "10px 0 16px 0", lineHeight: 1.5 }}>
+                    <PostContent content={post.content} />
+                  </p>
+                ) : null}
+
+                {/* Attached Images (Single / Multi-image responsive layout) */}
+                {(() => {
+                  const images = post.imageUrls && post.imageUrls.length > 0
+                    ? post.imageUrls
+                    : post.imageUrl
+                    ? [post.imageUrl]
+                    : [];
+                  if (images.length === 0) return null;
+                  if (images.length === 1) {
+                    return (
+                      <div className="post-image-container">
+                        <img
+                          src={images[0]}
+                          className="post-image"
+                          alt="Post attachment"
+                          onClick={() => setFullscreenImage(images[0]!)}
+                        />
+                      </div>
+                    );
+                  }
+                  const displayImages = images.slice(0, 4);
+                  const overflowCount = images.length - 4;
+                  return (
+                    <div className={`post-images-grid grid-${Math.min(images.length, 4)}`}>
+                      {displayImages.map((img, idx) => (
+                        <div
+                          key={idx}
+                          className="post-image-grid-item"
+                          onClick={() => setFullscreenImage(img)}
+                        >
+                          <img src={img} alt={`Post attachment ${idx + 1}`} className="post-image-grid-thumb" />
+                          {idx === 3 && overflowCount > 0 && (
+                            <div className="post-image-grid-overlay">
+                              +{overflowCount}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {/* Key Thinkers Pills */}
                 {post.keyThinkers && post.keyThinkers.length > 0 && (
@@ -312,11 +358,28 @@ export const PhilosophicalFeed: React.FC<PhilosophicalFeedProps> = ({
           })}
         </div>
       )}
-    </div>
-  );
-{fullscreenImage && (
-        <div className="post-image-fullscreen-overlay" onClick={() => setFullscreenImage(null)}>
-          <img src={fullscreenImage} alt="Fullsize" />
+      {fullscreenImage && (
+        <div
+          className="post-image-fullscreen-overlay"
+          onClick={() => setFullscreenImage(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            className="image-fullscreen-close"
+            onClick={() => setFullscreenImage(null)}
+            title="Close fullscreen view"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={fullscreenImage}
+            alt="Fullsize attachment"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
+    </div>
+  );
 };

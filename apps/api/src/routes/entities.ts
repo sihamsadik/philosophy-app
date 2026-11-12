@@ -11,12 +11,13 @@ import { logger } from "../lib/logger.js";
 import { indexContentAsync, indexEntityAsync } from "../lib/embeddings.js";
 import { generateDiscussionSummary } from "../lib/discussion-summarizer.js";
 import { env } from "../lib/env.js";
-import { collectFileRows, removeMediaAsync } from "../lib/storage-cleanup.js";
+import { collectFileRows, removeMedia, removeMediaAsync } from "../lib/storage-cleanup.js";
+import { assertUploadSize } from "../lib/storage.js";
 import * as webhooks from "../lib/webhooks.js";
 import { notifyOnEntityMentions, notifyOnReaction, notifyOnComment } from "../lib/notifications.js";
 import { sanitizeMentions } from "../lib/mentions.js";
 import { parseBracketQuery, buildFeedConditions, buildFeedOrder } from "../lib/entity-filters.js";
-import { entities, comments, reactions, collections, collectionEntities, spaces, spaceMembers, readReceipts } from "../db/schema/index.js";
+import { entities, comments, reactions, collections, collectionEntities, spaces, spaceMembers, readReceipts, files } from "../db/schema/index.js";
 import { isProjectAdmin } from "../lib/project-roles.js";
 import { getSocialConfig } from "../lib/social-config.js";
 import { readPagination, paginate } from "../http/envelope.js";
@@ -149,10 +150,19 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
     if (isMultipart) {
       const form = await c.req.parseBody({ all: true });
       rawBody = parseMultipartEntityFields(form);
-      const imgs = form["images.files"];
-      imageFiles = (Array.isArray(imgs) ? imgs : imgs ? [imgs] : []).filter(
-        (f): f is File => typeof f !== "string"
-      );
+      const candidateKeys = ["images.files", "images", "image", "files", "file"];
+      for (const key of candidateKeys) {
+        const val = form[key];
+        if (val) {
+          const list = (Array.isArray(val) ? val : [val]).filter(
+            (f): f is File => typeof f !== "string" && typeof f === "object" && f !== null && "size" in f
+          );
+          if (list.length > 0) {
+            imageFiles = list;
+            break;
+          }
+        }
+      }
       const optStr = form["images.options"];
       if (typeof optStr === "string") {
         try { imageOptions = JSON.parse(optStr); } catch { /* ignore malformed options */ }
@@ -161,8 +171,22 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
       rawBody = await c.req.json().catch(() => ({}));
     }
 
+    // Pre-validate all image attachments prior to database write
+    for (const file of imageFiles) {
+      if (!file.type || !file.type.startsWith("image/")) {
+        throw Errors.badRequest("storage/not-an-image", "File is not an image", "file");
+      }
+      assertUploadSize(file);
+    }
+
     const body = parseBody(createEntitySchema, rawBody, "entities");
     await assertCanPostInSpace(c, body.spaceId); // enforce the space's postingPermission
+
+    // Require either text (title or content) or at least one image attachment
+    if (!body.title?.trim() && !body.content?.trim() && imageFiles.length === 0) {
+      throw Errors.badRequest("entities/empty", "Post must include text or an image attachment");
+    }
+
     // Blocking validation webhook (host app may veto). Passes through if unconfigured/unsubscribed.
     const check = await webhooks.validate(projectId, "entity.created", { ...body, userId });
     if (!check.valid) throw Errors.forbidden("entities/rejected", check.message ?? "Entity rejected by validation webhook");
@@ -203,12 +227,28 @@ export const entityRoutes = new Hono<{ Variables: Variables }>()
     if (!row) throw Errors.badRequest("entities/create-failed", "Insert returned no row");
 
     // Process any attached images: each becomes a `files` row linked to the new entity.
+    // If upload fails, rollback the entity row and remove any uploaded files to prevent orphaned assets.
     const fileRows = [];
-    for (const file of imageFiles) {
-      const { fileRow } = await storeImageFromUpload({
-        projectId, userId, file, optionsBody: imageOptions, assoc: { entityId: row.id },
-      });
-      fileRows.push(fileRow);
+    try {
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i]!;
+        const { fileRow } = await storeImageFromUpload({
+          projectId, userId, file, optionsBody: imageOptions, assoc: { entityId: row.id },
+        });
+        if (i > 0) {
+          await getDb().update(files).set({ position: i }).where(eq(files.id, fileRow.id));
+          fileRow.position = i;
+        }
+        fileRows.push(fileRow);
+      }
+    } catch (uploadErr) {
+      logger.error("entity creation: image upload failed, rolling back entity");
+      logger.debug({ err: uploadErr, entityId: row.id }, "entity image upload error");
+      if (fileRows.length > 0) {
+        await removeMedia(fileRows, "entity: rollback orphaned files");
+      }
+      await getDb().delete(entities).where(and(eq(entities.projectId, projectId), eq(entities.id, row.id)));
+      throw uploadErr;
     }
 
     indexEntityAsync(projectId, row.id, [row.title, row.content].filter(Boolean).join("\n"));
@@ -585,7 +625,7 @@ function parseMultipartEntityFields(form: Record<string, unknown>): Record<strin
     const v = str(k);
     if (v !== undefined) out[k] = v;
   }
-  for (const k of ["keywords", "mentions", "attachments", "metadata", "location"]) {
+  for (const k of ["keywords", "mentions", "attachments", "metadata", "location", "philosophicalTaxonomy"]) {
     const v = json(k);
     if (v !== undefined) out[k] = v;
   }
