@@ -300,10 +300,15 @@ export class AgoraPhilosophyClient {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
+      const errorObj = typeof errorBody?.error === "object" && errorBody?.error !== null ? errorBody.error : null;
       const extractedMessage =
-        (typeof errorBody === "object" && errorBody !== null
-          ? errorBody.error || errorBody.message || errorBody.detail || errorBody.code
-          : null) || response.statusText;
+        errorObj?.message ||
+        (typeof errorBody?.error === "string" ? errorBody.error : null) ||
+        errorBody?.message ||
+        errorBody?.detail ||
+        errorBody?.code ||
+        errorObj?.code ||
+        response.statusText;
 
       const userFriendlyMsg =
         extractedMessage && extractedMessage !== "OK" && extractedMessage !== "Bad Request" && extractedMessage !== "Conflict"
@@ -2132,10 +2137,16 @@ export class AgoraPhilosophyClient {
     const list = res?.posts || res?.data || (Array.isArray(res) ? res : []);
     const mapped = (Array.isArray(list) ? list : []).map((p: any) => {
       const meta = p.metadata || {};
+      const files = Array.isArray(p.files) ? p.files : [];
+      const imageUrls: string[] = files
+        .map((f: any) => f.originalPath || f.image?.original?.publicPath)
+        .filter((u: any): u is string => typeof u === "string" && u.length > 0);
+      const singleImage = imageUrls[0] || meta.imageUrl || undefined;
+
       return {
         id: p.id,
         spaceId: p.spaceId || meta.spaceId,
-        title: p.title || "Untitled Debate",
+        title: p.title || (imageUrls.length > 0 ? "" : "Untitled Debate"),
         content: p.content || "",
         authorId: p.userId || "usr-001",
         authorName: meta.authorName || p.user?.name || p.user?.username || "Thinker",
@@ -2149,9 +2160,8 @@ export class AgoraPhilosophyClient {
         createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "Recently",
         reactionCounts: p.reactionCounts || { love: 0, upvote: p.upvotesCount || 1, wow: 0, funny: 0, downvote: 0 },
         userReaction: p.userReaction || null,
-        imageUrl: Array.isArray(p.files) && p.files.length > 0
-          ? (p.files[0].originalPath || undefined)
-          : undefined,
+        imageUrl: singleImage,
+        imageUrls: imageUrls.length > 0 ? imageUrls : singleImage ? [singleImage] : undefined,
       };
     });
     return { posts: mapped };
@@ -2198,9 +2208,9 @@ export class AgoraPhilosophyClient {
   }
 
   async createPost(postData: {
-    title: string;
-    content: string;
-    postType: "argument" | "thought_experiment" | "question" | "essay" | "thesis";
+    title?: string;
+    content?: string;
+    postType?: "argument" | "thought_experiment" | "question" | "essay" | "thesis";
     spaceId?: string;
     primarySchool?: string;
     keyThinkers?: string[];
@@ -2208,17 +2218,25 @@ export class AgoraPhilosophyClient {
     authorHandle?: string;
     authorAvatar?: string;
     image?: File;
+    images?: File[];
   }): Promise<PhilosophicalPost> {
     const authorName = postData.authorName || "You (Thinker)";
     const authorHandle = postData.authorHandle || "you";
     const authorAvatar = postData.authorAvatar || undefined;
+    const postType = postData.postType || "argument";
+
+    const imageFiles = postData.images && postData.images.length > 0
+      ? postData.images
+      : postData.image
+      ? [postData.image]
+      : [];
 
     const payload = {
-      title: postData.title,
-      content: postData.content,
+      title: postData.title || (imageFiles.length > 0 ? "" : "Untitled Argument"),
+      content: postData.content || "",
       spaceId: postData.spaceId,
       metadata: {
-        postType: postData.postType,
+        postType,
         primarySchool: postData.primarySchool || "General Philosophy",
         keyThinkers: postData.keyThinkers || [],
         authorName,
@@ -2227,24 +2245,28 @@ export class AgoraPhilosophyClient {
       },
     };
 
-    // If an image is attached, send multipart/form-data; otherwise plain JSON.
+    // If images are attached, send multipart/form-data; otherwise plain JSON.
     const buildBody = (): BodyInit => {
-      if (!postData.image) return JSON.stringify(payload);
+      if (imageFiles.length === 0) return JSON.stringify(payload);
       const fd = new FormData();
-      fd.append("title", payload.title);
+      if (payload.title) fd.append("title", payload.title);
       if (payload.content) fd.append("content", payload.content);
       if (payload.spaceId) fd.append("spaceId", payload.spaceId);
       fd.append("metadata", JSON.stringify(payload.metadata));
-      fd.append("images.files", postData.image);
+      for (const img of imageFiles) {
+        fd.append("images.files", img);
+      }
       return fd;
     };
 
-    const extractImageUrl = (res: any): string | undefined => {
+    const extractImageUrls = (res: any): string[] => {
       const files = res?.files;
       if (Array.isArray(files) && files.length > 0) {
-        return files[0].originalPath || files[0].image?.original?.publicPath;
+        return files
+          .map((f: any) => f.originalPath || f.image?.original?.publicPath)
+          .filter((u: any): u is string => typeof u === "string" && u.length > 0);
       }
-      return undefined;
+      return [];
     };
 
     try {
@@ -2254,41 +2276,49 @@ export class AgoraPhilosophyClient {
         body,
       });
       const meta = res?.metadata || payload.metadata;
+      const uploadedUrls = extractImageUrls(res);
+      const previewUrls = uploadedUrls.length > 0
+        ? uploadedUrls
+        : imageFiles.map((f) => URL.createObjectURL(f));
+
       return {
         id: res?.id || `post-${Date.now()}`,
-        title: res?.title || postData.title,
-        content: res?.content || postData.content,
+        title: res?.title || payload.title,
+        content: res?.content || payload.content,
         authorId: res?.userId || "usr-current",
         authorName: meta.authorName || authorName,
         authorHandle: meta.authorHandle || authorHandle,
         authorAvatar: meta.authorAvatar || authorAvatar,
-        postType: meta.postType || postData.postType,
+        postType: meta.postType || postType,
         primarySchool: meta.primarySchool || "General Philosophy",
         keyThinkers: meta.keyThinkers || [],
         upvotesCount: 0,
         commentsCount: 0,
         createdAt: "Just now",
         spaceId: res?.spaceId || postData.spaceId,
-        imageUrl: extractImageUrl(res) || (postData.image ? URL.createObjectURL(postData.image) : undefined),
+        imageUrl: previewUrls[0] || undefined,
+        imageUrls: previewUrls.length > 0 ? previewUrls : undefined,
       };
     } catch (error) {
       if (this.isAuthenticated()) throw error;
+      const previewUrls = imageFiles.map((f) => URL.createObjectURL(f));
       const newPost: PhilosophicalPost = {
         id: `post-${Date.now()}`,
-        title: postData.title,
-        content: postData.content,
+        title: payload.title,
+        content: payload.content,
         authorId: "usr-current",
         authorName,
         authorHandle,
         authorAvatar,
-        postType: postData.postType,
+        postType,
         primarySchool: postData.primarySchool || "General Philosophy",
         keyThinkers: postData.keyThinkers || [],
         upvotesCount: 0,
         commentsCount: 0,
         createdAt: "Just now",
         spaceId: postData.spaceId,
-        imageUrl: postData.image ? URL.createObjectURL(postData.image) : undefined,
+        imageUrl: previewUrls[0] || undefined,
+        imageUrls: previewUrls.length > 0 ? previewUrls : undefined,
       };
       DEMO_POSTS.unshift(newPost);
       return newPost;
@@ -2642,6 +2672,7 @@ export interface PhilosophicalPost {
   commentsCount: number;
   createdAt: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 export const DEMO_CONVERSATIONS: DirectConversation[] = [];

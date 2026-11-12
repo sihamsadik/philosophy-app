@@ -41,9 +41,12 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
   const [availableSpaces, setAvailableSpaces] = useState<PhilosophicalSpace[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MiB cap matching server limit
+  const MAX_IMAGES_COUNT = 10;
 
   useEffect(() => {
     if (isOpen) {
@@ -55,12 +58,12 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
     }
   }, [isOpen, initialSpaceId]);
 
-  // Clean up object URLs when component unmounts or image changes
+  // Clean up object URLs when component unmounts or previews change
   useEffect(() => {
     return () => {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [imagePreview]);
+  }, [imagePreviews]);
 
   if (!isOpen) return null;
 
@@ -69,31 +72,67 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
   const currentAuthorAvatar = authorAvatar || user?.avatar || undefined;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setErrorMsg("Please select an image file (JPEG, PNG, WebP, etc.)");
+    const selected = Array.from(e.target.files || []);
+    if (selected.length === 0) return;
+
+    if (imageFiles.length + selected.length > MAX_IMAGES_COUNT) {
+      setErrorMsg(`You can attach up to ${MAX_IMAGES_COUNT} images per post.`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-    // Revoke old preview URL
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+
+    const validFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    for (const file of selected) {
+      if (!file.type.startsWith("image/")) {
+        setErrorMsg(`"${file.name}" is not a supported image file (JPEG, PNG, WebP, GIF).`);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setErrorMsg(`"${file.name}" exceeds the 25 MB file size limit.`);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+      validFiles.push(file);
+      newPreviews.push(URL.createObjectURL(file));
+    }
+
+    setImageFiles((prev) => [...prev, ...validFiles]);
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
     setErrorMsg(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleImageRemove = () => {
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(null);
-    setImagePreview(null);
+  const handleRemoveImage = (index: number) => {
+    const urlToRemove = imagePreviews[index];
+    if (urlToRemove) URL.revokeObjectURL(urlToRemove);
+
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const clearAllImages = () => {
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setImageFiles([]);
+    setImagePreviews([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Title is always required; content is required only when no image is attached
-    if (!title.trim()) return;
-    if (!content.trim() && !imageFile) return;
+    if (isPublishing) return; // Prevent duplicate submissions
+
+    const hasImages = imageFiles.length > 0;
+    const hasText = title.trim().length > 0 || content.trim().length > 0;
+
+    // Disallow completely empty posts (no text and no images)
+    if (!hasImages && !hasText) {
+      setErrorMsg("Please enter a title, content, or attach an image to create a post.");
+      return;
+    }
 
     setIsPublishing(true);
     setErrorMsg(null);
@@ -116,7 +155,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
         authorName: currentAuthorName,
         authorHandle: currentAuthorHandle,
         authorAvatar: currentAuthorAvatar,
-        image: imageFile || undefined,
+        images: imageFiles,
       });
 
       // Attach space metadata if selected
@@ -131,7 +170,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
       setPrimarySchool("");
       setKeyThinkersStr("");
       setSelectedSpaceId("");
-      handleImageRemove();
+      clearAllImages();
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to publish post");
@@ -178,11 +217,14 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
 
           {/* Post Title */}
           <div className="form-group">
-            <label className="section-label">Post Title / Central Question</label>
+            <label className="section-label">
+              Post Title / Central Question {imageFiles.length > 0 ? "(Optional with images)" : ""}
+            </label>
             <input
               type="text"
               className="input-text"
-              required
+              required={imageFiles.length === 0 && !content.trim()}
+              disabled={isPublishing}
               placeholder="e.g. On the Inevitability of Free Will in Deterministic Systems"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -191,11 +233,13 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
 
           {/* Post Body */}
           <div className="form-group">
-            <label className="section-label">Post Content & Argument Body {imageFile ? "(Optional with image)" : ""}</label>
+            <label className="section-label">
+              Post Content & Argument Body {imageFiles.length > 0 ? "(Optional with images)" : ""}
+            </label>
             <textarea
               className="input-textarea"
               rows={5}
-              required={!imageFile}
+              disabled={isPublishing}
               placeholder="Elaborate on your premises, conclusions, and philosophical context..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -205,32 +249,40 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
                 style={{ display: "none" }}
                 onChange={handleImageSelect}
+                disabled={isPublishing}
               />
               <button
                 type="button"
                 className="image-attach-btn"
                 onClick={() => fileInputRef.current?.click()}
-                title="Attach an image to your post"
+                disabled={isPublishing || imageFiles.length >= MAX_IMAGES_COUNT}
+                title="Attach images to your post"
               >
                 <ImagePlus size={16} />
-                {imageFile ? "Change Image" : "Attach Image"}
+                {imageFiles.length > 0 ? `Add More Images (${imageFiles.length}/${MAX_IMAGES_COUNT})` : "Attach Images"}
               </button>
             </div>
-            {/* Image Preview */}
-            {imagePreview && (
-              <div className="image-preview-container">
-                <img src={imagePreview} alt="Attachment preview" className="image-preview-img" />
-                <button
-                  type="button"
-                  className="image-preview-remove"
-                  onClick={handleImageRemove}
-                  title="Remove image"
-                >
-                  <X size={14} />
-                </button>
+            {/* Image Previews Grid */}
+            {imagePreviews.length > 0 && (
+              <div className="image-previews-grid">
+                {imagePreviews.map((previewUrl, idx) => (
+                  <div key={idx} className="image-preview-item">
+                    <img src={previewUrl} alt={`Attachment ${idx + 1}`} className="image-preview-thumb" />
+                    <button
+                      type="button"
+                      className="image-preview-remove"
+                      onClick={() => handleRemoveImage(idx)}
+                      disabled={isPublishing}
+                      title="Remove image"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -283,7 +335,7 @@ export const PostComposerModal: React.FC<PostComposerModalProps> = ({
           {/* Submit Action */}
           <div className="settings-actions">
             <button type="submit" className="save-submit-btn" disabled={isPublishing}>
-              {isPublishing ? "Publishing..." : <><Rocket size={15} style={{ marginRight: 6, verticalAlign: "middle" }} /> Publish Post</>}
+              {isPublishing ? "Publishing with media..." : <><Rocket size={15} style={{ marginRight: 6, verticalAlign: "middle" }} /> Publish Post</>}
             </button>
           </div>
         </form>
